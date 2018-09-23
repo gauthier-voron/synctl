@@ -6,14 +6,14 @@
 
 #include "synctl/OutputStream.hxx"
 #include "synctl/Reference.hxx"
-#include "synctl/server/Repository.hxx"
+#include "synctl/server/ObjectStore.hxx"
 
 
 using std::move;
 using std::unique_ptr;
 using synctl::OutputStream;
 using synctl::Reference;
-using synctl::server::Repository;
+using synctl::server::ObjectStore;
 using synctl::server::TransientOutputStream;
 
 
@@ -21,15 +21,15 @@ TransientOutputStream::TransientOutputStream()
 {
 }
 
-TransientOutputStream::TransientOutputStream(Repository *repository)
-	: _repository(repository)
+TransientOutputStream::TransientOutputStream(ObjectStore *ostore)
+	: _ostore(ostore)
 {
 }
 
 TransientOutputStream::TransientOutputStream(TransientOutputStream &&other)
-	: _repository(other._repository), _buffer(move(other._buffer))
+	: _ostore(other._ostore), _buffer(move(other._buffer))
 {
-	other._repository = nullptr;
+	other._ostore = nullptr;
 }
 
 TransientOutputStream::~TransientOutputStream()
@@ -40,9 +40,9 @@ TransientOutputStream::~TransientOutputStream()
 TransientOutputStream &
 TransientOutputStream::operator=(TransientOutputStream &&other)
 {
-	_repository = other._repository;
+	_ostore = other._ostore;
 	_buffer = move(other._buffer);
-	other._repository = nullptr;
+	other._ostore = nullptr;
 
 	return *this;
 }
@@ -59,7 +59,7 @@ void TransientOutputStream::write(const uint8_t *src, size_t len)
 
 void TransientOutputStream::commit(const Reference &reference)
 {
-	unique_ptr<OutputStream> os = _repository->newObject(reference);
+	unique_ptr<OutputStream> os = _ostore->newObject(reference);
 
 	os->write(_buffer.data(), _buffer.size());
 	_buffer.clear();

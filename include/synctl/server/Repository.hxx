@@ -6,6 +6,9 @@
 #include <memory>
 #include <string>
 
+#include "synctl/server/BranchStore.hxx"
+#include "synctl/server/ObjectStore.hxx"
+
 
 namespace synctl {
 
@@ -19,26 +22,26 @@ class Reference;
 namespace synctl::server {
 
 
+class Branch;
 class TransientOutputStream;
 
 
 class Repository
 {
-	using Refcount = uint32_t;
-
-
 	std::string  _path;
+	BranchStore  _bstore;
+	ObjectStore  _ostore;
 
 
-	std::unique_ptr<synctl::InputStream>
-	_readObject(const synctl::Reference &reference) const;
+	// std::unique_ptr<synctl::InputStream>
+	// _readObject(const synctl::Reference &reference) const;
 
-	Refcount _readRefcount(const synctl::Reference &reference) const;
+	// Refcount _readRefcount(const synctl::Reference &reference) const;
 
-	std::unique_ptr<synctl::OutputStream>
-	_writeObject(const synctl::Reference &reference);
+	// std::unique_ptr<synctl::OutputStream>
+	// _writeObject(const synctl::Reference &reference);
 
-	void _writeRefcount(const synctl::Reference &reference, Refcount cnt);
+	// void _writeRefcount(const synctl::Reference &reference, Refcount cnt);
 
 
  public:
@@ -50,11 +53,13 @@ class Repository
 
 	void takeReference(const synctl::Reference &reference);
 
-
 	std::unique_ptr<TransientOutputStream> newObject();
 
-	std::unique_ptr<synctl::OutputStream>
-	newObject(const synctl::Reference &reference);
+
+	Branch *newBranch(const std::string &name);
+
+	Branch *branch(const std::string &name);
+	const Branch *branch(const std::string &name) const;
 
 	
 	// const RepositorySnapshot &getTrunk() const;

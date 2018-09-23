@@ -6,6 +6,8 @@
 #include <memory>
 #include <string>
 
+#include "synctl/Filter.hxx"
+
 
 namespace synctl::client {
 

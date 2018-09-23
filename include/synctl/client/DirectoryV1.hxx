@@ -19,27 +19,36 @@ namespace synctl::client {
 
 
 class EntryFactory;
+class SendContext;
 
 
 class DirectoryV1 : public Receiver, public Sender
 {
-	const EntryFactory  *_factory;
-	std::string          _path;
+	bool _send_child(synctl::OutputStream *out,
+			 const std::string &name,
+			 synctl::Reference *dest,
+			 SendContext *context) const;
 
-
-	bool _send_child(synctl::OutputStream *os, const std::string &path,
-			 synctl::Reference *ref) const;
-
-	void _send_child_meta(synctl::OutputStream *os,
+	void _send_child_meta(synctl::OutputStream *bout,
 			      const std::string &name, 
 			      const synctl::Reference &ref,
 			      const struct stat &st) const;
 
+	size_t _send_children(synctl::OutputStream *out,
+			      synctl::OutputStream *bout,
+			      SendContext *context) const;
+
+	bool _send(synctl::OutputStream *out, synctl::Reference *dest,
+		   SendContext *context, bool traverse) const;
+
 
  public:
-	DirectoryV1(const std::string &path, const EntryFactory *factory);
+	virtual bool send(synctl::OutputStream *out, synctl::Reference *dest,
+			  SendContext *context);
 
-	virtual bool send(synctl::OutputStream *os, synctl::Reference *dest);
+	virtual bool traverse(synctl::OutputStream *out, synctl::Reference *ds,
+			      SendContext *context);
+
 	virtual void recv(std::istream &is);
 };
 

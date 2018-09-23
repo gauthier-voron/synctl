@@ -13,7 +13,7 @@
 #include "synctl/OutputStream.hxx"
 #include "synctl/Reference.hxx"
 #include "synctl/Type.hxx"
-#include "synctl/client/EntryFactory.hxx"
+#include "synctl/client/SendContext.hxx"
 
 
 #define TRANSFER_BUFFER_SIZE   4096
@@ -27,14 +27,9 @@ using synctl::HashOutputStream;
 using synctl::OutputStream;
 using synctl::Reference;
 using synctl::Type;
-using synctl::client::EntryFactory;
 using synctl::client::RegularV1;
+using synctl::client::SendContext;
 
-
-RegularV1::RegularV1(const string &path, const EntryFactory *factory)
-	: _factory(factory), _path(path)
-{
-}
 
 size_t RegularV1::_transfer(OutputStream *to, istream &from, size_t len)
 {
@@ -57,11 +52,11 @@ size_t RegularV1::_transfer(OutputStream *to, istream &from, size_t len)
 // Format of the meta information sent for each child.
 //   uint64_t     size      = S
 //   S            content
-bool RegularV1::send(OutputStream *os, Reference *dest)
+bool RegularV1::send(OutputStream *os, Reference *dest, SendContext *ctx)
 {
 	static const Type type = Type::RegularV1;
 	HashOutputStream hos(os);
-	ifstream ifs(_path);
+	ifstream ifs(ctx->path());
 	struct stat st;
 	uint64_t size;
 	int ret;
@@ -69,7 +64,7 @@ bool RegularV1::send(OutputStream *os, Reference *dest)
 	if (ifs.bad())
 		return false;
 
-	ret = stat(_path.c_str(), &st);
+	ret = stat(ctx->path().c_str(), &st);
 	if (ret != 0)
 		return false;
 

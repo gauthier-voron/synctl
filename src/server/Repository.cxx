@@ -15,6 +15,8 @@
 #include "synctl/IOException.hxx"
 #include "synctl/OutputStream.hxx"
 #include "synctl/Reference.hxx"
+#include "synctl/server/Branch.hxx"
+#include "synctl/server/BranchStore.hxx"
 #include "synctl/server/TransientOutputStream.hxx"
 
 
@@ -27,40 +29,53 @@ using synctl::InputStream;
 using synctl::IOException;
 using synctl::OutputStream;
 using synctl::Reference;
+using synctl::server::Branch;
 using synctl::server::Repository;
 using synctl::server::TransientOutputStream;
 
 
-unique_ptr<InputStream> Repository::_readObject(const Reference &ref) const
+// unique_ptr<InputStream> Repository::_readObject(const Reference &ref) const
+// {
+// 	string object_path = string(_path + "/objects/" + ref.toHex());
+// 	return make_unique<FileInputStream>(object_path);
+// }
+
+// Repository::Refcount Repository::_readRefcount(const Reference &reference) const
+// {
+// 	unique_ptr<InputStream> is = _readObject(reference);
+// 	Refcount ret;
+
+// 	is->readall(&ret, sizeof (ret));
+
+// 	return ret;
+// }
+
+// unique_ptr<OutputStream> Repository::_writeObject(const Reference &reference)
+// {
+// 	string object_path = string(_path + "/objects/" + reference.toHex());
+// 	return make_unique<FileOutputStream>(object_path);
+// }
+
+// void Repository::_writeRefcount(const Reference &reference, Refcount cnt)
+// {
+// 	unique_ptr<OutputStream> os = _writeObject(reference);
+// 	os->write(&cnt, sizeof (cnt));
+// }
+
+static string __bstorePath(const string &path)
 {
-	string object_path = string(_path + "/objects/" + ref.toHex());
-	return make_unique<FileInputStream>(object_path);
+	string bstore = path + "/branches";
+	return bstore;
 }
 
-Repository::Refcount Repository::_readRefcount(const Reference &reference) const
+static string __ostorePath(const string &path)
 {
-	unique_ptr<InputStream> is = _readObject(reference);
-	Refcount ret;
-
-	is->readall(&ret, sizeof (ret));
-
-	return ret;
-}
-
-unique_ptr<OutputStream> Repository::_writeObject(const Reference &reference)
-{
-	string object_path = string(_path + "/objects/" + reference.toHex());
-	return make_unique<FileOutputStream>(object_path);
-}
-
-void Repository::_writeRefcount(const Reference &reference, Refcount cnt)
-{
-	unique_ptr<OutputStream> os = _writeObject(reference);
-	os->write(&cnt, sizeof (cnt));
+	string ostore = path + "/objects";
+	return ostore;
 }
 
 Repository::Repository(const string &path)
-	: _path(path)
+	: _path(path), _bstore(__bstorePath(path)), _ostore(__ostorePath(path))
 {
 }
 
@@ -93,27 +108,31 @@ void Repository::initialize() const
 		closedir(dd);
 	}
 
-	if (mkdir((_path + "/objects").c_str(), 0700) != 0)
-		throw IOException("cannot create directory");
+	_bstore.initialize();
+	_ostore.initialize();
 }
 
 void Repository::takeReference(const Reference &reference)
 {
-	Refcount refcnt = _readRefcount(reference);
-	_writeRefcount(reference, refcnt + 1);
+	_ostore.takeReference(reference);
 }
 
 unique_ptr<TransientOutputStream> Repository::newObject()
 {
-	return make_unique<TransientOutputStream>(this);
+	return _ostore.newObject();
 }
 
-unique_ptr<OutputStream> Repository::newObject(const Reference &reference)
+Branch *Repository::newBranch(const string &name)
 {
-	unique_ptr<OutputStream> ret = _writeObject(reference);
-	Refcount refcnt = 0;
+	return _bstore.newBranch(name);
+}
 
-	ret->write(&refcnt, sizeof (refcnt));
+Branch *Repository::branch(const string &name)
+{
+	return _bstore.branch(name);
+}
 
-	return ret;
+const Branch *Repository::branch(const string &name) const
+{
+	return _bstore.branch(name);
 }

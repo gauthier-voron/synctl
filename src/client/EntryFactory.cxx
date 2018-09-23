@@ -45,9 +45,9 @@ unique_ptr<Sender> EntryFactory::instance(const string &path) const
 		throw system_error(errno, std::generic_category());
 
 	switch (st.st_mode & S_IFMT) {
-	case S_IFDIR:  return make_unique<DirectoryV1>(path, this);
-	case S_IFLNK:  return make_unique<SymlinkV1>(path);
-	case S_IFREG:  return make_unique<RegularV1>(path, this);
+	case S_IFDIR:  return make_unique<DirectoryV1>();
+	case S_IFLNK:  return make_unique<SymlinkV1>();
+	case S_IFREG:  return make_unique<RegularV1>();
 	default:       return nullptr;
 	}
 }

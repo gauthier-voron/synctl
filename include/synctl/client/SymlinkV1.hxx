@@ -3,8 +3,6 @@
 
 
 #include <istream>
-#include <ostream>
-#include <string>
 
 #include "synctl/client/Receiver.hxx"
 #include "synctl/client/Sender.hxx"
@@ -21,15 +19,15 @@ class Reference;
 namespace synctl::client {
 
 
+class SendContext;
+
+
 class SymlinkV1 : public Receiver, public Sender
 {
-	std::string          _path;
-
-
  public:
-	SymlinkV1(const std::string &path);
+	virtual bool send(synctl::OutputStream *out, synctl::Reference *dest,
+			  SendContext *context);
 
-	virtual bool send(synctl::OutputStream *os, synctl::Reference *dest);
 	virtual void recv(std::istream &is);
 };
 

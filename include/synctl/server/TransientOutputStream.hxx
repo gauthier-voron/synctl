@@ -19,18 +19,18 @@ class Reference;
 namespace synctl::server {
 
 
-class Repository;
+class ObjectStore;
 
 
 class TransientOutputStream : public synctl::OutputStream
 {
-	Repository   *_repository = nullptr;
+	ObjectStore  *_ostore = nullptr;
 	std::string   _buffer;
 
 
  public:
 	TransientOutputStream();
-	TransientOutputStream(Repository *repository);
+	TransientOutputStream(ObjectStore *ostore);
 	TransientOutputStream(const TransientOutputStream &other) = delete;
 	TransientOutputStream(TransientOutputStream &&other);
 	virtual ~TransientOutputStream();

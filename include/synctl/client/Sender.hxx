@@ -16,12 +16,19 @@ class Reference;
 namespace synctl::client {
 
 
+class SendContext;
+
+
 class Sender
 {
  public:
 	virtual ~Sender() = default;
 
-	virtual bool send(synctl::OutputStream *os, synctl::Reference *r) = 0;
+	virtual bool send(synctl::OutputStream *out, synctl::Reference *dest,
+			  SendContext *context) = 0;
+
+	virtual bool traverse(synctl::OutputStream *out, synctl::Reference *ds,
+			      SendContext *context);
 };
 
 

@@ -6,9 +6,13 @@
 
 #include "synctl/AdapterInputStream.hxx"
 #include "synctl/AdapterOutputStream.hxx"
+#include "synctl/Filter.hxx"
+#include "synctl/FirstMatchFilter.hxx"
+#include "synctl/GlobPattern.hxx"
 #include "synctl/HashOutputStream.hxx"
 #include "synctl/Reference.hxx"
 #include "synctl/client/EntryFactory.hxx"
+#include "synctl/client/SendContext.hxx"
 #include "synctl/client/Sender.hxx"
 #include "synctl/server/ObjectFactory.hxx"
 #include "synctl/server/Repository.hxx"
@@ -19,14 +23,21 @@
 using std::cerr;
 using std::cout;
 using std::endl;
+using std::make_unique;
+using std::move;
 using std::string;
 using std::vector;
 using std::unique_ptr;
 using synctl::AdapterInputStream;
 using synctl::AdapterOutputStream;
+using synctl::GlobPattern;
+using synctl::Filter;
+using synctl::FirstMatchFilter;
 using synctl::HashOutputStream;
+using synctl::Pattern;
 using synctl::Reference;
 using synctl::client::EntryFactory;
+using synctl::client::SendContext;
 using synctl::client::Sender;
 using synctl::server::ObjectFactory;
 using synctl::server::Repository;
@@ -56,6 +67,8 @@ static int server()
 		children.clear();
 	}
 
+	repository.newBranch("Orme")->newSnapshot(reference);
+
 	return 0;
 }
 
@@ -67,13 +80,24 @@ int main(int argc, const char **argv)
 	}
 
 	if (string(argv[1]) == "client") {
+		FirstMatchFilter filter;
+		SendContext sendctx("/tmp", &filter);
 		AdapterOutputStream aos(cout);
-		EntryFactory efacto;
-		unique_ptr<Sender> sender = efacto.instance("test");
-		uint16_t zero = 0;
+		unique_ptr<Pattern> pattern;
 		Reference ref;
 
-		sender->send(&aos, &ref);
+		// pattern = make_unique<GlobPattern>("/*.tar.gz.d");
+		pattern = make_unique<GlobPattern>("/");
+		// filter.append(move(pattern), Filter::Action::Traverse);
+		filter.append(make_unique<GlobPattern>("/*.pdf"), Filter::Action::Accept);
+		sendctx.send(&aos, &ref);
+		
+		// EntryFactory efacto;
+		// unique_ptr<Sender> sender = efacto.instance("test");
+		uint16_t zero = 0;
+		// Reference ref;
+
+		// sender->send(&aos, &ref);
 		aos.write(&zero, sizeof (zero));
 
 		return 0;

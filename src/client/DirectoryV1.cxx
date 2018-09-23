@@ -1,6 +1,5 @@
 #include "synctl/client/DirectoryV1.hxx"
 
-#include <dirent.h>
 #include <grp.h>
 #include <pwd.h>
 #include <sys/stat.h>
@@ -15,11 +14,13 @@
 #include <vector>
 
 #include "synctl/AdapterOutputStream.hxx"
+#include "synctl/Directory.hxx"
+#include "synctl/Filter.hxx"
 #include "synctl/HashOutputStream.hxx"
 #include "synctl/OutputStream.hxx"
 #include "synctl/Reference.hxx"
 #include "synctl/Type.hxx"
-#include "synctl/client/EntryFactory.hxx"
+#include "synctl/client/SendContext.hxx"
 #include "synctl/client/Sender.hxx"
 
 
@@ -32,44 +33,24 @@ using std::unique_ptr;
 using std::unique_ptr;
 using std::vector;
 using synctl::AdapterOutputStream;
+using synctl::Directory;
+using synctl::Filter;
 using synctl::HashOutputStream;
 using synctl::OutputStream;
 using synctl::Reference;
 using synctl::Type;
 using synctl::client::DirectoryV1;
-using synctl::client::EntryFactory;
+using synctl::client::SendContext;
 using synctl::client::Sender;
 
 
-DirectoryV1::DirectoryV1(const string &path, const EntryFactory *factory)
-	: _factory(factory), _path(path)
+bool DirectoryV1::_send_child(OutputStream *out, const string &name,
+			      Reference *dest, SendContext *context) const
 {
+	return context->send(out, dest, name);
 }
 
-
-bool DirectoryV1::_send_child(OutputStream *os, const string &p, Reference *r)
-	const
-{
-	unique_ptr<Sender> sender = _factory->instance(p);
-
-	if (sender == nullptr)
-		return false;
-
-	return sender->send(os, r);
-}
-
-// Format of the meta information sent for each child.
-//   uint8_t      st_dev
-//   uint8_t      st_ino
-//   uint16_t     st_mode
-//   uint16_t     username.length()    = A
-//   uint16_t     groupname.length()   = B
-//   uint16_t     childname.length()   = C
-//   uint8_t[20]  reference
-//   C            username
-//   C            groupname
-//   C            childname
-void DirectoryV1::_send_child_meta(OutputStream *os, const string &name,
+void DirectoryV1::_send_child_meta(OutputStream *bout, const string &name, 
 				   const Reference &ref, const struct stat &st)
 	const
 {
@@ -105,63 +86,74 @@ void DirectoryV1::_send_child_meta(OutputStream *os, const string &name,
 	meta.glen = groupname.size();
 	meta.nlen = name.size();
 
-	os->write(&meta, sizeof (meta));
-	os->write(ref.data(), ref.size());
-	os->write(username.data(), username.size());
-	os->write(groupname.data(), groupname.size());
-	os->write(name.data(), name.size());
+	bout->write(&meta, sizeof (meta));
+	bout->write(ref.data(), ref.size());
+	bout->write(username.data(), username.size());
+	bout->write(groupname.data(), groupname.size());
+	bout->write(name.data(), name.size());
 }
 
-#include <iostream>
-bool DirectoryV1::send(OutputStream *os, Reference *dest)
+size_t DirectoryV1::_send_children(OutputStream *out, OutputStream *bout,
+				   SendContext *context) const
 {
-	static const Type type = Type::DirectoryV1;
-	HashOutputStream hos(os);
-	AdapterOutputStream aos;
-	string epath, cpath;
-	ostringstream buffer;
-	Reference placeholder;
-	struct dirent *de;
+	Directory dir = Directory(context->path());
+	size_t size = 0;
 	struct stat st;
-	uint64_t n;
-	DIR *dd;
+	Reference ref;
+	string path;
 	int ret;
 
-	dd = opendir(_path.c_str());
-	if (dd == NULL)
-		return false;
+	if (dir.listable() == false)
+		return 0;
 
-	aos.assign(buffer);
+	for (const string &name : dir.sortedTrueChildren()) {
+		path = context->path() + "/" + name;
 
-	n = 0;
-
-	while ((de = readdir(dd)) != NULL) {
-		cpath.assign(de->d_name);
-		if ((cpath == ".") || (cpath == ".."))
-			continue;
-		
-		epath = _path + '/' + cpath;
-
-		ret = lstat(epath.c_str(), &st);
+		ret = lstat(path.c_str(), &st);
 		if (ret != 0)
 			continue;
 
-		if (!_send_child(os, epath, &placeholder))
+		if (!_send_child(out, name, &ref, context))
 			continue;
 
-		n += 1;
-		_send_child_meta(&aos, cpath, placeholder, st);
+		size += 1;
+		_send_child_meta(bout, name, ref, st);
 	}
 
-	closedir(dd);
+	return size;
+}
+
+bool DirectoryV1::_send(OutputStream *out, Reference *dest, SendContext *ctx,
+			bool traverse) const
+{
+	static const Type type = Type::DirectoryV1;
+	HashOutputStream hos(out);
+	AdapterOutputStream aos;
+	ostringstream buffer;
+	uint64_t size;
+
+	aos.assign(buffer);
+	size = _send_children(out, &aos, ctx);
+
+	if (traverse && (size == 0))
+		return false;
 
 	hos.write(&type, sizeof (type));
-	hos.write(&n, sizeof (n));
+	hos.write(&size, sizeof (size));
 	hos.write(buffer.str().data(), buffer.str().length());
 	hos.digest(dest);
 
-	std::cerr << dest->toHex() << std::endl;
 	return true;
+}
+
+bool DirectoryV1::send(OutputStream *out, Reference *dest, SendContext *ctx)
+{
+	return _send(out, dest, ctx, false);
+}
+
+bool DirectoryV1::traverse(OutputStream *out, Reference *dst, SendContext *ctx)
+{
+	return _send(out, dst, ctx, true);
 }
 
 void DirectoryV1::recv(istream &is)

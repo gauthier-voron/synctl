@@ -11,6 +11,7 @@
 #include "synctl/OutputStream.hxx"
 #include "synctl/Reference.hxx"
 #include "synctl/Type.hxx"
+#include "synctl/client/SendContext.hxx"
 
 
 #define SYMLINK_PATH_BUFFER_SIZE   64
@@ -22,15 +23,11 @@ using synctl::HashOutputStream;
 using synctl::OutputStream;
 using synctl::Reference;
 using synctl::Type;
+using synctl::client::SendContext;
 using synctl::client::SymlinkV1;
 
 
-SymlinkV1::SymlinkV1(const string &path)
-	: _path(path)
-{
-}
-
-bool SymlinkV1::send(OutputStream *os, Reference *dest)
+bool SymlinkV1::send(OutputStream *os, Reference *dest, SendContext *ctx)
 {
 	static Type type = Type::SymlinkV1;
 	HashOutputStream hos = HashOutputStream(os);
@@ -40,7 +37,7 @@ bool SymlinkV1::send(OutputStream *os, Reference *dest)
 
 	buf.resize(l);
 
-	while ((s = readlink(_path.c_str(), buf.data(), l)) == l) {
+	while ((s = readlink(ctx->path().c_str(), buf.data(), l)) == l) {
 		l = l * 2;
 		buf.resize(l);
 	}
