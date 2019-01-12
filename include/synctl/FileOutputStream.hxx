@@ -6,32 +6,23 @@
 #include <cstdlib>
 #include <string>
 
-#include "synctl/OutputStream.hxx"
+#include "synctl/FdOutputStream.hxx"
 
 
 namespace synctl {
 
 
-class FileOutputStream : public OutputStream
+class FileOutputStream : public FdOutputStream
 {
-	int  _fd = -1;
-
-
  public:
 	FileOutputStream();
 	FileOutputStream(const std::string path);
 	FileOutputStream(const FileOutputStream &other) = delete;
 	FileOutputStream(FileOutputStream &&other);
-	virtual ~FileOutputStream();
+	virtual ~FileOutputStream() = default;
 
 	FileOutputStream &operator=(const FileOutputStream &other) = delete;
 	FileOutputStream &operator=(FileOutputStream &&other);
-
-	virtual void write(uint8_t c);
-	virtual void write(const uint8_t *src, size_t len);
-	using OutputStream::write;
-
-	virtual void close();
 };
 
 

@@ -45,6 +45,7 @@ class Directory
 	bool listable() const;
 
 	void create() const;
+	void remove() const;
 
 
 	class ConstIterator
