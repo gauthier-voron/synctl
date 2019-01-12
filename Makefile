@@ -34,7 +34,7 @@ ifeq ($(mode),mixed)
 else
 
 
-sources := $(filter %.cxx, $(call FIND, src))
+sources := $(filter %.cxx, $(call FIND, io ui)) $(wildcard *.cxx)
 objects := $(patsubst %.cxx, $(OBJ)%.o, $(sources))
 
 

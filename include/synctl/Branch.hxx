@@ -6,7 +6,7 @@
 #include <string>
 #include <vector>
 
-#include "synctl/Directory.hxx"
+#include "synctl/io/Directory.hxx"
 #include "synctl/Snapshot.hxx"
 
 

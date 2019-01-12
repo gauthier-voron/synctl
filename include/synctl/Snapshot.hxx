@@ -5,7 +5,7 @@
 #include <cstdint>
 #include <string>
 
-#include "synctl/Directory.hxx"
+#include "synctl/io/Directory.hxx"
 #include "synctl/Reference.hxx"
 
 
