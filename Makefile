@@ -34,23 +34,19 @@ ifeq ($(mode),mixed)
 else
 
 
-sources := $(filter %.cxx, $(call FIND, io ui)) $(wildcard *.cxx)
+sources := $(filter %.cxx, $(call FIND,io plan repo tree ui)) $(wildcard *.cxx)
 objects := $(patsubst %.cxx, $(OBJ)%.o, $(sources))
 
 
 check: $(BIN)synctl
 	./$< init --force 'sandbox'
-	./$< push --root='/tmp' --server 'file://sandbox' > /dev/null
-	./$< pull -rcopy -s 'file://sandbox'
-	# ./$< client-push > foo
-	# ./$< server-pull < foo
-	# ./$< server-push `cat sandbox/branches/Orme/*/ref` > foo
-	# ./$< client-pull < foo
+	./$< push --root='include' --server 'file://sandbox'
+	# ./$< pull -rrecvbox -s 'file://sandbox' -R `cat sandbox/branches/Orme/*/ref`
 
 all: $(BIN)synctl
 
 clean:
-	$(call cmd-clean, $(DEP) $(OBJ) $(BIN) .depends sandbox recvbox foo)
+	$(call cmd-clean, $(DEP) $(OBJ) $(BIN) .depends sandbox recvbox recbox)
 
 
 $(call REQUIRE-DIR, $(BIN)synctl)

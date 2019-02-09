@@ -7,7 +7,7 @@
 
 #include "synctl/io/IOException.hxx"
 #include "synctl/io/OutputStream.hxx"
-#include "synctl/Reference.hxx"
+#include "synctl/tree/Reference.hxx"
 
 
 using synctl::HashOutputStream;

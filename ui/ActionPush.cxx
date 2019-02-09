@@ -5,11 +5,12 @@
 #include <vector>
 
 #include "synctl/io/AdapterOutputStream.hxx"
-#include "synctl/DirectoryV1.hxx"
+#include "synctl/io/Channel.hxx"
+#include "synctl/plan/Protocol.hxx"
+#include "synctl/plan/ProtocolVersion.hxx"
+#include "synctl/tree/Reference.hxx"
 #include "synctl/ui/OperandMissingException.hxx"
 #include "synctl/ui/OperandUnexpectedException.hxx"
-#include "synctl/Reference.hxx"
-#include "synctl/SendContext.hxx"
 
 
 using std::string;
@@ -17,15 +18,31 @@ using std::unique_ptr;
 using std::vector;
 using synctl::ActionPush;
 using synctl::AdapterOutputStream;
-using synctl::DirectoryV1;
+using synctl::Channel;
 using synctl::OperandMissingException;
 using synctl::OperandUnexpectedException;
+using synctl::Protocol;
 using synctl::Reference;
-using synctl::SendContext;
 
 
 int ActionPush::_execute(const string &root, const string &server)
 {
+	unique_ptr<Channel> chan = Channel::open(server);
+	unique_ptr<Protocol> protocol = Protocol::clientHandcheck(chan.get());
+	Protocol::PushSettings psettings;
+
+	if (protocol == nullptr)
+		return 1;
+
+	psettings.localRoot = root;
+	psettings.branchName = "Laurier";
+	psettings.snapshotReference = nullptr;
+	protocol->push(psettings);
+
+	protocol->exit();
+
+	chan->close();
+
 	return 0;
 }
 

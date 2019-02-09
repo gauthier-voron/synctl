@@ -4,6 +4,7 @@
 
 #include <cstdint>
 #include <cstdlib>
+#include <string>
 
 
 namespace synctl {
@@ -20,6 +21,9 @@ class InputStream
 
 	template<typename T> size_t read(T *dest, size_t len);
 	template<typename T> void readall(T *dest, size_t len);
+
+	virtual std::string readStr();
+	virtual void readStr(std::string *dest);
 
 	virtual void close();
 };

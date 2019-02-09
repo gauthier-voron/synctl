@@ -4,6 +4,7 @@
 
 #include <cstdint>
 #include <cstdlib>
+#include <string>
 
 
 namespace synctl {
@@ -18,6 +19,8 @@ class OutputStream
 	virtual void write(const uint8_t *src, size_t len);
 
 	template<typename T> void write(const T *src, size_t len);
+
+	virtual void writeStr(const std::string &str);
 
 	virtual void close();
 };

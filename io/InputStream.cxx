@@ -6,6 +6,7 @@
 #include "synctl/io/EOFException.hxx"
 
 
+using std::string;
 using synctl::EOFException;
 using synctl::InputStream;
 
@@ -33,6 +34,26 @@ size_t InputStream::read(uint8_t *dest, size_t len)
 void InputStream::readall(uint8_t *dest, size_t len)
 {
 	if (read(dest, len) != len)
+		throw EOFException();
+}
+
+string InputStream::readStr()
+{
+	string ret;
+	readStr(&ret);
+	return ret;
+}
+
+void InputStream::readStr(string *dest)
+{
+	int16_t buf;
+
+	dest->clear();
+
+	while ((buf = read()) > 0)
+		dest->push_back(static_cast<char> (buf));
+
+	if (buf != 0)
 		throw EOFException();
 }
 

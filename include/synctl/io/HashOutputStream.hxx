@@ -8,7 +8,7 @@
 #include <cstdlib>
 
 #include "synctl/io/OutputStream.hxx"
-#include "synctl/Reference.hxx"
+#include "synctl/tree/Reference.hxx"
 
 
 namespace synctl {

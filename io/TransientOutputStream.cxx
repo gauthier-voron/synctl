@@ -5,8 +5,8 @@
 #include <memory> 
 
 #include "synctl/io/OutputStream.hxx"
-#include "synctl/Reference.hxx"
-#include "synctl/ObjectStore.hxx"
+#include "synctl/tree/Reference.hxx"
+#include "synctl/repo/ObjectStore.hxx"
 
 
 using std::move;

@@ -8,7 +8,7 @@
 #include "synctl/ui/OperandInvalidException.hxx"
 #include "synctl/ui/OperandMissingException.hxx"
 #include "synctl/ui/OperandUnexpectedException.hxx"
-#include "synctl/Repository.hxx"
+#include "synctl/repo/Repository.hxx"
 
 
 using std::string;
