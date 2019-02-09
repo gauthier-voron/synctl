@@ -1,56 +1,76 @@
+DEP := .depends.d/
 OBJ := obj/
 BIN := bin/
 
 
-sources := common/AdapterInputStream common/AdapterOutputStream \
-           common/Directory \
-           common/EOFException common/FileInputStream common/FileOutputStream \
-           common/FirstMatchFilter common/FSException common/GlobPattern \
-           common/HashOutputStream common/InputStream common/IOException \
-           common/OutputStream \
-           common/Reference
-sources += ui/main
-sources += client/EntryFactory client/DirectoryV1 client/RegularV1 \
-           client/SendContext client/Sender client/SymlinkV1
-sources += server/Branch server/BranchStore server/DirectoryV1 \
-           server/ObjectFactory \
-           server/ObjectStore \
-           server/RegularV1 \
-           server/Repository server/Snapshot server/SymlinkV1 \
-           server/TransientOutputStream
+include Function.mk
+include Command.mk
 
-objects := $(patsubst %, $(OBJ)%.o, $(sources))
+
+config-commands := tidy clean cleanall .depends
+
+ifeq ($(filter $(config-commands), $(MAKECMDGOALS)),)
+  # There is no goal or there are only build commands
+  mode := build
+else
+  # There is at least one config command
+  ifneq ($(filter-out $(config-commands), $(MAKECMDGOALS)),)
+    # There is at least one build command
+    mode := mixed
+  else
+    # There is no build command
+    mode := config
+  endif
+endif
+
+
+ifeq ($(mode),mixed)
+
+  %:
+        $(call cmd-make, $@)
+
+  .NOTPARALLEL:
+
+else
+
+
+sources := $(filter %.cxx, $(call FIND,io plan repo tree ui)) $(wildcard *.cxx)
+objects := $(patsubst %.cxx, $(OBJ)%.o, $(sources))
 
 
 check: $(BIN)synctl
-	./$< client | ./$< server
+	./$< init --force 'sandbox'
+	./$< push --root='include' --server 'file://sandbox'
+	# ./$< pull -rrecvbox -s 'file://sandbox' -R `cat sandbox/branches/Orme/*/ref`
 
 all: $(BIN)synctl
 
-
-$(BIN)synctl: $(objects) | $(BIN)
-	g++ $^ -o $@ -lssl -lcrypto
-
-
-$(OBJ)common/%.o: src/common/%.cxx | $(OBJ)common
-	g++ -Wall -Wextra -g -c $< -o $@ -Iinclude/
-
-$(OBJ)ui/%.o: src/ui/%.cxx | $(OBJ)ui
-	g++ -Wall -Wextra -g -c $< -o $@ -Iinclude/
-
-$(OBJ)client/%.o: src/client/%.cxx | $(OBJ)client
-	g++ -Wall -Wextra -g -std=c++17 -c $< -o $@ -Iinclude/ -include iostream
-
-$(OBJ)server/%.o: src/server/%.cxx | $(OBJ)server
-	g++ -Wall -Wextra -g -std=c++17 -c $< -o $@ -Iinclude/ -include iostream
-
-
-$(OBJ)common $(OBJ)client $(OBJ)server $(OBJ)ui: | $(OBJ)
-	mkdir $@
-
-$(OBJ) $(BIN):
-	mkdir $@
-
-
 clean:
-	-rm -rf $(OBJ) $(BIN)
+	$(call cmd-clean, $(DEP) $(OBJ) $(BIN) .depends sandbox recvbox recbox)
+
+
+$(call REQUIRE-DIR, $(BIN)synctl)
+
+$(BIN)synctl: $(objects)
+	$(call cmd-ldcxx, $@, $^, -lssl -lcrypto)
+
+
+$(call REQUIRE-DIR, $(objects))
+$(call REQUIRE-DEP, $(sources))
+
+$(OBJ)%.o: %.cxx
+	$(call cmd-ccxx, $@, $<, -Iinclude/ -include iostream)
+
+$(DEP)%.cxx.d: %.cxx
+	$(call cmd-depcxx, $@, $<, $(patsubst %.cxx, $(OBJ)%.o, $<), \
+               -Iinclude/)
+
+
+.depends:
+	$(call cmd-dep, $@, $(filter %.d, $^))
+
+ifeq ($(mode),build)
+  -include .depends
+endif
+
+endif
