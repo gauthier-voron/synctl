@@ -9,11 +9,12 @@
 #include <set>
 #include <string>
 
+#include "synctl/plan/Filter.hxx"
+
 
 namespace synctl {
 
 
-class Filter;
 class OutputStream;
 class Reference;
 
@@ -22,31 +23,36 @@ class Push_1
 {
 	struct Context
 	{
-		std::string         path;
+		std::string         apath;
+		std::string         rpath;
 		struct stat         stat;
-		const std::string  *root;
+		Filter::Action      defact;
 		OutputStream       *output;
 	};
 
 
 	std::set<Reference>   _knownReferences;
 
+	Filter               *_filter = nullptr;
+
 
 	bool _isReferenceKnown(const Reference &reference) const;
 
-	void _pushEntry(const Context *context, Reference *reference);
+	Filter::Action _filterPath(const Context *context) const;
 
-	void _pushDirectory(const Context *context, Reference *reference);
+	bool _pushEntry(const Context *context, Reference *reference);
 
-	void _pushRegular(const Context *context, Reference *reference);
+	bool _pushDirectory(const Context *context, Reference *reference);
 
-	void _pushSymlink(const Context *context, Reference *reference);
+	bool _pushRegular(const Context *context, Reference *reference);
+
+	bool _pushSymlink(const Context *context, Reference *reference);
 
 
  public:
 	void addKnownReference(const Reference &reference);
 
-	void addFilter(Filter *filter);
+	void setFilter(Filter *filter);
 
 	void push(OutputStream *output, const std::string &root);
 };

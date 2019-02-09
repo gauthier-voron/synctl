@@ -73,6 +73,7 @@ void Protocol_1_0_0::push(const PushSettings &settings) const
 		pusher.addKnownReference(ref);
 	}
 
+	pusher.setFilter(settings.filter);
 	pusher.push(_channel->outputStream(), settings.localRoot);
 
 	if (settings.snapshotReference == nullptr)

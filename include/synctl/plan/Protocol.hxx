@@ -11,6 +11,7 @@ namespace synctl {
 
 
 class Channel;
+class Filter;
 class InputStream;
 class OutputStream;
 class ProtocolVersion;
@@ -44,6 +45,9 @@ class Protocol
 
 		// Name of the remote branch to create a snapshot on
 		std::string   branchName;
+
+		// Filter to select what entries to push
+		Filter       *filter;
 
 		// Reference of the newly created snapshot
 		Reference    *snapshotReference;

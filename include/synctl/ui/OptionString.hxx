@@ -23,10 +23,10 @@ class OptionString : public Option
 		     const std::string &defaultValue = "");
 
 
-	virtual bool acceptArgument() const;
+	virtual bool acceptArgument() const override;
 
-	virtual void affect();
-	virtual void affect(const std::string &argument);
+	virtual void affect() override;
+	virtual void affect(const std::string &argument) override;
 
 
 	const std::string &value() const;

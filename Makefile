@@ -40,7 +40,8 @@ objects := $(patsubst %.cxx, $(OBJ)%.o, $(sources))
 
 check: $(BIN)synctl
 	./$< init --force 'sandbox'
-	./$< push --root='include' --server 'file://sandbox'
+	./$< push --root='include' --server 'file://sandbox' \
+             --exclude=/synctl/* --include=/synctl/io/* --include=**/ui/* --skip=*repo*
 	# ./$< pull -rrecvbox -s 'file://sandbox' -R `cat sandbox/branches/Orme/*/ref`
 
 all: $(BIN)synctl
