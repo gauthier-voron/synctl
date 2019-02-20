@@ -46,6 +46,14 @@ check: $(BIN)synctl
 
 all: $(BIN)synctl
 
+test: validation-test
+
+
+validation-test: test/validation.sh $(BIN)synctl
+	$(call cmd-call, $<, \
+          $(if $(filter $(V), 0), -s, $(if $(filter $(V), 1), -q)))
+
+
 clean:
 	$(call cmd-clean, $(DEP) $(OBJ) $(BIN) .depends sandbox recvbox recbox)
 
