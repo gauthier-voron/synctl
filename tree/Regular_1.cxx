@@ -11,7 +11,7 @@
 #include "synctl/tree/Reference.hxx"
 
 
-#define TRANSFER_BUFFER_SIZE  2097152
+#define TRANSFER_BUFFER_SIZE  16384
 
 
 using std::make_unique;
