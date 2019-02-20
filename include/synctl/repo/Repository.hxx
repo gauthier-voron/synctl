@@ -55,6 +55,8 @@ class Repository
 	std::unique_ptr<InputStream>
 	readObject(const Reference &reference) const;
 
+	size_t getObjectSize(const Reference &reference) const;
+
 
 	Branch *newBranch(const std::string &name);
 

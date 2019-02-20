@@ -4,19 +4,21 @@
 #include <string>
 #include <vector>
 
+#include "synctl/io/Channel.hxx"
+#include "synctl/io/InputStream.hxx"
+#include "synctl/io/OutputStream.hxx"
 #include "synctl/plan/Opcode.hxx"
 #include "synctl/plan/Protocol.hxx"
 #include "synctl/plan/ProtocolException.hxx"
 #include "synctl/plan/ProtocolVersion.hxx"
 #include "synctl/plan/ProtocolVersion_1_0_0.hxx"
+#include "synctl/plan/Pull_1.hxx"
 #include "synctl/plan/Push_1.hxx"
 #include "synctl/plan/Receive_1.hxx"
-#include "synctl/io/InputStream.hxx"
-#include "synctl/io/OutputStream.hxx"
-#include "synctl/tree/Reference.hxx"
+#include "synctl/plan/Send_1.hxx"
 #include "synctl/repo/Branch.hxx"
-#include "synctl/io/Channel.hxx"
 #include "synctl/repo/Repository.hxx"
+#include "synctl/tree/Reference.hxx"
 
 
 using std::move;
@@ -32,10 +34,12 @@ using synctl::Protocol_1_0_0;
 using synctl::ProtocolException;
 using synctl::ProtocolVersion;
 using synctl::ProtocolVersion_1_0_0;
+using synctl::Pull_1;
 using synctl::Push_1;
 using synctl::Receive_1;
 using synctl::Reference;
 using synctl::Repository;
+using synctl::Send_1;
 
 
 Protocol_1_0_0::Protocol_1_0_0(Channel *channel)
@@ -59,8 +63,9 @@ void Protocol_1_0_0::exit() const
 void Protocol_1_0_0::push(const PushSettings &settings) const
 {
 	Reference zeroref = Reference::zero();
+	string snapshotName, *nameptr;
 	opcode_t op = OP_ACT_PUSH;
-	Reference ref, *rptr;
+	Reference ref;
 	Push_1 pusher;
 
 	_channel->outputStream()->write(&op, sizeof (op));
@@ -76,20 +81,19 @@ void Protocol_1_0_0::push(const PushSettings &settings) const
 	pusher.setFilter(settings.filter);
 	pusher.push(_channel->outputStream(), settings.localRoot);
 
-	if (settings.snapshotReference == nullptr)
-		rptr = &ref;
+	if (settings.snapshotName == nullptr)
+		nameptr = &snapshotName;
 	else
-		rptr = settings.snapshotReference;
+		nameptr = settings.snapshotName;
 
-	_channel->inputStream()->read(rptr->data(), rptr->size());
+	*nameptr = _channel->inputStream()->readStr();
 }
 
 void Protocol_1_0_0::_servePush(Repository *repository) const
 {
 	Reference ref = Reference::zero();
+	string branchName, snapshotName;
 	Receive_1 receiver;
-	Snapshot *snapshot;
-	string branchName;
 	Branch *branch;
 
 	_channel->inputStream()->readStr(&branchName);
@@ -104,38 +108,73 @@ void Protocol_1_0_0::_servePush(Repository *repository) const
 	receiver.receive(_channel->inputStream(), repository, &ref);
 	repository->takeReference(ref);
 
-	snapshot = branch->newSnapshot(ref);
+	branch->newSnapshot(ref, &snapshotName);
 
-	_channel->outputStream()->write(ref.data(), ref.size());
+	_channel->outputStream()->writeStr(snapshotName);
 }
 
-void Protocol_1_0_0::pull(const string &localRoot, const Reference &ref) const
+void Protocol_1_0_0::pull(const PullSettings &settings) const
 {
-	// ReceiveContext ctx = ReceiveContext(localRoot,_channel->inputStream());
-	// DirectoryV1 dir;
-	// Type type;
+	opcode_t op = OP_ACT_PULL;
+	Pull_1 puller;
 
-	// _channel->outputStream()->write(&__opcodePull, sizeof (__opcodePull));
-	// _channel->outputStream()->write(ref.data(), ref.size());
+	_channel->outputStream()->write(&op, sizeof (op));
+	_channel->outputStream()->writeStr(settings.branchName);
+	_channel->outputStream()->writeStr(settings.snapshotName);
 
-	// _channel->inputStream()->readall(&type, sizeof (type));
-	// dir.recv("/", &ctx);
+	_channel->inputStream()->read(&op, sizeof (op));
+
+	switch (op) {
+	case OP_RET_OK:
+		break;
+	default:
+		throw ProtocolException();
+	}
+
+	puller.pull(_channel->inputStream(), settings.localRoot);
 }
 
 void Protocol_1_0_0::_servePull(Repository *repository) const
 {
-	// unique_ptr<InputStream> ris;
-	// DirectoryV1 dir;
-	// Reference ref;
-	// Type type;
-	// LoadContext ctx = LoadContext(repository, _channel->outputStream(),
-	// 			      nullptr);
+	string branchName, snapshotName;
+	const Snapshot *snapshot;
+	const Branch *branch;
+	Send_1 sender;
+	opcode_t op;
 
-	// _channel->inputStream()->readall(ref.data(), ref.size());
-	// ris = repository->readObject(ref);
-	// ris->readall(&type, sizeof (type));
+	_channel->inputStream()->readStr(&branchName);
+	_channel->inputStream()->readStr(&snapshotName);
 
-	// dir.load(ris.get(), "/", &ctx);
+	branch = repository->branch(branchName);
+
+	if (branch == nullptr) {
+		op = OP_RET_INVBRANCH;
+		_channel->outputStream()->write(&op, sizeof (op));
+		return;
+	}
+
+	if (snapshotName.empty()) {
+		snapshot = nullptr;
+		for (const Snapshot *sn : branch->snapshots()) {
+			if (snapshot == nullptr)
+				snapshot = sn;
+			else if (sn->date() > snapshot->date())
+				snapshot = sn;
+		}
+	} else {
+		snapshot = branch->snapshot(snapshotName);
+	}
+
+	if (snapshot == nullptr) {
+		op = OP_RET_INVSNAPSHOT;
+		_channel->outputStream()->write(&op, sizeof (op));
+		return;
+	}
+
+	op = OP_RET_OK;
+	_channel->outputStream()->write(&op, sizeof (op));
+
+	sender.send(_channel->outputStream(), repository, snapshot->ref());
 }
 
 void Protocol_1_0_0::serve(Repository *repository) const

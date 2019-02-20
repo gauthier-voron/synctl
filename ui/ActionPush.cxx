@@ -53,7 +53,7 @@ int ActionPush::_execute(const string &root, const string &server)
 	psettings.localRoot = root;
 	psettings.branchName = "Laurier";
 	psettings.filter = &filter;
-	psettings.snapshotReference = nullptr;
+	psettings.snapshotName = nullptr;
 	protocol->push(psettings);
 
 	protocol->exit();

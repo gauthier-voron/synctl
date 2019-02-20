@@ -35,7 +35,7 @@ void Branch::_ensureLoaded() const
 		load();
 }
 
-string Branch::_newSnapshotPath() const
+string Branch::_newSnapshotPath(string *name) const
 {
 	random_device rd;
 	mt19937 gen = mt19937(rd());
@@ -46,8 +46,11 @@ string Branch::_newSnapshotPath() const
 	size_t i;
 	int ret;
 
+	if (name == nullptr)
+		name = &numstr;
+
 	do {
-		numstr.clear();
+		name->clear();
 		number = dis(gen);
 		for (i = 0; i < SNAPSHOT_NAME_LENGTH; i++) {
 			digit = number & 0xf;
@@ -55,11 +58,11 @@ string Branch::_newSnapshotPath() const
 				digit = digit + '0';
 			else
 				digit = digit - 10 + 'a';
-			numstr.push_back(static_cast<char> (digit));
+			name->push_back(static_cast<char> (digit));
 			number >>= 4;
 		}
 		
-		path = _dir.path() + "/" + numstr;
+		path = _dir.path() + "/" + *name;
 		ret = stat(path.c_str(), &st);
 	} while (ret == 0);
 
@@ -78,12 +81,12 @@ Snapshot *Branch::_newSnapshot(const string &path) const
 	return ptr;
 }
 
-Snapshot *Branch::_newSnapshot() const
+Snapshot *Branch::_newSnapshot(string *name) const
 {
 	string path;
 
 	_ensureLoaded();
-	path = _newSnapshotPath();
+	path = _newSnapshotPath(name);
 
 	return _newSnapshot(path);
 }
@@ -111,18 +114,45 @@ void Branch::load() const
 	_loaded = true;
 }
 
-Snapshot *Branch::newSnapshot(const Reference &ref)
+Snapshot *Branch::newSnapshot(const Reference &ref, string *name)
 {
-	Snapshot *ret = _newSnapshot();
+	Snapshot *ret = _newSnapshot(name);
 	ret->initialize(ref);
 	return ret;
 }
 
-Snapshot *Branch::newSnapshot(Snapshot::Date d, const Reference &ref)
+Snapshot *Branch::newSnapshot(Snapshot::Date d, const Reference &ref,
+			      string *name)
 {
-	Snapshot *ret = _newSnapshot();
+	Snapshot *ret = _newSnapshot(name);
 	ret->initialize(d, ref);
 	return ret;
+}
+
+Snapshot *Branch::snapshot(const string &name) noexcept
+{
+	string path = _dir.path() + "/" + name;
+
+	_ensureLoaded();
+
+	for (Snapshot *sn : _rwptrs)
+		if (sn->path() == path)
+			return sn;
+
+	return nullptr;
+}
+
+const Snapshot *Branch::snapshot(const string &name) const noexcept
+{
+	string path = _dir.path() + "/" + name;
+
+	_ensureLoaded();
+
+	for (const Snapshot *sn : _roptrs)
+		if (sn->path() == path)
+			return sn;
+
+	return nullptr;
 }
 
 const string &Branch::path() const noexcept

@@ -8,6 +8,11 @@ define cmd-mkdir
   $(Q)mkdir $(1)
 endef
 
+define cmd-call
+  $(call cmd-echo,  CALL    $(strip $(call cmd-format, $(1))))
+  $(Q)./$(strip $(1)) $(2)
+endef
+
 
 define cmd-ccxx
   $(call cmd-echo,  CCXX    $(strip $(call cmd-format, $(1))))
@@ -17,6 +22,16 @@ endef
 define cmd-ldcxx
   $(call cmd-echo,  LD      $(strip $(call cmd-format, $(1))))
   $(Q)g++ $(2) -o $(1) $(3)
+endef
+
+define cmd-ccov
+  $(call cmd-echo,  CCXX    $(strip $(call cmd-format, $(1))))
+  $(Q)g++ -Wall -Wextra --coverage -g -std=c++17 -c $(2) -o $(1) $(3)
+endef
+
+define cmd-ldcov
+  $(call cmd-echo,  LD      $(strip $(call cmd-format, $(1))))
+  $(Q)g++ $(2) --coverage -o $(1) $(3)
 endef
 
 

@@ -2,6 +2,8 @@ DEP := .depends.d/
 OBJ := obj/
 BIN := bin/
 
+VALIDATION-GCOV := y
+
 
 include Function.mk
 include Command.mk
@@ -36,6 +38,7 @@ else
 
 sources := $(filter %.cxx, $(call FIND,io plan repo tree ui)) $(wildcard *.cxx)
 objects := $(patsubst %.cxx, $(OBJ)%.o, $(sources))
+objects-gcov := $(patsubst %.o, %.gcov.o, $(objects))
 
 
 check: $(BIN)synctl
@@ -49,9 +52,20 @@ all: $(BIN)synctl
 test: validation-test
 
 
-validation-test: test/validation.sh $(BIN)synctl
+ifeq ($(VALIDATION-GCOV),y)
+
+  validation-test: test/validation.sh $(BIN)synctl-gcov
+	$(call cmd-call, $<, \
+          --executable $(BIN)synctl-gcov \
+          $(if $(filter $(V), 0), --silent, $(if $(filter $(V), 1), --quiet)))
+
+else
+
+  validation-test: test/validation.sh $(BIN)synctl
 	$(call cmd-call, $<, \
           $(if $(filter $(V), 0), -s, $(if $(filter $(V), 1), -q)))
+
+endif
 
 
 clean:
@@ -59,19 +73,31 @@ clean:
 
 
 $(call REQUIRE-DIR, $(BIN)synctl)
+$(call REQUIRE-DIR, $(BIN)synctl-gcov)
 
 $(BIN)synctl: $(objects)
 	$(call cmd-ldcxx, $@, $^, -lssl -lcrypto)
 
+$(BIN)synctl-gcov: $(objects-gcov)
+	$(call cmd-ldcov, $@, $^, -lssl -lcrypto)
+
 
 $(call REQUIRE-DIR, $(objects))
+$(call REQUIRE-DIR, $(objects-gcov))
 $(call REQUIRE-DEP, $(sources))
 
 $(OBJ)%.o: %.cxx
 	$(call cmd-ccxx, $@, $<, -Iinclude/ -include iostream)
 
+$(OBJ)%.gcov.o: %.cxx
+	$(call cmd-ccov, $@, $<, -Iinclude/ -include iostream)
+
 $(DEP)%.cxx.d: %.cxx
 	$(call cmd-depcxx, $@, $<, $(patsubst %.cxx, $(OBJ)%.o, $<), \
+               -Iinclude/)
+
+$(DEP)%.cxx.d: %.cxx
+	$(call cmd-depcxx, $@, $<, $(patsubst %.cxx, $(OBJ)%.gcov.o, $<), \
                -Iinclude/)
 
 

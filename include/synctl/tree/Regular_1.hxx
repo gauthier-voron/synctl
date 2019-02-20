@@ -48,9 +48,9 @@ class Regular_1
 	void setInput(std::unique_ptr<InputStream> dest);
 
 
-	void write(OutputStream *output, Reference *ref) const;
+	void write(OutputStream *output, Reference *ref = nullptr) const;
 
-	void read(InputStream *input, Reference *ref);
+	void read(InputStream *input, Reference *ref = nullptr);
 
 
 	static Regular_1 make(const std::string &path);

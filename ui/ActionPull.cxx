@@ -24,18 +24,21 @@ using synctl::Protocol;
 using synctl::Reference;
 
 
-int ActionPull::_execute(const string &root, const string &server,
-			 const string &reference)
+int ActionPull::_execute(const string &root, const string &server)
 {
 	unique_ptr<Channel> chan = Channel::open(server);
 	unique_ptr<Protocol> protocol = Protocol::clientHandcheck(chan.get());
-	Reference ref = Reference::fromHex(reference);
+	Protocol::PullSettings psettings;
 
 	if (protocol == nullptr)
 		return 1;
 
+	psettings.localRoot = root;
+	psettings.branchName = "Laurier";
+	psettings.snapshotName = "";
+	psettings.filter = nullptr;
+	protocol->pull(psettings);
 
-	protocol->pull(root, ref);
 	protocol->exit();
 
 	chan->close();
@@ -46,7 +49,6 @@ int ActionPull::_execute(const string &root, const string &server,
 ActionPull::ActionPull()
 	: Action("pull")
 {
-	addOption(&_optionReference);
 	addOption(&_optionRoot);
 	addOption(&_optionServer);
 }
@@ -59,9 +61,6 @@ int ActionPull::execute(const vector<string> &operands)
 		throw OperandMissingException(_optionRoot.longName());
 	if (_optionServer.affected() == false)
 		throw OperandMissingException(_optionServer.longName());
-	if (_optionReference.affected() == false)
-		throw OperandMissingException(_optionReference.longName());
 
-	return _execute(_optionRoot.value(), _optionServer.value(),
-			_optionReference.value());
+	return _execute(_optionRoot.value(), _optionServer.value());
 }

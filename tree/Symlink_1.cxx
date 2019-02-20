@@ -6,17 +6,18 @@
 
 #include "synctl/io/HashOutputStream.hxx"
 #include "synctl/io/InputStream.hxx"
+#include "synctl/io/IOException.hxx"
 #include "synctl/io/OutputStream.hxx"
+#include "synctl/io/Symlink.hxx"
 #include "synctl/tree/Reference.hxx"
-
-
-#define SYMLINK_PATH_BUFFER_SIZE  128
 
 
 using std::string;
 using synctl::HashOutputStream;
 using synctl::InputStream;
+using synctl::IOException;
 using synctl::OutputStream;
+using synctl::Symlink;
 using synctl::Symlink_1;
 using synctl::Reference;
 
@@ -68,19 +69,17 @@ void Symlink_1::read(InputStream *input, Reference *ref)
 
 Symlink_1 Symlink_1::make(const string &path)
 {
-	ssize_t s, l = SYMLINK_PATH_BUFFER_SIZE;
-	string buffer;
+	Symlink symlink = Symlink(path);
+	return Symlink_1(symlink.get());
+}
 
-	buffer.resize(l);
 
-	while ((s = ::readlink(path.c_str(), buffer.data(), l)) == l) {
-		l = l << 1;
-		buffer.resize(l);
-	}
+void Symlink_1::apply(const string &path) const
+{
+	Symlink symlink = Symlink(path);
 
-	if (s < 0)
-		throw 0;
-
-	buffer.resize(s);
-	return Symlink_1(buffer);
+	if (symlink.exists())
+		symlink.set(_target);
+	else
+		symlink.create(_target);
 }

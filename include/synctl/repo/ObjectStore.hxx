@@ -45,6 +45,8 @@ class ObjectStore
 	std::unique_ptr<InputStream>
 	readObject(const Reference &reference) const;
 
+	size_t getObjectSize(const Reference &reference) const;
+
 	Refcount readRefcount(const Reference &reference) const;
 
 	void writeRefcount(const Reference &reference, Refcount cnt);
