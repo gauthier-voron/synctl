@@ -1,0 +1,132 @@
+#!/bin/bash
+#
+#
+
+set -e
+
+get_type() {
+    local mode="$1" ; shift
+    local ftype ntype
+
+    ftype=${mode:0:-4}
+
+    ntype=${ftype##0}
+    while [ "x$ntype" != "x$ftype" ] ; do
+	ftype=$ntype
+	ntype=${ftype##0}
+    done
+
+    echo $ftype
+}
+
+get_perm() {
+    local mode="$1" ; shift
+    local perm="${mode: -4}"
+
+    echo "$perm"
+}
+
+vtest() {
+    local path="$1" ; shift
+    local desc="$1" ; shift
+
+    if ! test "$@" ; then
+	printf "check failed for '%s' : %s\n" "$path" "$desc"
+	echo " " "$@"
+	false
+    fi
+}
+
+check_dir() {
+    local path="$1" ; shift
+
+    vtest "$path" 'type' ! -L "$path"
+    vtest "$path" 'type' -d "$path"
+}
+
+check_regular() {
+    local path="$1" ; shift
+    local rem="$1" ; shift
+
+    vtest "$path" 'type' ! -L "$path"
+    vtest "$path" 'type' -f "$path"
+
+    read -r symbol rem <<< "$rem"
+
+    case $symbol in
+	'<')
+	    temp=$(mktemp -t --suffix='.txt' 'chktree.XXXXXXXXX')
+	    printf "$rem" > "$temp"
+	    if ! diff -Naur "$temp" "$path" ; then
+		rm "$temp"
+		false
+	    else
+		rm "$temp"
+	    fi
+	    ;;
+	'')  vtest "$path" 'empty' $(stat -c '%s' "$path") = 0 ;;
+	*)   false ;;
+    esac
+}
+
+check_symlink() {
+    local path="$1" ; shift
+    local rem="$1" ; shift
+
+    vtest "$path" 'type' -L "$path"
+
+    read -r symbol rem <<< "$rem"
+
+    case $symbol in
+	'=') vtest "$path" 'target' "x$(readlink "$path")" = "x$rem" ;;
+	*)   false ;;
+    esac
+}
+
+prefix=
+
+while [ $# -gt 0 ] ; do
+    case "$1" in
+	'-p') shift; prefix="$1" ;;
+	'--') shift; break ;;
+    esac
+    shift
+done
+
+if [ "x$prefix" != 'x' ] ; then
+    if [ "${prefix: -1}" != '/' ] ; then
+	prefix="$prefix/"
+    fi
+fi
+
+while read -r path mode atime mtime rem ; do
+    path="${prefix}${path}"
+    ftype=$(get_type $mode)
+    perm="$(get_perm $mode)"
+
+    if [ "$atime" != '*' ] ; then
+	vtest "$path" 'access time' \
+	      $(stat -c '%x' "$path" | cut -d' ' -f1 | tr -d '-') = $atime
+    fi
+
+    if [ "$mtime" != '*' ] ; then
+	vtest "$path" 'modification time' \
+	      $(stat -c '%y' "$path" | cut -d' ' -f1 | tr -d '-') = $mtime
+    fi
+
+    if [ "$perm" != '****' ] ; then
+	vtest "$path" 'permissions' \
+	      $perm -eq $(stat -c '%a' "$path")
+    fi
+
+    if [ $ftype -ne 12 ] ; then
+	chmod 777 "$path"
+    fi
+
+    case $ftype in
+	4)  check_dir     "$path" "$rem" ;;
+	10) check_regular "$path" "$rem" ;;
+	12) check_symlink "$path" "$rem" ;;
+	*)  false ;;
+    esac
+done
