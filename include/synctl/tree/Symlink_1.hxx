@@ -35,9 +35,9 @@ class Symlink_1
 	std::string getTarget() const;
 
 
-	void write(OutputStream *output, Reference *ref) const;
+	void write(OutputStream *output, Reference *ref = nullptr) const;
 
-	void read(InputStream *input, Reference *ref);
+	void read(InputStream *input, Reference *ref = nullptr);
 
 
 	static Symlink_1 make(const std::string &path);
