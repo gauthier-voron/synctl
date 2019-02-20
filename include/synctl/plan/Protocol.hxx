@@ -49,8 +49,9 @@ class Protocol
 		// Filter to select what entries to push
 		Filter       *filter;
 
-		// Reference of the newly created snapshot
-		Reference    *snapshotReference;
+		// Filled with the name of the newly created snapshot if not
+		// set to nullptr
+		std::string  *snapshotName;
 	};
 
 	virtual void push(const PushSettings &settings) const;

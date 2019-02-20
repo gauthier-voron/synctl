@@ -63,8 +63,9 @@ void Protocol_1_0_0::exit() const
 void Protocol_1_0_0::push(const PushSettings &settings) const
 {
 	Reference zeroref = Reference::zero();
+	string snapshotName, *nameptr;
 	opcode_t op = OP_ACT_PUSH;
-	Reference ref, *rptr;
+	Reference ref;
 	Push_1 pusher;
 
 	_channel->outputStream()->write(&op, sizeof (op));
@@ -80,20 +81,19 @@ void Protocol_1_0_0::push(const PushSettings &settings) const
 	pusher.setFilter(settings.filter);
 	pusher.push(_channel->outputStream(), settings.localRoot);
 
-	if (settings.snapshotReference == nullptr)
-		rptr = &ref;
+	if (settings.snapshotName == nullptr)
+		nameptr = &snapshotName;
 	else
-		rptr = settings.snapshotReference;
+		nameptr = settings.snapshotName;
 
-	_channel->inputStream()->read(rptr->data(), rptr->size());
+	*nameptr = _channel->inputStream()->readStr();
 }
 
 void Protocol_1_0_0::_servePush(Repository *repository) const
 {
 	Reference ref = Reference::zero();
+	string branchName, snapshotName;
 	Receive_1 receiver;
-	Snapshot *snapshot;
-	string branchName;
 	Branch *branch;
 
 	_channel->inputStream()->readStr(&branchName);
@@ -108,9 +108,9 @@ void Protocol_1_0_0::_servePush(Repository *repository) const
 	receiver.receive(_channel->inputStream(), repository, &ref);
 	repository->takeReference(ref);
 
-	snapshot = branch->newSnapshot(ref);
+	branch->newSnapshot(ref, &snapshotName);
 
-	_channel->outputStream()->write(ref.data(), ref.size());
+	_channel->outputStream()->writeStr(snapshotName);
 }
 
 void Protocol_1_0_0::pull(const PullSettings &settings) const
