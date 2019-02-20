@@ -39,6 +39,7 @@ class Snapshot
 
 	Date date() const;
 	const Reference &ref() const;
+	const std::string &path() const noexcept;
 };
 
 

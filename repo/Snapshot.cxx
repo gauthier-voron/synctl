@@ -10,7 +10,7 @@
 
 
 #define UINT64_STRING_MAXLEN      20
-#define REFERENCE_STRING_MAXLEN   20
+#define REFERENCE_STRING_MAXLEN   40
 
 
 using std::chrono::duration_cast;
@@ -99,4 +99,9 @@ const Reference &Snapshot::ref() const
 {
 	_ensureLoaded();
 	return _ref;
+}
+
+const string &Snapshot::path() const noexcept
+{
+	return _dir.path();
 }
