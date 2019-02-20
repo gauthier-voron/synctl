@@ -66,8 +66,7 @@ void Protocol::push(const PushSettings &settings [[gnu::unused]]) const
 	throw ProtocolException();
 }
 
-void Protocol::pull(const string &localRoot [[gnu::unused]],
-		    const Reference &ref [[gnu::unused]]) const
+void Protocol::pull(const PullSettings &settings [[gnu::unused]]) const
 {
 	throw ProtocolException();
 }

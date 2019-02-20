@@ -109,7 +109,7 @@ void Protocol_1_0_0::_servePush(Repository *repository) const
 	_channel->outputStream()->write(ref.data(), ref.size());
 }
 
-void Protocol_1_0_0::pull(const string &localRoot, const Reference &ref) const
+void Protocol_1_0_0::pull(const PullSettings &settings) const
 {
 	// ReceiveContext ctx = ReceiveContext(localRoot,_channel->inputStream());
 	// DirectoryV1 dir;

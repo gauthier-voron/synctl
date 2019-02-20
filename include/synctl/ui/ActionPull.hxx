@@ -14,12 +14,10 @@ namespace synctl {
 
 class ActionPull : public Action
 {
-	OptionString  _optionReference = OptionString("reference", 'R');
 	OptionString  _optionRoot      = OptionString("root", 'r');
 	OptionString  _optionServer    = OptionString("server", 's');
 
-	int _execute(const std::string &root, const std::string &server,
-		     const std::string &reference);
+	int _execute(const std::string &root, const std::string &server);
 
 
  public:

@@ -55,8 +55,24 @@ class Protocol
 
 	virtual void push(const PushSettings &settings) const;
 
-	virtual void pull(const std::string &localRoot, const Reference &ref)
-		const;
+
+	struct PullSettings
+	{
+		// Root of the local tree to pull to
+		std::string   localRoot;
+
+		// Name of the remote branch to pull from
+		std::string   branchName;
+
+		// If not empty, name of the snapshot to pull
+		// If empty, pull the latest snapshot
+		std::string   snapshotName;
+
+		// Filter to select what entries to pull
+		Filter       *filter;
+	};
+
+	virtual void pull(const PullSettings &settings) const;
 
 
 	virtual void serve(Repository *repository) const;

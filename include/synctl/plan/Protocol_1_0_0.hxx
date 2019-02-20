@@ -48,8 +48,7 @@ class Protocol_1_0_0 : public Protocol
 
 	virtual void push(const PushSettings &settings) const override;
 
-	virtual void pull(const std::string &localRoot, const Reference &ref)
-		const override;
+	virtual void pull(const PullSettings &settings) const override;
 
 
 	virtual void serve(Repository *repository) const override;
