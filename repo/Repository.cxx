@@ -133,6 +133,11 @@ unique_ptr<InputStream> Repository::readObject(const Reference &reference)
 	return _ostore.readObject(reference);
 }
 
+size_t Repository::getObjectSize(const Reference &reference) const
+{
+	return _ostore.getObjectSize(reference);
+}
+
 Branch *Repository::newBranch(const string &name)
 {
 	return _bstore.newBranch(name);

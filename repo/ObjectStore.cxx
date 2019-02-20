@@ -153,6 +153,20 @@ unique_ptr<InputStream> ObjectStore::readObject(const Reference &ref) const
 	return input;
 }
 
+size_t ObjectStore::getObjectSize(const Reference &reference) const
+{
+	struct stat st;
+	string path;
+
+	if (_getReferencePath(reference, &path) == false)
+		return 0;
+
+	if (::stat(path.c_str(), &st) != 0)
+		return 0;
+
+	return (st.st_size - sizeof (ObjectStore::Refcount));
+}
+
 ObjectStore::Refcount ObjectStore::readRefcount(const Reference &reference)
 	const
 {
