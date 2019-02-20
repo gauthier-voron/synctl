@@ -8,6 +8,11 @@ define cmd-mkdir
   $(Q)mkdir $(1)
 endef
 
+define cmd-call
+  $(call cmd-echo,  CALL    $(strip $(call cmd-format, $(1))))
+  $(Q)./$(strip $(1)) $(2)
+endef
+
 
 define cmd-ccxx
   $(call cmd-echo,  CCXX    $(strip $(call cmd-format, $(1))))
