@@ -27,9 +27,9 @@ class Branch
 
 	void _ensureLoaded() const;
 
-	std::string _newSnapshotPath() const;
+	std::string _newSnapshotPath(std::string *name) const;
 	Snapshot *_newSnapshot(const std::string &path) const;
-	Snapshot *_newSnapshot() const;
+	Snapshot *_newSnapshot(std::string *name) const;
 
 
  public:
@@ -40,8 +40,12 @@ class Branch
 	void load() const;
 
 
-	Snapshot *newSnapshot(const Reference &ref);
-	Snapshot *newSnapshot(Snapshot::Date d, const Reference &ref);
+	Snapshot *newSnapshot(const Reference &ref, std::string *name=nullptr);
+	Snapshot *newSnapshot(Snapshot::Date d, const Reference &ref,
+			      std::string *name = nullptr);
+
+	Snapshot *snapshot(const std::string &name) noexcept;
+	const Snapshot *snapshot(const std::string &name) const noexcept;
 
 
 	const std::string &path() const noexcept;
