@@ -41,6 +41,8 @@ class Symlink_1
 
 
 	static Symlink_1 make(const std::string &path);
+
+	void apply(const std::string &path) const;
 };
 
 
