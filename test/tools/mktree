@@ -1,0 +1,113 @@
+#!/bin/bash
+#
+#
+#
+
+set -e
+
+get_type() {
+    local mode="$1" ; shift
+    local ftype ntype
+
+    ftype=${mode:0:-4}
+
+    ntype=${ftype##0}
+    while [ "x$ntype" != "x$ftype" ] ; do
+	ftype=$ntype
+	ntype=${ftype##0}
+    done
+
+    echo $ftype
+}
+
+get_perm() {
+    local mode="$1" ; shift
+    local perm="${mode: -4}"
+
+    echo "$perm"
+}
+
+create_dir() {
+    local path="$1" ; shift
+    local rem="$1" ; shift
+
+    test "x$rem" = 'x'
+
+    mkdir "$path"
+}
+
+create_regular() {
+    local path="$1" ; shift
+    local rem="$1" ; shift
+
+    read -r symbol rem <<< "$rem"
+
+    case $symbol in
+	'<') printf "$rem" > "$path" ;;
+	'')  touch "$path" ;;
+	*)   false ;;
+    esac
+}
+
+create_symlink() {
+    local path="$1" ; shift
+    local rem="$1" ; shift
+
+    read -r symbol rem <<< "$rem"
+
+    case $symbol in
+	'=') ln -s "$rem" "$path" ;;
+	*)   false ;;
+    esac
+}
+
+prefix=
+
+while [ $# -gt 0 ] ; do
+    case "$1" in
+	'-p') shift; prefix="$1" ;;
+	'--') shift; break ;;
+    esac
+    shift
+done
+
+if [ "x$prefix" != 'x' ] ; then
+    if [ ! -d "$prefix" ] ; then
+	mkdir "$prefix"
+    fi
+    if [ "${prefix: -1}" != '/' ] ; then
+	prefix="$prefix/"
+    fi
+fi
+
+perms=$(mktemp -t --suffix='.sh' 'mktree.XXXXXXXXXX')
+trap "rm '$perms'" 'EXIT'
+
+while read -r path mode atime mtime rem ; do
+    path="${prefix}${path}"
+    ftype=$(get_type $mode)
+    perm="$(get_perm $mode)"
+
+    case $ftype in
+	4)  create_dir     "$path" "$rem" ;;
+	10) create_regular "$path" "$rem" ;;
+	12) create_symlink "$path" "$rem" ;;
+	*)  false ;;
+    esac
+
+    if [ "$mtime" != '*' ] ; then
+	echo "touch -m -h -t ${mtime}0000 '$path'" >> "$perms"
+    fi
+
+    if [ "$atime" != '*' ] ; then
+	echo "touch -a -h -t ${atime}0000 '$path'" >> "$perms"
+    fi
+
+    if [ $ftype -ne 12 -a "$perm" != '****' ] ; then
+	echo "chmod $perm '$path'" >> "$perms"
+    fi
+done
+
+tac "$perms" | bash
+rm "$perms"
+trap - 'EXIT'
