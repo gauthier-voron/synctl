@@ -1,8 +1,7 @@
 DEP := .depends.d/
+COV := gcov/
 OBJ := obj/
 BIN := bin/
-
-VALIDATION-GCOV := y
 
 
 include Function.mk
@@ -38,7 +37,9 @@ else
 
 sources := $(filter %.cxx, $(call FIND,io plan repo tree ui)) $(wildcard *.cxx)
 objects := $(patsubst %.cxx, $(OBJ)%.o, $(sources))
-objects-gcov := $(patsubst %.o, %.gcov.o, $(objects))
+
+objects-gcov := $(patsubst %.o, %.gcov.o,    $(objects))
+objects-gcda := $(patsubst %.o, %.gcov.gcda, $(objects))
 
 
 check: $(BIN)synctl
@@ -49,27 +50,25 @@ check: $(BIN)synctl
 
 all: $(BIN)synctl
 
+
 test: validation-test
 
+validation-test: test/validation.sh $(BIN)synctl
+	$(call cmd-call, $<,                  \
+          $(if $(filter $(V), 0), -s,         \
+          $(if $(filter $(V), 1), -q)))
 
-ifeq ($(VALIDATION-GCOV),y)
+.validation-test-gcov: test/validation.sh $(BIN)synctl-gcov
+	-$(call cmd-call, $<,                    \
+          --executable $(BIN)synctl-gcov         \
+          $(if $(filter $(V), 0 1 2), --silent))
 
-  validation-test: test/validation.sh $(BIN)synctl-gcov
-	$(call cmd-call, $<, \
-          --executable $(BIN)synctl-gcov \
-          $(if $(filter $(V), 0), --silent, $(if $(filter $(V), 1), --quiet)))
 
-else
-
-  validation-test: test/validation.sh $(BIN)synctl
-	$(call cmd-call, $<, \
-          $(if $(filter $(V), 0), -s, $(if $(filter $(V), 1), -q)))
-
-endif
-
+coverage: $(COV)coverage.csv
 
 clean:
-	$(call cmd-clean, $(DEP) $(OBJ) $(BIN) .depends sandbox recvbox recbox)
+	$(call cmd-clean, $(DEP) $(COV) $(OBJ) $(BIN) .depends \
+               sandbox recvbox recbox)
 
 
 $(call REQUIRE-DIR, $(BIN)synctl)
@@ -107,5 +106,16 @@ $(DEP)%.cxx.d: %.cxx
 ifeq ($(mode),build)
   -include .depends
 endif
+
+
+$(call REQUIRE-DIR, $(COV)coverage.csv)
+
+$(COV)coverage.csv: $(objects-gcda)
+	$(call cmd-call, test/tools/coverage, -o $@ -d $(COV) $(objects-gcov))
+
+$(objects-gcda): .validation-test-gcov ;
+
+.INTERMEDIATE: .validation-test-gcov
+
 
 endif
