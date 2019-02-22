@@ -1,0 +1,182 @@
+#!/bin/bash
+#
+#   coverage - produce code coverage output with gcov
+#
+#   Wrapper script around gcov. Produce a hierarchy of files in a given
+#   directory instead of producing files in the current directory.
+#   Also produce a summary of code coverage in csv format.
+#
+#   Options:
+#
+#     -d <path>     Generate coverage source annotations below <path>. The
+#                   output hierarchy has the same structure than the source
+#                   hierarchy. If this option is not specified, produce no
+#                   coverage annotation .
+#
+#     -o <path>     Generate a CSV summary of code coverage. This summary
+#                   describes for each function : the function name, the size
+#                   of the function (in number of lines), the code coverage of
+#                   the function and the percent of non covered code this
+#                   function is responsible of.
+#
+#
+#   Author: Gauthier Voron
+#
+
+set -e
+
+
+# Step 1: parse the options
+#
+# We only accept options in short format and without bundling. This is to
+# simplify option parsing and keep this script simple.
+#
+while [ $# -gt 0 ] ; do
+    case "$1" in
+	'-d') shift; destdir="$1" ;;
+	'-o') shift; output="$1" ;;
+	'--') shift; break ;;
+	-*) echo "unknown option '$1'" >&2 ; exit 1 ;;
+	*) break ;;
+    esac
+    shift
+done
+
+# Step 2: generate gcov friendly environment
+#
+# Gcov can only extract coverage annotations from .gcda files if invoked from
+# the directory used during the compilation (i.e. the project root).
+# We don't want to pollute the project root so we create a temporary directory
+# and create symbolic links inside to every entry of the project root.
+# We can then cd into this temporary directory.
+#
+if [ "x$destdir" != 'x' ] ; then
+    if [ "${destdir:0:1}" != '/' ] ; then
+	destdir="$PWD/$destdir"
+    fi
+
+    if [ ! -d "$destdir" -o ! -r "$destdir" -o ! -x "$destdir" ] ; then
+	echo "not a valid directory: '$destdir'" >&2
+	exit 1
+    fi
+
+    extdir="$(mktemp -d --suffix='.d' --tmpdir="$destdir" 'coverage.XXXXXXXX')"
+
+    ls -1a | while read entry ; do
+	if [ "$entry" = '.' ] ; then
+	    continue
+	elif [ "$entry" = '..' ] ; then
+	    continue
+	fi
+
+	ln -s "$PWD/$entry" "$extdir/$entry"
+    done
+
+    ppwd="$PWD"
+    cd "$extdir"
+
+    nopt=
+else
+    nopt='-n'
+fi
+
+# If an output path is specified, redirect the standard output to this file.
+# Otherwise, simply let it print a CSV on the terminal.
+#
+if [ "x$output" != 'x' ] ; then
+    exec > "$output"
+fi
+
+# Step 3: invoke gcov and parse its output
+#
+# Parse each group of lines in the form:
+#
+#     Function 'synctl::my_function()'
+#     Lines executed:XX.X% of Y
+#
+# and extract the function name, the XX.X coverage and the Y number of lines.
+# After collecting everything, make some simple stat and produce the CSV on
+# standard output.
+#
+gcov -m -f -p $nopt -f "$@" | perl -wnle '
+    BEGIN {
+        printf("function,lines,coverage,weight\n");
+    }
+
+    if (/^Function .(.*).\s*$/) {
+        $function = $1;
+    } elsif (/^No executable lines$/) {
+        $function = undef;
+    } elsif (/^Lines executed:(.*)% of (\d+)$/) {
+        $coverage = $1;
+        $lines = $2;
+        if (defined($function) && $function =~ /^synctl/) {
+            $stats{$function} = [ $coverage, $lines ];
+            $totlines += $lines;
+            $totcover += ($lines * $coverage) / 100;
+        }
+        $function = undef;
+    }
+
+    END {
+        $totuncover = $totlines - $totcover;
+
+        foreach $function (sort { $a cmp $b } keys(%stats)) {
+            ($coverage, $line) = @{$stats{$function}};
+            $uncover = $line - (($line * $coverage) / 100);
+            printf("\"%s\",%d,%.2f,%.2f\n", $function, $line, $coverage,
+                   ($uncover * 100) / $totuncover);
+        }
+    }
+'
+
+# Step 4: cleanup extraction directory and build file hierarchy
+#
+# Move the extracted files from the temporary extraction directory to the
+# destination directory. Gcov produce files in the form 'path#to#source.gcov'
+# where the '#' stand for '/' in the real source hierarchy.
+# We parse the files here to create an actual file hierearchy in the
+# destination directory and move the extracted files there.
+#
+if [ "x$destdir" != 'x' ] ; then
+    cd "$ppwd"
+
+    ls -1a | while read entry ; do
+	if [ "$entry" = '.' ] ; then
+	    continue
+	elif [ "$entry" = '..' ] ; then
+	    continue
+	fi
+
+	rm "$extdir/$entry"
+    done
+
+    ls -1a "$extdir" | while read entry ; do
+	if [ -d "$entry" ] ; then
+	    continue
+	elif [ "${entry:0:1}" = '#' ] ; then
+	    file="${entry:1}"
+	    dpart="$destdir/#system/"
+	    if [ ! -d "$dpart" ] ; then
+		mkdir "$dpart"
+	    fi
+	else
+	    file="$entry"
+	    dpart="$destdir/"
+	fi
+
+	while echo "$file" | grep -q '#' ; do
+	    prefix="$(echo "$file" | cut -d'#' -f1)"
+	    file="$(echo "$file" | cut -d'#' -f2-)"
+
+	    dpart="$dpart$prefix/"
+	    if [ ! -d "$dpart" ] ; then
+		mkdir "$dpart"
+	    fi
+	done
+
+	mv "$extdir/$entry" "$dpart$file"
+    done
+
+    rmdir "$extdir"
+fi
