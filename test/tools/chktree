@@ -30,7 +30,7 @@ vtest() {
     local path="$1" ; shift
     local desc="$1" ; shift
 
-    if ! test "$@" ; then
+    if ! test "$@" 2> /dev/null ; then
 	printf "check failed for '%s' : %s\n" "$path" "$desc"
 	echo " " "$@"
 	false
