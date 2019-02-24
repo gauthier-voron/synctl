@@ -20,6 +20,7 @@ class Pull_1
 	};
 
 
+	void _delete(const std::string &path);
 	void _delete(const Context *context);
 
 	void _pullObject(const Context *context);

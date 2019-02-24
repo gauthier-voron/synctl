@@ -6,6 +6,7 @@
 #include <unistd.h>
 
 #include <string>
+#include <vector>
 
 #include "synctl/io/Directory.hxx"
 #include "synctl/io/InputStream.hxx"
@@ -19,6 +20,7 @@
 
 
 using std::string;
+using std::vector;
 using synctl::Directory;
 using synctl::Directory_1;
 using synctl::InputStream;
@@ -52,9 +54,23 @@ void __applyStat(const std::string &path, const struct stat &stat)
 		throw IOException();
 }
 
+void Pull_1::_delete(const std::string &path)
+{
+	Directory directory = Directory(path);
+	int ret;
+
+	if (directory.exists()) {
+		directory.remove();
+	} else {
+		ret = unlink(path.c_str());
+		if (ret != 0)
+			throw IOException(path);
+	}
+}
+
 void Pull_1::_delete(const Context *context)
 {
-	throw 0;
+	_delete(context->apath);
 }
 
 void Pull_1::_pullObject(const Context *context)
@@ -109,7 +125,54 @@ void Pull_1::_createDirectory(const Context *context)
 
 void Pull_1::_mergeDirectory(const Context *context)
 {
-	throw 0;
+	Directory directory = Directory(context->apath);
+	vector<Directory_1::Entry> remoteChildren;
+	vector<string> localChildren;
+	LimitedInputStream lis;
+	Directory_1 dir;
+	uint64_t size;
+	bool hasLocal;
+	size_t i, j;
+	Context ctx;
+
+	context->input->readall(&size, sizeof (size));
+	lis = LimitedInputStream(context->input, size);
+	dir.read(&lis);
+
+	localChildren = directory.sortedTrueChildren();
+	i = 0;
+
+	remoteChildren = dir.getChildren();
+	j = 0;
+
+	ctx.apath = context->apath + '/';
+	ctx.input = context->input;
+
+	while (j < remoteChildren.size()) {
+		hasLocal = i < localChildren.size();
+		if (hasLocal && (localChildren[i] < remoteChildren[j].name)) {
+			_delete(ctx.apath + localChildren[i]);
+			i++;
+		}
+
+		ctx.apath += remoteChildren[j].name;
+
+		_pullObject(&ctx);
+		__applyStat(ctx.apath, remoteChildren[j].stat);
+
+		ctx.apath.resize(ctx.apath.length() -
+				 remoteChildren[j].name.length());
+
+
+		if (hasLocal && (localChildren[i] == remoteChildren[j].name))
+			i++;
+		j++;
+	}
+
+	while (i < localChildren.size()) {
+		_delete(ctx.apath + localChildren[i]);
+		i++;
+	}
 }
 
 void Pull_1::_pullDirectory(const Context *context)

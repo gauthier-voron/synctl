@@ -30,7 +30,7 @@ vtest() {
     local path="$1" ; shift
     local desc="$1" ; shift
 
-    if ! test "$@" ; then
+    if ! test "$@" 2> /dev/null ; then
 	printf "check failed for '%s' : %s\n" "$path" "$desc"
 	echo " " "$@"
 	false
@@ -84,6 +84,8 @@ check_symlink() {
 }
 
 prefix=
+roots=()
+entries=()
 
 while [ $# -gt 0 ] ; do
     case "$1" in
@@ -129,4 +131,35 @@ while read -r path mode atime mtime rem ; do
 	12) check_symlink "$path" "$rem" ;;
 	*)  false ;;
     esac
+
+    entries+=("$path")
+
+    if [ $ftype -eq 4 ] ; then
+	isroot=1
+	for root in "${roots[@]}" ; do
+	    if [ "x${path#$root}" != "x$path" ] ; then
+		isroot=0
+		break
+	    fi
+	done
+
+	if [ $isroot -eq 1 ] ; then
+	    roots+=("$path")
+	fi
+    fi
+done
+
+for root in "${roots[@]}" ; do
+    find "$root" | while read child ; do
+	valid=0
+	for entry in "${entries[@]}" ; do
+	    if [ "x$entry" = "x$child" ] ; then
+		valid=1
+		break
+	    fi
+	done
+
+	vtest "$child" 'unexpected entry' \
+	      $valid -eq 1
+    done
 done
