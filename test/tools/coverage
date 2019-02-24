@@ -100,33 +100,52 @@ fi
 #
 gcov -m -f -p $nopt -f "$@" | perl -wnle '
     BEGIN {
-        printf("function,lines,coverage,weight\n");
+        printf("type,name,lines,coverage\n");
     }
 
-    if (/^Function .(.*).\s*$/) {
-        $function = $1;
+    if (/^File .(.*).\s*$/) {
+        $type = "file";
+        $name = $1;
+    } elsif (/^Function .(.*).\s*$/) {
+        $type = "function";
+        $name = $1;
     } elsif (/^No executable lines$/) {
-        $function = undef;
+        $name = undef;
     } elsif (/^Lines executed:(.*)% of (\d+)$/) {
         $coverage = $1;
         $lines = $2;
-        if (defined($function) && $function =~ /^synctl/) {
-            $stats{$function} = [ $coverage, $lines ];
-            $totlines += $lines;
-            $totcover += ($lines * $coverage) / 100;
+
+        if (defined($name)) {
+            if (($type eq "file") && ($name =~ m|^/|)) {
+                $name = undef;
+                next;
+            } elsif (($type eq "function") && ($name =~ m|std::|)) {
+                $name = undef;
+                next;
+            }
+
+            $stats{$name} = [ $type, $coverage, $lines ];
+            if ($type eq "file") {
+                $totlines += $lines;
+                $totcover += ($lines * $coverage) / 100;
+            }
         }
-        $function = undef;
+
+        $name = undef;
     }
 
     END {
-        $totuncover = $totlines - $totcover;
-
-        foreach $function (sort { $a cmp $b } keys(%stats)) {
-            ($coverage, $line) = @{$stats{$function}};
-            $uncover = $line - (($line * $coverage) / 100);
-            printf("\"%s\",%d,%.2f,%.2f\n", $function, $line, $coverage,
-                   ($uncover * 100) / $totuncover);
+        foreach $name (sort {
+                    $ta = $stats{$a}->[0];
+                    $tb = $stats{$b}->[0];
+                    if ($ta ne $tb) { $ta cmp $tb }
+                    else { $a cmp $b }
+                } keys(%stats)) {
+            ($type, $coverage, $line) = @{$stats{$name}};
+            printf("%s,\"%s\",%d,%.2f\n", $type, $name, $line, $coverage);
         }
+
+        printf("total,,%d,%.2f\n", $totlines, ($totcover * 100 / $totlines));
     }
 '
 
