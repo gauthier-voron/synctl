@@ -1,0 +1,21 @@
+#!/bin/bash
+
+set -e
+set -x
+
+cat > 'spec.txt' <<EOF
+root 010**** * * < foo\n
+EOF
+
+mkdir 'pushed' 'pulled'
+
+mktree -p 'pushed' < 'spec.txt'
+mktree -p 'pulled' <<EOF
+root 012**** * * = /dev/zero\n
+EOF
+
+synctl init 'server'
+synctl push --server='file://server' --root='pushed/root'
+synctl pull --server='file://server' --root='pulled/root'
+
+chktree -p 'pulled' < 'spec.txt'
