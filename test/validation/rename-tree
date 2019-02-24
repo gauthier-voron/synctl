@@ -1,0 +1,29 @@
+#!/bin/bash
+
+set -e
+set -x
+
+cat > 'spec.txt' <<EOF
+root 04**** * *
+root/foo 040700 19990103 19990104
+root/foo/f0 0100600 19990105 19990106
+root/foo/l0 0120777 19990107 19990108 = ../l0
+root/l0 0120777 19990109 19990110 = foo/l0
+EOF
+
+mkdir 'pushed' 'pulled'
+
+mktree -p 'pushed' < 'spec.txt'
+mktree -p 'pulled' <<EOF
+root 04**** * *
+root/bar 040700 19990103 19990104
+root/bar/f1 0100600 19990105 19990106
+root/bar/l1 0120777 19990107 19990108 = ../l1
+root/l1 0120777 19990109 19990110 = bar/l1
+EOF
+
+synctl init 'server'
+synctl push --server='file://server' --root='pushed/root'
+synctl pull --server='file://server' --root='pulled/root'
+
+chktree -p 'pulled' < 'spec.txt'
