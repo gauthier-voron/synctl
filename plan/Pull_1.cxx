@@ -52,9 +52,23 @@ void __applyStat(const std::string &path, const struct stat &stat)
 		throw IOException();
 }
 
+void Pull_1::_delete(const std::string &path)
+{
+	Directory directory = Directory(path);
+	int ret;
+
+	if (directory.exists()) {
+		directory.remove();
+	} else {
+		ret = unlink(path.c_str());
+		if (ret != 0)
+			throw IOException(path);
+	}
+}
+
 void Pull_1::_delete(const Context *context)
 {
-	throw 0;
+	_delete(context->apath);
 }
 
 void Pull_1::_pullObject(const Context *context)
