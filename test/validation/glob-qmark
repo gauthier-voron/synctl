@@ -1,0 +1,30 @@
+#!/bin/bash
+
+set -e
+set -x
+
+mkdir 'pushed' 'pulled'
+
+mktree -p 'pushed' <<EOF
+root 04**** * *
+root/a 040755 19990101 19990101
+root/a/c 0100644 19990101 19990101 < c\n
+root/ac 0100644 19990101 19990101 < ac\n
+root/abc 0100644 19990101 19990101 < abc\n
+root/abbc 0100644 19990101 19990101 < abbc\n
+EOF
+
+synctl init 'server'
+
+synctl push --server='file://server' --root='pushed/root' \
+            --exclude='/a?c'
+
+synctl pull --server='file://server' --root='pulled/root'
+
+chktree -p 'pulled' <<EOF
+root 04**** * *
+root/a 040755 19990101 19990101
+root/a/c 0100644 19990101 19990101 < c\n
+root/ac 0100644 19990101 19990101 < ac\n
+root/abbc 0100644 19990101 19990101 < abbc\n
+EOF
