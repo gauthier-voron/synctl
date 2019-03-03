@@ -75,15 +75,16 @@ $(call REQUIRE-DIR, $(BIN)synctl)
 $(call REQUIRE-DIR, $(BIN)synctl-gcov)
 
 $(BIN)synctl: $(objects)
-	$(call cmd-ldcxx, $@, $^, -lssl -lcrypto)
+	$(call cmd-ldcxx, $@, $^, -lssl -lcrypto -lpcre2-8)
 
 $(BIN)synctl-gcov: $(objects-gcov)
-	$(call cmd-ldcov, $@, $^, -lssl -lcrypto)
+	$(call cmd-ldcov, $@, $^, -lssl -lcrypto -lpcre2-8)
 
 
 $(call REQUIRE-DIR, $(objects))
 $(call REQUIRE-DIR, $(objects-gcov))
-$(call REQUIRE-DEP, $(sources))
+$(call REQUIRE-DEP, $(sources), $(DEP)%.d)
+$(call REQUIRE-DEP, $(sources), $(DEP)%.gcov.d)
 
 $(OBJ)%.o: %.cxx
 	$(call cmd-ccxx, $@, $<, -Iinclude/ -include iostream)
@@ -95,7 +96,7 @@ $(DEP)%.cxx.d: %.cxx
 	$(call cmd-depcxx, $@, $<, $(patsubst %.cxx, $(OBJ)%.o, $<), \
                -Iinclude/)
 
-$(DEP)%.cxx.d: %.cxx
+$(DEP)%.cxx.gcov.d: %.cxx
 	$(call cmd-depcxx, $@, $<, $(patsubst %.cxx, $(OBJ)%.gcov.o, $<), \
                -Iinclude/)
 

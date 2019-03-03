@@ -5,7 +5,9 @@
 #include <string>
 #include <vector>
 
+#include "synctl/tree/FirstMatchFilter.hxx"
 #include "synctl/ui/Action.hxx"
+#include "synctl/ui/OptionLambda.hxx"
 #include "synctl/ui/OptionString.hxx"
 
 
@@ -14,8 +16,11 @@ namespace synctl {
 
 class ActionPull : public Action
 {
-	OptionString  _optionRoot      = OptionString("root", 'r');
-	OptionString  _optionServer    = OptionString("server", 's');
+	FirstMatchFilter  _filter;
+	OptionLambda      _optionExclude;
+	OptionLambda      _optionInclude;
+	OptionString      _optionRoot    = OptionString("root", 'r');
+	OptionString      _optionServer  = OptionString("server", 's');
 
 	int _execute(const std::string &root, const std::string &server);
 

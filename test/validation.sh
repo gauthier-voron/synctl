@@ -75,6 +75,15 @@ TEST_FAILED=
 #
 TEST_FAILED_NAMES=()
 
+# The maximum length (in number of character) of test number.
+# Equals to log_10(#test)
+#
+TEST_NUM_MAXLEN=0
+
+# The maximum length of test name.
+#
+TEST_NAME_MAXLEN=0
+
 # Use colored output.
 # 0 = yes / 1 = no
 #
@@ -149,12 +158,30 @@ is_silent() {
     test "x${OPTION_SILENT}" != 'x'
 }
 
+# Return the maximum length over a list of arbitrary strings.
+# Return: an positive or null integer.
+#
+maxlen() {
+    local len=0
+    local str tlen
+
+    for str in "$@" ; do
+	tlen=$(printf "%s" "$str" | wc -c)
+	if [ $tlen -gt $len ] ; then
+	    len=$tlen
+	fi
+    done
+
+    echo $len
+}
 
 # Print the name of the test case currently executed.
 # Arg0: name of the test
 #
 print_test() {
     local name="$1" ; shift
+    local num=$1 ; shift
+    local cs ce head body
 
     if is_quiet ; then
 	return 0
@@ -163,10 +190,13 @@ print_test() {
     fi
 
     if use_color ; then
-	printf "\033[34;1m==>\033[0;1m %s : \033[0m" "$name"
-    else
-	printf "==> %s : " "$name"
+	cs="\033[34m"
+	ce="\033[0m"
     fi
+
+    head="${cs}[${ce}%${TEST_NUM_MAXLEN}d${cs}/${ce}%d${cs}]${ce}"
+    body="%-${TEST_NAME_MAXLEN}s "
+    printf "${head} ${body}" $num ${TEST_DONE} "$name"
 }
 
 # Print the name and the result of the test case executed.
@@ -175,7 +205,10 @@ print_test() {
 #
 print_test_result() {
     local name="$1" ; shift
+    local num=$1 ; shift
     local ret=$1 ; shift
+    local cs ce ph res
+    local head body
 
     if is_silent ; then
 	return 0
@@ -186,24 +219,39 @@ print_test_result() {
 	    if is_quiet ; then
 		return 0
 	    fi
-	    printf "\r\033[32;1m==>\033[0;1m %s : \033[32;1msuccess\033[0m\n" "$name"
+	    cs="\033[32m"
+	    res='success'
 	else
-	    printf "\r\033[31;1m==>\033[0;1m %s : \033[31;1mfailure\033[0m\n" "$name"
+	    cs="\033[31m"
+	    res='failure'
 	fi
+	ce="\033[0m"
+	ph=1
+	printf "\r"
     else
 	if [ $ret -eq 0 ] ; then
 	    if is_quiet ; then
 		return 0
 	    fi
-	    echo 'success'
+	    ph=0
+	    res='success'
 	else
 	    if is_quiet ; then
-		printf "==> %s : failure\n" "$name"
+		ph=1
 	    else
-		echo 'failure'
+		ph=0
 	    fi
+	    res='failure'
 	fi
     fi
+
+    if [ $ph -eq 1 ] ; then
+	head="${cs}[${ce}%${TEST_NUM_MAXLEN}d${cs}/${ce}%d${cs}]${ce}"
+	body="%-${TEST_NAME_MAXLEN}s "
+	printf "${head} ${body}" $num ${TEST_DONE} "$name"
+    fi
+
+    printf "${cs}%s${ce}\n" "$res"
 }
 
 # Print the log of the test case executed.
@@ -238,7 +286,7 @@ print_test_summary() {
 
 	echo
 	if use_color ; then
-	    printf "\033[32;1m::\033[0;1m All tests succeed\033[0m\n"
+	    printf "\033[32m::\033[0m All tests succeed\n"
 	else
 	    printf ":: All tests succeed\n"
 	fi
@@ -253,9 +301,9 @@ print_test_summary() {
 
 	echo
 	if use_color ; then
-	    printf "\033[31;1m::\033[0;1m Test failed : %d / %d\033[0m\n" ${TEST_FAILED} ${TEST_DONE}
+	    printf "\033[31m::\033[0m Test failed : %d / %d\n" ${TEST_FAILED} ${TEST_DONE}
 	    for name in "${TEST_FAILED_NAMES[@]}" ; do
-		printf "  \033[31;1m->\033[0m %s\n" "$name"
+		printf "  \033[31m->\033[0m %s\n" "$name"
 	    done
 	else
 	    printf ":: Test failed : %d / %d\n" ${TEST_FAILED} ${TEST_DONE}
@@ -444,6 +492,7 @@ setup_test_environment() {
 execute_validation_case() {
     local prefix="$1" ; shift
     local name="$1" ; shift
+    local num=$1 ; shift
     local path=$(absolute_path "${prefix}${name}")
     local sandbox=$(create_case_sandbox)
     local log=$(mktemp --suffix='.log' "${SCRIPT_NAME}.XXXXXX")
@@ -451,7 +500,7 @@ execute_validation_case() {
 
     push_atexit "rm '$log'"
 
-    print_test "$name"
+    print_test "$name" $num
 
     set -m
     (
@@ -482,7 +531,7 @@ execute_validation_case() {
 	wait $skpid
     fi
 
-    print_test_result "$name" $vcret
+    print_test_result "$name" $num $vcret
     if [ $vcret -ne 0 ] ; then
 	print_test_log "$log"
 	TEST_FAILED=$(( TEST_FAILED + 1 ))
@@ -625,22 +674,29 @@ setup_executable
 
 TEST_FAILED=0
 TEST_FAILED_NAMES=()
+test_num=0
 
 if [ $# -eq 0 ] ; then
     # No test path has been specified on the command line.
     # Take the test cases from the VALIDATION_ROOT.
     #
     TEST_DONE=$(list_default_validation_cases | wc -l)
+    TEST_NAME_MAXLEN=$(maxlen $(list_default_validation_cases))
+    TEST_NUM_MAXLEN=$(maxlen ${TEST_DONE})
     for case in $(list_default_validation_cases) ; do
-	    execute_validation_case "${VALIDATION_ROOT}/" "$case"
+	    test_num=$(( test_num + 1 ))
+	    execute_validation_case "${VALIDATION_ROOT}/" "$case" ${test_num}
     done
 else
     # Some test cases has been specified on the command line.
     # Execute them without asking questions.
     #
     TEST_DONE=$#
+    TEST_NAME_MAXLEN=$(maxlen "$@")
+    TEST_NUM_MAXLEN=$(maxlen ${TEST_DONE})
     for case in "$@" ; do
-	    execute_validation_case "" "$case"
+	    test_num=$(( test_num + 1 ))
+	    execute_validation_case "" "$case" ${test_num}
     done
 fi
 

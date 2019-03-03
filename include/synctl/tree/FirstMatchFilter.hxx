@@ -6,12 +6,14 @@
 #include <string>
 #include <vector>
 
-#include "synctl/plan/Filter.hxx"
+#include "synctl/tree/Filter.hxx"
 
 
 namespace synctl {
 
 
+class InputStream;
+class OutputStream;
 class Pattern;
 
 
@@ -33,7 +35,11 @@ class FirstMatchFilter : public Filter
 
 	void append(std::unique_ptr<Pattern> pattern, Filter::Action action);
 
-	virtual Filter::Action apply(const std::string &path);
+	virtual Filter::Action apply(const std::string &path) override;
+
+	virtual void write(OutputStream *output) const override;
+
+	virtual void read(InputStream *input) override;
 };
 
 

@@ -4,7 +4,7 @@
 
 #include <string>
 
-#include "synctl/plan/Filter.hxx"
+#include "synctl/tree/Filter.hxx"
 #include "synctl/tree/Reference.hxx"
 
 
@@ -35,9 +35,11 @@ class Send_1
 
 	void _sendObject(const Context *context);
 
-	void _transfer(const Context *context, InputStream *input);
+	void _transfer(const Context *context, InputStream *input,
+		       size_t size);
 
-	void _sendDirectory(const Context *context, InputStream *input);
+	void _sendDirectory(const Context *context, InputStream *input,
+			    size_t size);
 
 
  public:

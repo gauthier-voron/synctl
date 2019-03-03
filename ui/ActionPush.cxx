@@ -6,13 +6,15 @@
 
 #include "synctl/io/AdapterOutputStream.hxx"
 #include "synctl/io/Channel.hxx"
-#include "synctl/plan/FirstMatchFilter.hxx"
-#include "synctl/plan/GlobPattern.hxx"
 #include "synctl/plan/Protocol.hxx"
 #include "synctl/plan/ProtocolVersion.hxx"
+#include "synctl/tree/FirstMatchFilter.hxx"
+#include "synctl/tree/GlobPattern.hxx"
 #include "synctl/tree/Reference.hxx"
 #include "synctl/ui/OperandMissingException.hxx"
 #include "synctl/ui/OperandUnexpectedException.hxx"
+#include "synctl/ui/OptionLambda.hxx"
+#include "synctl/ui/OptionString.hxx"
 
 
 using std::make_unique;
@@ -26,6 +28,8 @@ using synctl::FirstMatchFilter;
 using synctl::GlobPattern;
 using synctl::OperandMissingException;
 using synctl::OperandUnexpectedException;
+using synctl::OptionLambda;
+using synctl::OptionString;
 using synctl::Protocol;
 using synctl::Reference;
 
@@ -35,14 +39,6 @@ int ActionPush::_execute(const string &root, const string &server)
 	Protocol::PushSettings psettings;
 	unique_ptr<Protocol> protocol;
 	unique_ptr<Channel> chan;
-	FirstMatchFilter filter;
-
-	for (const string &pstr : _optionInclude.values())
-		filter.append(make_unique<GlobPattern>(pstr), Filter::Accept);
-	for (const string &pstr : _optionSkip.values())
-		filter.append(make_unique<GlobPattern>(pstr), Filter::Reject);
-	for (const string &pstr : _optionExclude.values())
-		filter.append(make_unique<GlobPattern>(pstr),Filter::Traverse);
 
 	chan = Channel::open(server);
 	protocol = Protocol::clientHandcheck(chan.get());
@@ -52,8 +48,8 @@ int ActionPush::_execute(const string &root, const string &server)
 
 	psettings.localRoot = root;
 	psettings.branchName = "Laurier";
-	psettings.filter = &filter;
 	psettings.snapshotName = nullptr;
+	psettings.filter = &_filter;
 	protocol->push(psettings);
 
 	protocol->exit();
@@ -65,9 +61,14 @@ int ActionPush::_execute(const string &root, const string &server)
 
 ActionPush::ActionPush()
 	: Action("push")
+	, _optionExclude("exclude", 'e', [&](auto ptrn) {
+		_filter.append(make_unique<GlobPattern>(ptrn), Filter::Reject);
+	  })
+	, _optionInclude("include", 'i', [&](auto ptrn) {
+	        _filter.append(make_unique<GlobPattern>(ptrn), Filter::Accept);
+	  })
 {
 	addOption(&_optionExclude);
-	addOption(&_optionSkip);
 	addOption(&_optionInclude);
 	addOption(&_optionRoot);
 	addOption(&_optionServer);

@@ -7,11 +7,14 @@
 #include "synctl/io/AdapterOutputStream.hxx"
 #include "synctl/io/Channel.hxx"
 #include "synctl/plan/Protocol.hxx"
+#include "synctl/tree/FirstMatchFilter.hxx"
+#include "synctl/tree/GlobPattern.hxx"
 #include "synctl/tree/Reference.hxx"
 #include "synctl/ui/OperandMissingException.hxx"
 #include "synctl/ui/OperandUnexpectedException.hxx"
 
 
+using std::make_unique;
 using std::string;
 using std::unique_ptr;
 using std::vector;
@@ -26,9 +29,12 @@ using synctl::Reference;
 
 int ActionPull::_execute(const string &root, const string &server)
 {
-	unique_ptr<Channel> chan = Channel::open(server);
-	unique_ptr<Protocol> protocol = Protocol::clientHandcheck(chan.get());
 	Protocol::PullSettings psettings;
+	unique_ptr<Protocol> protocol;
+	unique_ptr<Channel> chan;
+
+	chan = Channel::open(server);
+	protocol = Protocol::clientHandcheck(chan.get());
 
 	if (protocol == nullptr)
 		return 1;
@@ -36,7 +42,7 @@ int ActionPull::_execute(const string &root, const string &server)
 	psettings.localRoot = root;
 	psettings.branchName = "Laurier";
 	psettings.snapshotName = "";
-	psettings.filter = nullptr;
+	psettings.filter = &_filter;
 	protocol->pull(psettings);
 
 	protocol->exit();
@@ -48,7 +54,15 @@ int ActionPull::_execute(const string &root, const string &server)
 
 ActionPull::ActionPull()
 	: Action("pull")
+	, _optionExclude("exclude", 'e', [&](auto ptrn) {
+		_filter.append(make_unique<GlobPattern>(ptrn), Filter::Reject);
+	  })
+	, _optionInclude("include", 'i', [&](auto ptrn) {
+	        _filter.append(make_unique<GlobPattern>(ptrn), Filter::Accept);
+	  })
 {
+	addOption(&_optionExclude);
+	addOption(&_optionInclude);
 	addOption(&_optionRoot);
 	addOption(&_optionServer);
 }

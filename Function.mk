@@ -149,5 +149,5 @@ endef
 
 define REQUIRE-DEP
   $(foreach o, $(1), \
-    $(eval $(call __AUTODEP-RULE, $(patsubst %, $(DEP)%.d, $(o)), $(o))))
+    $(eval $(call __AUTODEP-RULE, $(patsubst %, $(2), $(o)), $(o))))
 endef

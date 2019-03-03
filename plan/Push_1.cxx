@@ -10,7 +10,7 @@
 
 #include "synctl/io/Directory.hxx"
 #include "synctl/io/NullOutputStream.hxx"
-#include "synctl/plan/Filter.hxx"
+#include "synctl/tree/Filter.hxx"
 #include "synctl/plan/Opcode.hxx"
 #include "synctl/tree/Directory_1.hxx"
 #include "synctl/tree/Reference.hxx"
@@ -39,6 +39,9 @@ bool Push_1::_isReferenceKnown(const Reference &reference) const
 Filter::Action Push_1::_filterPath(const Context *context) const
 {
 	Filter::Action ret;
+
+	if (context->rpath == "/")
+		return Filter::Accept;
 
 	if (_filter == nullptr)
 		return context->defact;

@@ -8,6 +8,10 @@
 namespace synctl {
 
 
+class InputStream;
+class OutputStream;
+
+
 class Filter
 {
  public:
@@ -21,6 +25,10 @@ class Filter
 	virtual ~Filter() = default;
 
 	virtual Action apply(const std::string &path) = 0;
+
+	virtual void write(OutputStream *output) const = 0;
+
+	virtual void read(InputStream *input) = 0;
 };
 
 
