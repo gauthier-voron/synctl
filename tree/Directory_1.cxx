@@ -119,7 +119,7 @@ void Directory_1::_write(OutputStream *output) const
 		const std::string &name = it.first;
 		EntryInfo &einfo = it.second;
 
-		output->write(name.c_str(), name.length() + 1);
+		output->writeStr(name);
 		_writeInfo(output, einfo);
 	}
 }
