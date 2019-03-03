@@ -3,8 +3,10 @@
 #include <cstdint>
 #include <memory>
 #include <string>
+#include <vector>
 
 #include "synctl/io/InputStream.hxx"
+#include "synctl/io/NullOutputStream.hxx"
 #include "synctl/io/OutputStream.hxx"
 #include "synctl/tree/Filter.hxx"
 #include "synctl/plan/Opcode.hxx"
@@ -17,8 +19,12 @@
 
 using std::string;
 using std::unique_ptr;
+using std::vector;
 using synctl::Directory_1;
 using synctl::Filter;
+using synctl::InputStream;
+using synctl::NullOutputStream;
+using synctl::OutputStream;
 using synctl::Send_1;
 
 
@@ -76,29 +82,47 @@ void Send_1::_transfer(const Context *context, InputStream *input, size_t size)
 void Send_1::_sendDirectory(const Context *context, InputStream *input,
 			    size_t size)
 {
+	NullOutputStream null;
+	vector<Context> ctxs;
+	bool altered = false;
 	Directory_1 dir;
 	Context ctx;
 
 	dir.read(input);
-
-	context->output->write(&size, sizeof (size));
-	dir.write(context->output);
-
-	ctx.repository = context->repository;
-	ctx.output = context->output;
 
 	if (context->rpath[context->rpath.length() - 1] == '/')
 		ctx.rpath = context->rpath;
 	else
 		ctx.rpath = context->rpath + '/';
 
+	ctx.defact = context->defact;
+	ctx.repository = context->repository;
+	ctx.output = context->output;
+
 	for (const Directory_1::Entry &entry : dir.getChildren()) {
 		ctx.rpath += entry.name;
-		ctx.reference = entry.reference;
 
-		_sendObject(&ctx);
+		if (_filterPath(&ctx) == Filter::Reject) {
+			dir.removeChild(entry.name);
+			altered = true;
+		} else {
+			ctx.reference = entry.reference;
+			ctxs.push_back(ctx);
+		}
 
 		ctx.rpath.resize(ctx.rpath.length() - entry.name.length());
+	}
+
+	if (altered) {
+		dir.write(&null);
+		size = null.written();
+	}
+
+	context->output->write(&size, sizeof (size));
+	dir.write(context->output);
+
+	for (const Context &c : ctxs) {
+		_sendObject(&c);
 	}
 }
 
