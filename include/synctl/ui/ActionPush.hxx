@@ -5,8 +5,9 @@
 #include <string>
 #include <vector>
 
+#include "synctl/plan/FirstMatchFilter.hxx"
 #include "synctl/ui/Action.hxx"
-#include "synctl/ui/OptionListString.hxx"
+#include "synctl/ui/OptionLambda.hxx"
 #include "synctl/ui/OptionString.hxx"
 
 
@@ -15,9 +16,9 @@ namespace synctl {
 
 class ActionPush : public Action
 {
-	OptionListString  _optionExclude = OptionListString("exclude", 'e');
-	OptionListString  _optionSkip    = OptionListString("skip", 'E');
-	OptionListString  _optionInclude = OptionListString("include", 'i');
+	FirstMatchFilter  _filter;
+	OptionLambda      _optionExclude;
+	OptionLambda      _optionInclude;
 	OptionString      _optionRoot    = OptionString("root", 'r');
 	OptionString      _optionServer  = OptionString("server", 's');
 
