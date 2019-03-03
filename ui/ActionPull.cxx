@@ -29,9 +29,12 @@ using synctl::Reference;
 
 int ActionPull::_execute(const string &root, const string &server)
 {
-	unique_ptr<Channel> chan = Channel::open(server);
-	unique_ptr<Protocol> protocol = Protocol::clientHandcheck(chan.get());
 	Protocol::PullSettings psettings;
+	unique_ptr<Protocol> protocol;
+	unique_ptr<Channel> chan;
+
+	chan = Channel::open(server);
+	protocol = Protocol::clientHandcheck(chan.get());
 
 	if (protocol == nullptr)
 		return 1;
