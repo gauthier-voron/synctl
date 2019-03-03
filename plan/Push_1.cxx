@@ -40,6 +40,9 @@ Filter::Action Push_1::_filterPath(const Context *context) const
 {
 	Filter::Action ret;
 
+	if (context->rpath == "/")
+		return Filter::Accept;
+
 	if (_filter == nullptr)
 		return context->defact;
 
