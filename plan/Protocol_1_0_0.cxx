@@ -18,6 +18,7 @@
 #include "synctl/plan/Send_1.hxx"
 #include "synctl/repo/Branch.hxx"
 #include "synctl/repo/Repository.hxx"
+#include "synctl/tree/FilterCodec.hxx"
 #include "synctl/tree/Reference.hxx"
 
 
@@ -65,6 +66,7 @@ void Protocol_1_0_0::push(const PushSettings &settings) const
 	Reference zeroref = Reference::zero();
 	string snapshotName, *nameptr;
 	opcode_t op = OP_ACT_PUSH;
+	FilterCodec codec;
 	Reference ref;
 	Push_1 pusher;
 
@@ -77,6 +79,8 @@ void Protocol_1_0_0::push(const PushSettings &settings) const
 			break;
 		pusher.addKnownReference(ref);
 	}
+
+	codec.encode(settings.filter, _channel->outputStream());
 
 	pusher.setFilter(settings.filter);
 	pusher.push(_channel->outputStream(), settings.localRoot);
@@ -94,6 +98,7 @@ void Protocol_1_0_0::_servePush(Repository *repository) const
 	Reference ref = Reference::zero();
 	string branchName, snapshotName;
 	Receive_1 receiver;
+	FilterCodec codec;
 	Branch *branch;
 
 	_channel->inputStream()->readStr(&branchName);
@@ -104,6 +109,9 @@ void Protocol_1_0_0::_servePush(Repository *repository) const
 
 	repository->dumpReferences(_channel->outputStream());
 	_channel->outputStream()->write(ref.data(), ref.size());
+
+	// TODO: use it in the receiver
+	codec.decode(_channel->inputStream());
 
 	receiver.receive(_channel->inputStream(), repository, &ref);
 	repository->takeReference(ref);
