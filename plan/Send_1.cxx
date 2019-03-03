@@ -49,22 +49,23 @@ void Send_1::_sendObject(const Context *context)
 	size -= sizeof (op);
 
 	context->output->write(&op, sizeof (op));
-	context->output->write(&size, sizeof (size));
 
 	switch (op) {
 	case OP_TREE_DIRECTORY_1:
-		_sendDirectory(context, input.get());
+		_sendDirectory(context, input.get(), size);
 		break;
 	default:
-		_transfer(context, input.get());
+		_transfer(context, input.get(), size);
 		break;
 	}
 }
 
-void Send_1::_transfer(const Context *context, InputStream *input)
+void Send_1::_transfer(const Context *context, InputStream *input, size_t size)
 {
 	uint8_t buffer[TRANSFER_BUFFER_SIZE];
 	size_t did;
+
+	context->output->write(&size, sizeof (size));
 
 	do {
 		did = input->read(buffer, TRANSFER_BUFFER_SIZE);
@@ -72,12 +73,15 @@ void Send_1::_transfer(const Context *context, InputStream *input)
 	} while (did > 0);
 }
 
-void Send_1::_sendDirectory(const Context *context, InputStream *input)
+void Send_1::_sendDirectory(const Context *context, InputStream *input,
+			    size_t size)
 {
 	Directory_1 dir;
 	Context ctx;
 
 	dir.read(input);
+
+	context->output->write(&size, sizeof (size));
 	dir.write(context->output);
 
 	ctx.repository = context->repository;
