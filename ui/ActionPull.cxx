@@ -7,11 +7,14 @@
 #include "synctl/io/AdapterOutputStream.hxx"
 #include "synctl/io/Channel.hxx"
 #include "synctl/plan/Protocol.hxx"
+#include "synctl/plan/FirstMatchFilter.hxx"
+#include "synctl/plan/GlobPattern.hxx"
 #include "synctl/tree/Reference.hxx"
 #include "synctl/ui/OperandMissingException.hxx"
 #include "synctl/ui/OperandUnexpectedException.hxx"
 
 
+using std::make_unique;
 using std::string;
 using std::unique_ptr;
 using std::vector;
@@ -36,7 +39,7 @@ int ActionPull::_execute(const string &root, const string &server)
 	psettings.localRoot = root;
 	psettings.branchName = "Laurier";
 	psettings.snapshotName = "";
-	psettings.filter = nullptr;
+	psettings.filter = &_filter;
 	protocol->pull(psettings);
 
 	protocol->exit();
@@ -48,7 +51,15 @@ int ActionPull::_execute(const string &root, const string &server)
 
 ActionPull::ActionPull()
 	: Action("pull")
+	, _optionExclude("exclude", 'e', [&](auto ptrn) {
+		_filter.append(make_unique<GlobPattern>(ptrn), Filter::Reject);
+	  })
+	, _optionInclude("include", 'i', [&](auto ptrn) {
+	        _filter.append(make_unique<GlobPattern>(ptrn), Filter::Accept);
+	  })
 {
+	addOption(&_optionExclude);
+	addOption(&_optionInclude);
 	addOption(&_optionRoot);
 	addOption(&_optionServer);
 }
