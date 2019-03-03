@@ -124,11 +124,14 @@ void Protocol_1_0_0::_servePush(Repository *repository) const
 void Protocol_1_0_0::pull(const PullSettings &settings) const
 {
 	opcode_t op = OP_ACT_PULL;
+	FilterCodec codec;
 	Pull_1 puller;
 
 	_channel->outputStream()->write(&op, sizeof (op));
 	_channel->outputStream()->writeStr(settings.branchName);
 	_channel->outputStream()->writeStr(settings.snapshotName);
+
+	codec.encode(settings.filter, _channel->outputStream());
 
 	_channel->inputStream()->read(&op, sizeof (op));
 
@@ -145,13 +148,17 @@ void Protocol_1_0_0::pull(const PullSettings &settings) const
 void Protocol_1_0_0::_servePull(Repository *repository) const
 {
 	string branchName, snapshotName;
+	unique_ptr<Filter> filter;
 	const Snapshot *snapshot;
 	const Branch *branch;
+	FilterCodec codec;
 	Send_1 sender;
 	opcode_t op;
 
 	_channel->inputStream()->readStr(&branchName);
 	_channel->inputStream()->readStr(&snapshotName);
+
+	filter = codec.decode(_channel->inputStream());
 
 	branch = repository->branch(branchName);
 
@@ -182,6 +189,7 @@ void Protocol_1_0_0::_servePull(Repository *repository) const
 	op = OP_RET_OK;
 	_channel->outputStream()->write(&op, sizeof (op));
 
+	sender.setFilter(filter.get());
 	sender.send(_channel->outputStream(), repository, snapshot->ref());
 }
 
