@@ -10,7 +10,7 @@
 
 #include "synctl/io/Directory.hxx"
 #include "synctl/io/NullOutputStream.hxx"
-#include "synctl/plan/Filter.hxx"
+#include "synctl/tree/Filter.hxx"
 #include "synctl/plan/Opcode.hxx"
 #include "synctl/tree/Directory_1.hxx"
 #include "synctl/tree/Reference.hxx"

@@ -4,7 +4,7 @@
 
 #include <string>
 
-#include "synctl/plan/Filter.hxx"
+#include "synctl/tree/Filter.hxx"
 #include "synctl/tree/Reference.hxx"
 
 

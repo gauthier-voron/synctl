@@ -5,7 +5,7 @@
 #include <string>
 #include <vector>
 
-#include "synctl/plan/FirstMatchFilter.hxx"
+#include "synctl/tree/FirstMatchFilter.hxx"
 #include "synctl/ui/Action.hxx"
 #include "synctl/ui/OptionLambda.hxx"
 #include "synctl/ui/OptionString.hxx"

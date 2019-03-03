@@ -6,7 +6,7 @@
 
 #include "synctl/io/InputStream.hxx"
 #include "synctl/io/OutputStream.hxx"
-#include "synctl/plan/Filter.hxx"
+#include "synctl/tree/Filter.hxx"
 #include "synctl/plan/Opcode.hxx"
 #include "synctl/repo/Repository.hxx"
 #include "synctl/tree/Directory_1.hxx"

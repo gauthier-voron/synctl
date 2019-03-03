@@ -9,7 +9,7 @@
 #include <set>
 #include <string>
 
-#include "synctl/plan/Filter.hxx"
+#include "synctl/tree/Filter.hxx"
 
 
 namespace synctl {
