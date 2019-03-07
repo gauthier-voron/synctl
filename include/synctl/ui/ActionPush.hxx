@@ -2,9 +2,11 @@
 #define _INCLUDE_SYNCTL_ACTIONPUSH_HXX_
 
 
+#include <memory>
 #include <string>
 #include <vector>
 
+#include "synctl/io/Channel.hxx"
 #include "synctl/tree/FirstMatchFilter.hxx"
 #include "synctl/ui/Action.hxx"
 #include "synctl/ui/OptionLambda.hxx"
@@ -17,12 +19,16 @@ namespace synctl {
 class ActionPush : public Action
 {
 	FirstMatchFilter  _filter;
+	OptionString      _optionCommand = OptionString("command", 'c');
 	OptionLambda      _optionExclude;
 	OptionLambda      _optionInclude;
 	OptionString      _optionRoot    = OptionString("root", 'r');
 	OptionString      _optionServer  = OptionString("server", 's');
 
-	int _execute(const std::string &root, const std::string &server);
+
+	std::unique_ptr<Channel> _openChannel(const std::string &server);
+
+	int _execute(const std::string &root, Channel *channel);
 
 
  public:

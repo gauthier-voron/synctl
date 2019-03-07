@@ -1,0 +1,21 @@
+#!/bin/bash
+#
+#
+#
+
+set -e
+
+name="$1" ; shift
+
+if [ "x$name" = 'x' ] ; then
+    echo "invalid empty name operand"
+    exit 1
+fi >&2
+
+dir=$(mktemp -d --suffix='.d' 'cmdalias.XXXXXXXXXX')
+dir="$PWD/$dir"
+
+cat > "$dir/$name"
+chmod 755 "$dir/$name"
+
+echo "PATH='$dir:$PATH'"
