@@ -9,6 +9,7 @@
 #include "synctl/ui/OperandInvalidException.hxx"
 #include "synctl/ui/OperandMissingException.hxx"
 #include "synctl/ui/OperandUnexpectedException.hxx"
+#include "synctl/ui/Path.hxx"
 #include "synctl/io/PipeChannel.hxx"
 #include "synctl/plan/Protocol.hxx"
 #include "synctl/repo/Repository.hxx"
@@ -27,6 +28,7 @@ using synctl::FdOutputStream;
 using synctl::OperandInvalidException;
 using synctl::OperandMissingException;
 using synctl::OperandUnexpectedException;
+using synctl::Path;
 using synctl::PipeChannel;
 using synctl::Protocol;
 using synctl::Repository;
@@ -36,7 +38,7 @@ int ActionServer::_execute(const string &serverPath)
 {
 	PipeChannel chan = PipeChannel(FdInputStream(0), FdOutputStream(1));
 	unique_ptr<Protocol> protocol = Protocol::serverHandcheck(&chan);
-	Repository repository = Repository(serverPath);
+	Repository repository = Repository(Path::resolvePath(serverPath));
 
 	if (protocol == nullptr)
 		return 1;
