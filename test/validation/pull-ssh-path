@@ -1,0 +1,34 @@
+#!/bin/bash
+
+set -e
+set -x
+
+cat > 'spec.txt' <<EOF
+root 04**** * *
+root/aaa 0100644 19990101 19990101 < a\n
+EOF
+
+eval $(cmdalias 'ssh' <<'EOF'
+#!/bin/bash
+
+for arg in "$@" ; do
+    path="$arg"
+done
+
+synctl server "$path"
+EOF
+)
+
+mkdir 'pushed' 'pulled'
+
+mktree -p 'pushed' < 'spec.txt'
+
+synctl init 'server'
+
+path="$PWD/server"
+path="${path#$HOME/}"
+synctl push --server='file://server' --root='pushed/root'
+
+synctl pull --server="ssh://localhost/~$USER/$path" --root='pulled/root'
+
+chktree -p 'pulled' < 'spec.txt'
