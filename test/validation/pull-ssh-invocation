@@ -1,0 +1,36 @@
+#!/bin/bash
+
+set -e
+set -x
+
+mktree <<EOF
+root 04**** * *
+root/aaa 0100644 19990101 19990101 < a\n
+EOF
+
+synctl init 'server'
+synctl push --server='file://server' --root='root'
+
+eval $(cmdalias 'ssh' <<'EOF'
+#!/bin/bash
+
+for arg in "$@" ; do
+    echo "$arg"
+done > ssh-cmdline.txt
+
+synctl server server
+EOF
+)
+
+synctl pull --server='ssh://user@server:2022/~home/path' --root='root'
+
+cat > 'expected-cmdline.txt' <<EOF
+-p
+2022
+user@server
+synctl
+server
+~home/path
+EOF
+
+diff 'ssh-cmdline.txt' 'expected-cmdline.txt'
