@@ -32,8 +32,6 @@ bool Receive_1::_receiveEntry(const Context *context)
 	context->input->readall(&op, sizeof (op));
 
 	switch (op) {
-	case OP_TREE_NONE:
-		return false;
 	case OP_TREE_REGULAR_1:
 		_receiveRegular(context);
 		break;
@@ -43,6 +41,10 @@ bool Receive_1::_receiveEntry(const Context *context)
 	case OP_TREE_DIRECTORY_1:
 		_receiveDirectory(context);
 		break;
+	case OP_TREE_REFERENCE:
+		context->input->readall(context->reference->data(),
+					context->reference->size());
+		return false;
 	default:
 		throw 0;
 	}
