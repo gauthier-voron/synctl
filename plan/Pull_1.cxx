@@ -77,7 +77,7 @@ void Pull_1::_pullObject(const Context *context)
 {
 	opcode_t op;
 
-	context->input->readall(&op, sizeof (op));
+	op = context->input->readInt<opcode_t>();
 
 	switch (op) {
 	case OP_TREE_NONE:
@@ -104,7 +104,7 @@ void Pull_1::_createDirectory(const Context *context)
 	uint64_t size;
 	Context ctx;
 
-	context->input->readall(&size, sizeof (size));
+	size = context->input->readInt<uint64_t>();
 	lis = LimitedInputStream(context->input, size);
 	dir.read(&lis);
 
@@ -135,7 +135,7 @@ void Pull_1::_mergeDirectory(const Context *context)
 	size_t i, j;
 	Context ctx;
 
-	context->input->readall(&size, sizeof (size));
+	size = context->input->readInt<uint64_t>();
 	lis = LimitedInputStream(context->input, size);
 	dir.read(&lis);
 
@@ -203,7 +203,7 @@ void Pull_1::_pullRegular(const Context *context)
 	if ((ret == 0) && ((st.st_mode & S_IFMT) != S_IFREG))
 		_delete(context);
 
-	context->input->readall(&size, sizeof (size));
+	size = context->input->readInt<uint64_t>();
 	lis = LimitedInputStream(context->input, size);
 
 	reg = Regular_1::makeTo(context->apath);
@@ -214,14 +214,14 @@ void Pull_1::_pullSymlink(const Context *context)
 {
 	struct stat st;
 	Symlink_1 link;
-	uint64_t size;
 	int ret;
 
 	ret = ::lstat(context->apath.c_str(), &st);
 	if ((ret == 0) && ((st.st_mode & S_IFMT) != S_IFLNK))
 		_delete(context);
 
-	context->input->readall(&size, sizeof (size));
+	// discard size since we stop on asciiz end
+	context->input->readInt<uint64_t>();
 
 	link.read(context->input);
 	link.apply(context->apath);

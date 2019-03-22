@@ -1,5 +1,6 @@
 #include "synctl/tree/Directory_1.hxx"
 
+#include <endian.h>
 #include <grp.h>
 #include <pwd.h>
 #include <sys/stat.h>
@@ -43,15 +44,21 @@ Directory_1::Entry::Entry(const string &_name, const EntryInfo &_einfo)
 {
 	struct passwd *passwd;
 	struct group *grp;
+	uint64_t tmp;
 	size_t pos;
 
 	stat.st_dev = _einfo.stat.dev;
 	stat.st_ino = _einfo.stat.ino;
-	stat.st_mode = _einfo.stat.mode;
-	stat.st_atim.tv_sec = _einfo.stat.atime / 1000000000ul;
-	stat.st_atim.tv_nsec = _einfo.stat.atime % 1000000000ul;
-	stat.st_mtim.tv_sec = _einfo.stat.mtime / 1000000000ul;
-	stat.st_mtim.tv_nsec = _einfo.stat.mtime % 1000000000ul;
+
+	stat.st_mode = le16toh(_einfo.stat.mode);
+
+	tmp = le64toh(_einfo.stat.atime);
+	stat.st_atim.tv_sec = tmp / 1000000000ul;
+	stat.st_atim.tv_nsec = tmp % 1000000000ul;
+
+	tmp = le64toh(_einfo.stat.mtime);
+	stat.st_mtim.tv_sec = tmp / 1000000000ul;
+	stat.st_mtim.tv_nsec = tmp % 1000000000ul;
 
 	if ((passwd = getpwnam(_einfo.user.c_str())) != NULL) {
 		stat.st_uid = passwd->pw_uid;
@@ -89,11 +96,18 @@ Directory_1::EntryInfo::EntryInfo(const struct stat &_stat,
 
 	stat.dev = _stat.st_dev;
 	stat.ino = _stat.st_ino;
-	stat.mode = _stat.st_mode;
-	stat.atime = _stat.st_atim.tv_sec * 1000000000ul +
-		_stat.st_atim.tv_nsec;
-	stat.mtime = _stat.st_mtim.tv_sec * 1000000000ul +
-		_stat.st_mtim.tv_nsec;
+
+	stat.mode = htole16(_stat.st_mode);
+
+	stat.atime  = _stat.st_atim.tv_sec;
+	stat.atime *= 1000000000ul;
+	stat.atime += _stat.st_atim.tv_nsec;
+	stat.atime  = htole64(stat.atime);
+
+	stat.mtime  = _stat.st_mtim.tv_sec;
+	stat.mtime *= 1000000000ul;
+	stat.mtime += _stat.st_mtim.tv_nsec;
+	stat.mtime  = htole64(stat.mtime);
 }
 
 void Directory_1::_writeInfo(OutputStream *output, const EntryInfo &einfo)

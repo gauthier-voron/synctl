@@ -59,11 +59,12 @@ void FirstMatchFilter::write(OutputStream *output) const
 		case Traverse: actcode = '>'; break;
 		}
 
-		output->write(actcode);
+		output->writeInt(actcode);
 		codec.encode(rule.first.get(), output);
 	}
 
-	output->write(0);
+	actcode = 0;
+	output->writeInt(actcode);
 }
 
 void FirstMatchFilter::read(InputStream *input)
@@ -75,7 +76,7 @@ void FirstMatchFilter::read(InputStream *input)
 
 	_rules.clear();
 
-	while ((actcode = input->read()) > 0) {
+	while ((actcode = input->readInt<uint8_t>()) > 0) {
 		switch ((uint8_t) actcode) {
 		case '=': act = Filter::Ignore; break;
 		case '+': act = Filter::Accept; break;

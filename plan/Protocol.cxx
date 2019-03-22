@@ -40,15 +40,15 @@ void Protocol::sendVersion(OutputStream *output, const ProtocolVersion *v)
 	size_t i;
 
 	for (i = 0; i < 3; i++)
-		output->write(&numbers[i], sizeof (numbers[i]));
+		output->writeInt(numbers[i]);
 }
 
 void Protocol::recvVersion(InputStream *input, uint16_t *major,
 			   uint16_t *minor, uint16_t *variant)
 {
-	input->readall(major, sizeof (*major));
-	input->readall(minor, sizeof (*minor));
-	input->readall(variant, sizeof (*variant));
+	*major = input->readInt<uint16_t>();
+	*minor = input->readInt<uint16_t>();
+	*variant = input->readInt<uint16_t>();
 }
 
 const ProtocolVersion *Protocol::version() const noexcept

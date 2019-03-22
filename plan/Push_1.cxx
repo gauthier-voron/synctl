@@ -123,8 +123,8 @@ bool Push_1::_pushDirectory(const Context *context, Reference *reference)
 		return true;
 	dlen = null.written();
 
-	context->output->write(&op, sizeof (op));
-	context->output->write(&dlen, sizeof (dlen));
+	context->output->writeInt(op);
+	context->output->writeInt(dlen);
 	dir.write(context->output, nullptr);
 
 	return true;
@@ -153,8 +153,8 @@ bool Push_1::_pushRegular(const Context *context, Reference *reference)
 
 	flen = context->stat.st_size;
 
-	context->output->write(&op, sizeof (op));
-	context->output->write(&flen, sizeof (flen));
+	context->output->writeInt(op);
+	context->output->writeInt(flen);
 	reg = Regular_1::makeFrom(context->apath);
 	reg.write(context->output, nullptr);
 
@@ -177,7 +177,7 @@ bool Push_1::_pushSymlink(const Context *context, Reference *reference)
 	if (_isReferenceKnown(*reference))
 		return true;
 
-	context->output->write(&op, sizeof (op));
+	context->output->writeInt(op);
 	link.write(context->output, nullptr);
 
 	return true;
@@ -212,6 +212,6 @@ void Push_1::push(OutputStream *output, const string &root)
 	_pushEntry(&ctx, &holder);
 
 	op = OP_TREE_REFERENCE;
-	output->write(&op, sizeof (op));
+	output->writeInt(op);
 	output->write(holder.data(), holder.size());
 }

@@ -30,7 +30,7 @@ void FilterCodec::encode(const Filter *filter, OutputStream *output) const
 		throw 0;
 	}
 
-	output->write(&op, sizeof (op));
+	output->writeInt(op);
 
 	if (filter != nullptr)
 		filter->write(output);
@@ -41,7 +41,7 @@ unique_ptr<Filter> FilterCodec::decode(InputStream *input) const
 	unique_ptr<Filter> ret;
 	opcode_t op;
 
-	input->readall(&op, sizeof (op));
+	op = input->readInt<opcode_t>();
 
 	switch (op) {
 	case OP_FLT_NONE:   ret = nullptr; break;
