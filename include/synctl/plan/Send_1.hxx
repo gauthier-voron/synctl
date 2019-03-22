@@ -2,6 +2,7 @@
 #define _INCLUDE_SYNCTL_SEND_1_HXX_
 
 
+#include <cstdint>
 #include <string>
 
 #include "synctl/tree/Filter.hxx"
@@ -36,10 +37,10 @@ class Send_1
 	void _sendObject(const Context *context);
 
 	void _transfer(const Context *context, InputStream *input,
-		       size_t size);
+		       uint64_t size);
 
 	void _sendDirectory(const Context *context, InputStream *input,
-			    size_t size);
+			    uint64_t size);
 
 
  public:

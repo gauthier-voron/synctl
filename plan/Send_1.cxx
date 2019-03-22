@@ -66,7 +66,8 @@ void Send_1::_sendObject(const Context *context)
 	}
 }
 
-void Send_1::_transfer(const Context *context, InputStream *input, size_t size)
+void Send_1::_transfer(const Context *context, InputStream *input,
+		       uint64_t size)
 {
 	uint8_t buffer[TRANSFER_BUFFER_SIZE];
 	size_t did;
@@ -80,7 +81,7 @@ void Send_1::_transfer(const Context *context, InputStream *input, size_t size)
 }
 
 void Send_1::_sendDirectory(const Context *context, InputStream *input,
-			    size_t size)
+			    uint64_t size)
 {
 	NullOutputStream null;
 	vector<Context> ctxs;
