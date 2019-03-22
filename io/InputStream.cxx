@@ -4,11 +4,13 @@
 #include <cstdlib>
 
 #include "synctl/io/EOFException.hxx"
+#include "synctl/io/IOException.hxx"
 
 
 using std::string;
 using synctl::EOFException;
 using synctl::InputStream;
+using synctl::IOException;
 
 
 InputStream::~InputStream()
@@ -24,7 +26,7 @@ size_t InputStream::read(uint8_t *dest, size_t len)
 	for (i = 0; i < len; i++) {
 		buf = read();
 		if (buf == -1)
-			return i;
+			throw IOException();
 		dest[i] = static_cast<uint8_t> (buf);
 	}
 
@@ -33,8 +35,14 @@ size_t InputStream::read(uint8_t *dest, size_t len)
 
 void InputStream::readall(uint8_t *dest, size_t len)
 {
-	if (read(dest, len) != len)
-		throw EOFException();
+	size_t s, done = 0;
+
+	while (done < len) {
+		s = read(dest + done, len - done);
+		if (s == 0)
+			throw EOFException();
+		done += s;
+	}
 }
 
 string InputStream::readStr()
