@@ -63,6 +63,8 @@ validation-test: test/execute.sh $(BIN)synctl
           --executable $(BIN)synctl-gcov         \
           $(if $(filter $(V), 0 1 2), --silent))
 
+benchmark: test/execute.sh $(BIN)synctl
+	$(call cmd-call, $< --mode benchmark)
 
 coverage: $(COV)coverage.csv
 
