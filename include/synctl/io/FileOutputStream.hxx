@@ -16,7 +16,8 @@ class FileOutputStream : public FdOutputStream
 {
  public:
 	FileOutputStream();
-	FileOutputStream(const std::string path);
+	FileOutputStream(const std::string &path);
+	FileOutputStream(const std::string &path, int flags);
 	FileOutputStream(const FileOutputStream &other) = delete;
 	FileOutputStream(FileOutputStream &&other);
 	virtual ~FileOutputStream() = default;
