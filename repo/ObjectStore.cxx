@@ -187,10 +187,9 @@ void ObjectStore::initialize() const
 unique_ptr<InputStream> ObjectStore::readObject(const Reference &ref) const
 {
 	unique_ptr<InputStream> input = _readReferencePath(ref);
-	Refcount refcnt;
 
 	if (input != nullptr)
-		input->readall(&refcnt, sizeof (refcnt));
+		input->readInt<Refcount>();
 
 	return input;
 }
@@ -216,7 +215,7 @@ ObjectStore::Refcount ObjectStore::readRefcount(const Reference &reference)
 	Refcount refcnt = 0;
 
 	if (input != nullptr)
-		input->readall(&refcnt, sizeof (refcnt));
+		refcnt = input->readInt<Refcount>();
 
 	return refcnt;
 }
@@ -226,7 +225,7 @@ void ObjectStore::writeRefcount(const Reference &reference, Refcount cnt)
 	unique_ptr<OutputStream> output = _writeReferencePath(reference,false);
 
 	if (output != nullptr)
-		output->write(&cnt, sizeof (cnt));
+		output->writeInt(cnt);
 }
 
 void ObjectStore::takeReference(const Reference &reference)
@@ -241,7 +240,7 @@ unique_ptr<TransientOutputStream> ObjectStore::newObject()
 	FileOutputStream output = FileOutputStream(path);
 	Refcount refcnt = 0;
 
-	output.write(&refcnt, sizeof (refcnt));
+	output.writeInt(refcnt);
 
 	return make_unique<TransientOutputStream>(this, path, move(output));
 }
@@ -251,7 +250,7 @@ unique_ptr<OutputStream> ObjectStore::newObject(const Reference &reference)
 	unique_ptr<OutputStream> output = _writeReferencePath(reference, true);
 	Refcount refcnt = 0;
 
-	output->write(&refcnt, sizeof (refcnt));
+	output->writeInt(refcnt);
 
 	return output;
 }
