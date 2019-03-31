@@ -1,0 +1,88 @@
+#!/bin/bash
+#
+#   bench - invoke configuration specific benchmarking commands
+#
+#   Different users may want to benchmark different setups. Users can control
+#   the benchmarked setup by writing shell functions in a configuration file.
+#   These function defines what to do during an operation (e.g. a push, pull,
+#   ect...), what server to contact and so on.
+#   The bench tool load the configuration file and invoke the appropriate
+#   functions during the benchmark executions.
+#
+
+# Directory containing the bench tool.
+#
+BENCH_DIRECTORY="${0%/*}"
+
+# Root directory of the project, assuming this file is in 'test/tools'.
+#
+ROOT_DIRECTORY="${BENCH_DIRECTORY}/../.."
+
+# Local configuration directory of the project.
+#
+CONFIG_DIRECTORY="${ROOT_DIRECTORY}/.config"
+
+# The configuration file to use.
+#
+BENCHMARK_CONFIGURATION="${CONFIG_DIRECTORY}/benchmark-config.sh"
+
+# The template file to copy as configurtion file if none found.
+#
+BENCHMARK_TEMPLATE="${ROOT_DIRECTORY}/test/template-benchmark-config.sh"
+
+
+# Ensure that a benchmark configuration file exists.
+# If not, create it from the template file and ask the user to edit it.
+#
+ensure_configuration_exists() {
+    local path="${BENCHMARK_CONFIGURATION}"
+    local dir="${CONFIG_DIRECTORY}"
+    local template="${BENCHMARK_TEMPLATE}"
+    local editor="$EDITOR"
+
+    if [ ! -f "$path" -o ! -r "$path" ] ; then
+
+	if [ ! -d "$dir" ] ; then
+	    if ! mkdir "$dir" ; then
+		echo "$0: cannot create configuration directory '$dir'" >&2
+		exit 1
+	    fi
+	fi
+
+	cp "$template" "$path"
+
+	if [ "x$editor" = 'x' ] ; then
+	    vi "$path"
+	else
+	    "$editor" "$path"
+	fi
+    fi
+}
+
+# Load the user defined functions for the bench.
+#
+load_configuration() {
+    ensure_configuration_exists
+    source "${BENCHMARK_CONFIGURATION}"
+}
+
+
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+#                           Main script starts here
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+load_configuration
+
+command="$1" ; shift
+
+if [ "x$command" = 'x' ] ; then
+    echo "missing command operand" >&2
+    exit 1
+fi
+
+if ! type "$command" | grep -q 'function' ; then
+    echo "unknown command '$command'" >&2
+    exit 1
+fi
+
+"$command" "$@"
