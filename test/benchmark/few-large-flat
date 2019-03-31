@@ -1,0 +1,36 @@
+#!/bin/bash
+
+NUM_SECTOR=32
+LEN_SECTOR=4194304
+
+
+set -e
+set -x
+
+
+mkdir 'pushed' 'pulled' 'init'
+mkflat ${NUM_SECTOR} 'init/%05d' ${LEN_SECTOR}
+cat 'init/'* > 'pushed/root'
+
+measure 'operation,different sectors (%),time'
+
+bench synctl_init
+bench synctl_push --root='pushed/root'
+measure 'push,0' bench synctl_push --root='pushed/root'
+measure 'pull,0' bench synctl_pull --root='pushed/root'
+bench synctl_cleanup
+
+for i in 1 8 32 ; do
+    percent=$(( ( i * 100 ) / NUM_SECTOR ))
+    bench synctl_init
+    bench synctl_push --root='pushed/root'
+    rm -rf 'pulled/root'
+    cat 'init/'* > 'pulled/root'
+    cp -R 'init' 'tmp'
+    mkflat $i 'tmp/%05d' ${LEN_SECTOR}
+    cat 'tmp/'* > 'pushed/root'
+    rm -rf 'tmp'
+    measure "push,${percent}" bench synctl_push --root='pushed/root'
+    measure "pull,${percent}" bench synctl_pull --root='pulled/root'
+    bench synctl_cleanup
+done
