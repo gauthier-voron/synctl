@@ -6,7 +6,6 @@
 
 #include <cstdint>
 #include <memory>
-#include <random>
 #include <string>
 
 #include "synctl/io/Directory.hxx"
@@ -15,6 +14,7 @@
 #include "synctl/io/IOException.hxx"
 #include "synctl/io/InputStream.hxx"
 #include "synctl/io/OutputStream.hxx"
+#include "synctl/io/Path.hxx"
 #include "synctl/io/TransientOutputStream.hxx"
 #include "synctl/tree/Reference.hxx"
 #include "synctl/repo/OverwriteException.hxx"
@@ -25,10 +25,7 @@
 
 using std::make_unique;
 using std::move;
-using std::mt19937;
-using std::random_device;
 using std::string;
-using std::uniform_int_distribution;
 using std::unique_ptr;
 using synctl::Directory;
 using synctl::FileInputStream;
@@ -137,40 +134,6 @@ unique_ptr<OutputStream> ObjectStore::_writeReferencePath(const Reference &ref,
 	return make_unique<FileOutputStream>(path);
 }
 
-string ObjectStore::_buildTransientPath() const
-{
-	random_device rd;
-	mt19937 gen = mt19937(rd());
-	uniform_int_distribution<uint64_t> dis;
-	uint64_t number, digit;
-	struct stat st;
-	size_t i, len;
-	string path;
-	int ret;
-
-	path = _path;
-	path += "/transient-";
-	len = path.length();
-
-	do {
-		path.resize(len);
-		number = dis(gen);
-		for (i = 0; i < TRANSIENT_NAME_LENGTH; i++) {
-			digit = number & 0xf;
-			if (digit < 10)
-				digit = digit + '0';
-			else
-				digit = digit - 10 + 'a';
-			path.push_back(static_cast<char> (digit));
-			number >>= 4;
-		}
-
-		ret = stat(path.c_str(), &st);
-	} while (ret == 0);
-
-	return path;
-}
-
 ObjectStore::ObjectStore(const string &path)
 	: _path(path)
 {
@@ -236,13 +199,13 @@ void ObjectStore::takeReference(const Reference &reference)
 
 unique_ptr<TransientOutputStream> ObjectStore::newObject()
 {
-	string path = _buildTransientPath();
-	FileOutputStream output = FileOutputStream(path);
+	string path = _path + "/transient-";
+	FileOutputStream out = randomHexOutput(&path, TRANSIENT_NAME_LENGTH);
 	Refcount refcnt = 0;
 
-	output.writeInt(refcnt);
+	out.writeInt(refcnt);
 
-	return make_unique<TransientOutputStream>(this, path, move(output));
+	return make_unique<TransientOutputStream>(this, path, move(out));
 }
 
 unique_ptr<OutputStream> ObjectStore::newObject(const Reference &reference)
