@@ -15,9 +15,6 @@
 #include "synctl/repo/Repository.hxx"
 
 
-using std::cin;
-using std::cout;
-using std::endl;
 using std::string;
 using std::unique_ptr;
 using std::vector;

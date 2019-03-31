@@ -120,11 +120,11 @@ bool Push_1::_pushDirectory(const Context *context, Reference *reference)
  write:
 	dir.write(&null, reference);
 	if (_isReferenceKnown(*reference))
-		return false;
+		return true;
 	dlen = null.written();
 
-	context->output->write(&op, sizeof (op));
-	context->output->write(&dlen, sizeof (dlen));
+	context->output->writeInt(op);
+	context->output->writeInt(dlen);
 	dir.write(context->output, nullptr);
 
 	return true;
@@ -145,7 +145,7 @@ bool Push_1::_pushRegular(const Context *context, Reference *reference)
 		reg = Regular_1::makeFrom(context->apath);
 		reg.write(&null, reference);
 		if (_isReferenceKnown(*reference))
-			return false;
+			return true;
 	} catch (IOException &) {
 		// TODO: indicate it?
 		return false;
@@ -153,8 +153,8 @@ bool Push_1::_pushRegular(const Context *context, Reference *reference)
 
 	flen = context->stat.st_size;
 
-	context->output->write(&op, sizeof (op));
-	context->output->write(&flen, sizeof (flen));
+	context->output->writeInt(op);
+	context->output->writeInt(flen);
 	reg = Regular_1::makeFrom(context->apath);
 	reg.write(context->output, nullptr);
 
@@ -175,9 +175,9 @@ bool Push_1::_pushSymlink(const Context *context, Reference *reference)
 
 	link.write(&null, reference);
 	if (_isReferenceKnown(*reference))
-		return false;
+		return true;
 
-	context->output->write(&op, sizeof (op));
+	context->output->writeInt(op);
 	link.write(context->output, nullptr);
 
 	return true;
@@ -195,9 +195,9 @@ void Push_1::setFilter(Filter *filter)
 
 void Push_1::push(OutputStream *output, const string &root)
 {
-	opcode_t op = OP_TREE_NONE;
 	Reference holder;
 	Context ctx;
+	opcode_t op;
 	int ret;
 
 	ctx.apath = root;
@@ -210,5 +210,8 @@ void Push_1::push(OutputStream *output, const string &root)
 		throw 0;
 
 	_pushEntry(&ctx, &holder);
-	output->write(&op, sizeof (op));
+
+	op = OP_TREE_REFERENCE;
+	output->writeInt(op);
+	output->write(holder.data(), holder.size());
 }

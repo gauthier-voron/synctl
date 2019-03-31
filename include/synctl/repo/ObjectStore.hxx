@@ -31,6 +31,8 @@ class ObjectStore
 	std::unique_ptr<OutputStream>
 	_writeReferencePath(const Reference &reference, bool exclusive);
 
+	std::string _buildTransientPath() const;
+
 
  public:
 	using Refcount = uint32_t;
@@ -61,6 +63,8 @@ class ObjectStore
 
 	std::unique_ptr<OutputStream>
 	newObject(const Reference &reference);
+
+	void putObject(const std::string &path, const Reference &reference);
 };
 
 

@@ -29,7 +29,6 @@ class FdInputStream : public InputStream
 	virtual size_t read(uint8_t *dest, size_t len);
 	using InputStream::read;
 
-	virtual void readall(uint8_t *dest, size_t len);
 	using InputStream::readall;
 
 	virtual void close();

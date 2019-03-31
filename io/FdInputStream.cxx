@@ -59,18 +59,6 @@ size_t FdInputStream::read(uint8_t *dest, size_t len)
 	return ((size_t) ssize);
 }
 
-void FdInputStream::readall(uint8_t *dest, size_t len)
-{
-	size_t r, done = 0;
-
-	while (done < len) {
-		r = read(dest + done, len - done);
-		if (r == 0)
-			throw EOFException("cannot read properly");
-		done += r;
-	}
-}
-
 void FdInputStream::close()
 {
 	if (_fd >= 0)

@@ -29,11 +29,9 @@ bool Receive_1::_receiveEntry(const Context *context)
 {
 	opcode_t op;
 
-	context->input->readall(&op, sizeof (op));
+	op = context->input->readInt<opcode_t>();
 
 	switch (op) {
-	case OP_TREE_NONE:
-		return false;
 	case OP_TREE_REGULAR_1:
 		_receiveRegular(context);
 		break;
@@ -43,6 +41,10 @@ bool Receive_1::_receiveEntry(const Context *context)
 	case OP_TREE_DIRECTORY_1:
 		_receiveDirectory(context);
 		break;
+	case OP_TREE_REFERENCE:
+		context->input->readall(context->reference->data(),
+					context->reference->size());
+		return false;
 	default:
 		throw 0;
 	}
@@ -58,12 +60,12 @@ void Receive_1::_receiveDirectory(const Context *context)
 	Directory_1 dir;
 	uint64_t dlen;
 
-	context->input->readall(&dlen, sizeof (dlen));
+	dlen = context->input->readInt<uint64_t>();
 	lis = LimitedInputStream(context->input, dlen);
 	dir.read(&lis, nullptr);
 
 	tos = context->repository->newObject();
-	tos->write(&op, sizeof (op));
+	tos->writeInt(op);
 	dir.write(tos.get(), context->reference);
 
 	for (Directory_1::Entry &child : dir.getChildren())
@@ -84,7 +86,7 @@ void Receive_1::_receiveRegular(const Context *context)
 	Regular_1 reg;
 	uint64_t flen;
 
-	context->input->readall(&flen, sizeof (flen));
+	flen = context->input->readInt<uint64_t>();
 	lis = LimitedInputStream(context->input, flen);
 
 	tos = context->repository->newObject();

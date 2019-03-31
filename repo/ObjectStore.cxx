@@ -14,12 +14,17 @@
 #include "synctl/io/IOException.hxx"
 #include "synctl/io/InputStream.hxx"
 #include "synctl/io/OutputStream.hxx"
+#include "synctl/io/Path.hxx"
 #include "synctl/io/TransientOutputStream.hxx"
 #include "synctl/tree/Reference.hxx"
 #include "synctl/repo/OverwriteException.hxx"
 
 
+#define TRANSIENT_NAME_LENGTH   20
+
+
 using std::make_unique;
+using std::move;
 using std::string;
 using std::unique_ptr;
 using synctl::Directory;
@@ -145,10 +150,9 @@ void ObjectStore::initialize() const
 unique_ptr<InputStream> ObjectStore::readObject(const Reference &ref) const
 {
 	unique_ptr<InputStream> input = _readReferencePath(ref);
-	Refcount refcnt;
 
 	if (input != nullptr)
-		input->readall(&refcnt, sizeof (refcnt));
+		input->readInt<Refcount>();
 
 	return input;
 }
@@ -174,7 +178,7 @@ ObjectStore::Refcount ObjectStore::readRefcount(const Reference &reference)
 	Refcount refcnt = 0;
 
 	if (input != nullptr)
-		input->readall(&refcnt, sizeof (refcnt));
+		refcnt = input->readInt<Refcount>();
 
 	return refcnt;
 }
@@ -184,7 +188,7 @@ void ObjectStore::writeRefcount(const Reference &reference, Refcount cnt)
 	unique_ptr<OutputStream> output = _writeReferencePath(reference,false);
 
 	if (output != nullptr)
-		output->write(&cnt, sizeof (cnt));
+		output->writeInt(cnt);
 }
 
 void ObjectStore::takeReference(const Reference &reference)
@@ -195,7 +199,13 @@ void ObjectStore::takeReference(const Reference &reference)
 
 unique_ptr<TransientOutputStream> ObjectStore::newObject()
 {
-	return make_unique<TransientOutputStream>(this);
+	string path = _path + "/transient-";
+	FileOutputStream out = randomHexOutput(&path, TRANSIENT_NAME_LENGTH);
+	Refcount refcnt = 0;
+
+	out.writeInt(refcnt);
+
+	return make_unique<TransientOutputStream>(this, path, move(out));
 }
 
 unique_ptr<OutputStream> ObjectStore::newObject(const Reference &reference)
@@ -203,7 +213,21 @@ unique_ptr<OutputStream> ObjectStore::newObject(const Reference &reference)
 	unique_ptr<OutputStream> output = _writeReferencePath(reference, true);
 	Refcount refcnt = 0;
 
-	output->write(&refcnt, sizeof (refcnt));
+	output->writeInt(refcnt);
 
 	return output;
+}
+
+void ObjectStore::putObject(const string &path, const Reference &reference)
+{
+	string dest = _buildReferencePath(reference);
+	struct stat st;
+	int ret;
+
+	if (::stat(dest.c_str(), &st) == 0)
+		throw OverwriteException();
+
+	ret = ::rename(path.c_str(), dest.c_str());
+	if (ret != 0)
+		throw IOException();
 }

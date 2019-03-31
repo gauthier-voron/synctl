@@ -24,9 +24,19 @@ FileOutputStream::FileOutputStream()
 {
 }
 
-FileOutputStream::FileOutputStream(const string path)
+FileOutputStream::FileOutputStream(const string &path)
 {
 	int fd = open(path.c_str(), O_WRONLY | O_CREAT, 0600);
+
+	if (fd == -1)
+		throw IOException("cannot open file");
+
+	FdOutputStream::operator=(FdOutputStream(fd));
+}
+
+FileOutputStream::FileOutputStream(const string &path, int flags)
+{
+	int fd = open(path.c_str(), O_WRONLY | O_CREAT | flags, 0600);
 
 	if (fd == -1)
 		throw IOException("cannot open file");

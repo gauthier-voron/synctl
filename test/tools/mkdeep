@@ -1,0 +1,71 @@
+#!/bin/bash
+#
+#   mkdeep - generate random file hierarchy
+#
+#   Usage: mkdeep <root> <depth> <children> <dir-pattern> <file-pattern> <size>
+#
+#   Generate a file hierarchy with the specified depth, each level having the
+#   specified number of child directory except for the last level which has
+#   this number of regular files.
+#   Each produced directory and file has the specified pattern.
+#   The files have the specfied size.
+#
+
+
+set -e
+
+
+root="$1" ; shift
+depth=$1 ; shift
+children=$1 ; shift
+dpattern="$1" ; shift
+fpattern="$1" ; shift
+size=$1 ; shift
+
+ncpu=$(grep 'processor' '/proc/cpuinfo' | wc -l)
+ntask=1
+
+if [ $children -gt 1 ] ; then
+    while [ $ntask -lt $ncpu ] ; do
+	ntask=$(( ntask * children ))
+    done
+fi
+
+mkbranch() {
+    local depth=$1 ; shift
+    local root="$1" ; shift
+    local ntask=$1 ; shift
+    local ctask i dir file
+
+    if [ $depth -eq 0 ] ; then
+	for i in $(seq 0 $(( children - 1 ))) ; do
+	    file=$(printf "%s/$fpattern" "$root" $i)
+	    dd if='/dev/urandom' of="$file" count=1 bs=$size \
+	       > /dev/null 2> /dev/null
+	done
+	return 0
+    fi
+
+    if [ $ntask -gt $children ] ; then
+	ctask=$(( ntask / children ))
+    else
+	ctask=1
+    fi
+
+    for i in $(seq 0 $(( children - 1 ))) ; do
+	(
+	    dir="$(printf "%s/$dpattern" "$root" $i)"
+	    if [ ! -d "$dir" ] ; then
+		mkdir "$dir"
+	    fi
+	    mkbranch $(( depth - 1 )) "$dir" $ctask
+	) &
+	if [ $ntask -eq 1 ] ; then
+	    wait
+	fi
+    done
+
+    wait
+}
+
+mkbranch $depth "$root" $ntask

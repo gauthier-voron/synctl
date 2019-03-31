@@ -30,7 +30,7 @@ void PatternCodec::encode(const Pattern *pattern, OutputStream *output) const
 		throw 0;
 	}
 
-	output->write(&op, sizeof (op));
+	output->writeInt(op);
 
 	if (pattern != nullptr)
 		pattern->write(output);
@@ -41,7 +41,7 @@ unique_ptr<Pattern> PatternCodec::decode(InputStream *input) const
 	unique_ptr<Pattern> ret;
 	opcode_t op;
 
-	input->readall(&op, sizeof (op));
+	op = input->readInt<opcode_t>();
 
 	switch (op) {
 	case OP_PAT_NONE: ret = nullptr; break;

@@ -1,0 +1,44 @@
+#!/bin/bash
+
+DEPTH=3
+CHILDREN=13
+
+
+set -e
+set -x
+
+
+mkdir 'pushed' 'pulled'
+mkdir 'pushed/root' 'pulled/root'
+mkdeep 'pushed/root' $DEPTH $CHILDREN 'dir%05d' 'file%05d' 8
+
+measure 'operation,change height (%),changed proportion (%),time'
+
+bench synctl_init
+bench synctl_push --root='pushed/root'
+measure 'push,0,0' bench synctl_push --root='pushed/root'
+measure 'pull,0,0' bench synctl_pull --root='pushed/root'
+bench synctl_cleanup
+
+for i in 0 1 2 3 ; do
+    hpercent=$(( ( i * 100 ) / $DEPTH ))
+    for j in 1 3 7 10 ; do
+	percent=$(( ( j * 100 ) / $CHILDREN ))
+	bench synctl_init
+	bench synctl_push --root='pushed/root'
+
+	root='pushed/root'
+	if [ $i -lt $DEPTH ] ; then
+	    for k in $(seq 0 $i) ; do
+		root="$root/dir00000"
+	    done
+	fi
+	mkdeep "$root" $i $j 'dir%05d' 'file%05d' 8
+
+        measure "push,${hpercent},${percent}" \
+		bench synctl_push --root='pushed/root'
+	measure "pull,${hpercent},${percent}" \
+		bench synctl_pull --root='pulled/root'
+	bench synctl_cleanup
+    done
+done

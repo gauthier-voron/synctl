@@ -1,0 +1,29 @@
+#!/bin/bash
+
+NUM_FILES=10000
+
+
+set -e
+
+
+mkdir 'pushed' 'pulled'
+mkdir 'pushed/root' 'pulled/root'
+mkflat ${NUM_FILES} 'pushed/root/%05d' 8
+
+measure 'operation,different files (%),time'
+
+bench synctl_init
+bench synctl_push --root='pushed/root'
+measure 'push,0' bench synctl_push --root='pushed/root'
+measure 'pull,0' bench synctl_pull --root='pushed/root'
+bench synctl_cleanup
+
+for i in 100 10 4 2 1 ; do
+    percent=$(( 100 / i ))
+    bench synctl_init
+    bench synctl_push --root='pushed/root'
+    mkflat $(( NUM_FILES / i )) 'pushed/root/%05d' 8
+    measure "push,${percent}" bench synctl_push --root='pushed/root'
+    measure "pull,${percent}" bench synctl_pull --root='pulled/root'
+    bench synctl_cleanup
+done

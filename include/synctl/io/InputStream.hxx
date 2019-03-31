@@ -2,6 +2,8 @@
 #define _INCLUDE_SYNCTL_INPUTSTREAM_HXX_
 
 
+#include <endian.h>
+
 #include <cstdint>
 #include <cstdlib>
 #include <string>
@@ -25,6 +27,8 @@ class InputStream
 	virtual std::string readStr();
 	virtual void readStr(std::string *dest);
 
+	template<typename T> T readInt();
+
 	virtual void close();
 };
 
@@ -42,6 +46,38 @@ template<typename T>
 void synctl::InputStream::readall(T *dest, size_t len)
 {
 	readall(reinterpret_cast<uint8_t *> (dest), len);
+}
+
+template<>
+inline uint8_t synctl::InputStream::readInt<uint8_t>()
+{
+	uint8_t ret;
+	readall(&ret, sizeof (ret));
+	return ret;
+}
+
+template<>
+inline uint16_t synctl::InputStream::readInt<uint16_t>()
+{
+	uint16_t ret;
+	readall(reinterpret_cast<uint8_t *> (&ret), sizeof (ret));
+	return le16toh(ret);
+}
+
+template<>
+inline uint32_t synctl::InputStream::readInt<uint32_t>()
+{
+	uint32_t ret;
+	readall(reinterpret_cast<uint8_t *> (&ret), sizeof (ret));
+	return le32toh(ret);
+}
+
+template<>
+inline uint64_t synctl::InputStream::readInt<uint64_t>()
+{
+	uint64_t ret;
+	readall(reinterpret_cast<uint8_t *> (&ret), sizeof (ret));
+	return le64toh(ret);
 }
 
 

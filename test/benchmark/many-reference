@@ -1,0 +1,23 @@
+#!/bin/bash
+
+NUM_FILES=10000
+num_ref=0
+
+
+set -e
+
+
+mkdir 'pushed' 'pulled'
+mkdir 'pushed/root' 'pulled/root'
+bench synctl_init
+
+measure "operation,reference count,time (s)"
+
+for i in 0 1 2 3 4 ; do
+    mkflat ${NUM_FILES} 'pushed/root/%05d' 8
+    measure "push,${num_ref}" bench synctl_push --root='pushed/root'
+    num_ref=$(( num_ref + NUM_FILES ))
+    measure "pull,${num_ref}" bench synctl_pull --root='pulled/root'
+done
+
+bench synctl_cleanup

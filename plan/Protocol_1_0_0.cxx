@@ -58,7 +58,7 @@ void Protocol_1_0_0::exit() const
 {
 	opcode_t op = OP_ACT_EXIT;
 
-	_channel->outputStream()->write(&op, sizeof (op));
+	_channel->outputStream()->writeInt(op);
 }
 
 void Protocol_1_0_0::push(const PushSettings &settings) const
@@ -70,7 +70,7 @@ void Protocol_1_0_0::push(const PushSettings &settings) const
 	Reference ref;
 	Push_1 pusher;
 
-	_channel->outputStream()->write(&op, sizeof (op));
+	_channel->outputStream()->writeInt(op);
 	_channel->outputStream()->writeStr(settings.branchName);
 
 	while (1) {
@@ -127,13 +127,13 @@ void Protocol_1_0_0::pull(const PullSettings &settings) const
 	FilterCodec codec;
 	Pull_1 puller;
 
-	_channel->outputStream()->write(&op, sizeof (op));
+	_channel->outputStream()->writeInt(op);
 	_channel->outputStream()->writeStr(settings.branchName);
 	_channel->outputStream()->writeStr(settings.snapshotName);
 
 	codec.encode(settings.filter, _channel->outputStream());
 
-	_channel->inputStream()->read(&op, sizeof (op));
+	op = _channel->inputStream()->readInt<opcode_t>();
 
 	switch (op) {
 	case OP_RET_OK:
@@ -164,7 +164,7 @@ void Protocol_1_0_0::_servePull(Repository *repository) const
 
 	if (branch == nullptr) {
 		op = OP_RET_INVBRANCH;
-		_channel->outputStream()->write(&op, sizeof (op));
+		_channel->outputStream()->writeInt(op);
 		return;
 	}
 
@@ -182,12 +182,12 @@ void Protocol_1_0_0::_servePull(Repository *repository) const
 
 	if (snapshot == nullptr) {
 		op = OP_RET_INVSNAPSHOT;
-		_channel->outputStream()->write(&op, sizeof (op));
+		_channel->outputStream()->writeInt(op);
 		return;
 	}
 
 	op = OP_RET_OK;
-	_channel->outputStream()->write(&op, sizeof (op));
+	_channel->outputStream()->writeInt(op);
 
 	sender.setFilter(filter.get());
 	sender.send(_channel->outputStream(), repository, snapshot->ref());
@@ -198,7 +198,7 @@ void Protocol_1_0_0::serve(Repository *repository) const
 	opcode_t op;
 
 	do {
-		_channel->inputStream()->readall(&op, sizeof (op));
+		op = _channel->inputStream()->readInt<opcode_t>();
 		switch (op) {
 		case OP_ACT_EXIT:
 			break;

@@ -6,9 +6,10 @@ typedef uint8_t opcode_t;
 
 
 #define OP_TREE_NONE          ((opcode_t) 0)
-#define OP_TREE_DIRECTORY_1   ((opcode_t) 1)
-#define OP_TREE_REGULAR_1     ((opcode_t) 2)
-#define OP_TREE_SYMLINK_1     ((opcode_t) 3)
+#define OP_TREE_REFERENCE     ((opcode_t) 1)
+#define OP_TREE_DIRECTORY_1   ((opcode_t) 2)
+#define OP_TREE_REGULAR_1     ((opcode_t) 3)
+#define OP_TREE_SYMLINK_1     ((opcode_t) 4)
 
 #define OP_FLT_NONE           ((opcode_t) 0)
 #define OP_FLT_FMATCH         ((opcode_t) 1)
