@@ -1,0 +1,39 @@
+#!/bin/bash
+#
+#   measure - measure the time a command takes to execute
+#
+#   Usage: measure <title> <command> <args...>     (1)
+#          measure <header>                        (2)
+#
+#   (1) Execute the given command with the provided arguments and measure its
+#       execution time. Report this time along with the specified title at
+#       csv format on stderr or in $MEASURE_OUTPUT if this environment variable
+#       is not empty.
+#
+#   (2) Print the specified header on stderr or in $MEASURE_OUTPUT if this
+#       environment variable is not empty.
+#
+
+if [ "x${MEASURE_OUTPUT}" != 'x' ] ; then
+    printf '%s' "$1" >> "${MEASURE_OUTPUT}" ; shift
+
+    if [ $# -eq 0 ] ; then
+	printf '\n' >> "${MEASURE_OUTPUT}"
+	exit 0
+    else
+	printf ',' >> "${MEASURE_OUTPUT}"
+    fi
+
+    /usr/bin/time --format='%e' --output="${MEASURE_OUTPUT}" --append "$@"
+else
+    printf '%s' "$1" >&2 ; shift
+
+    if [ $# -eq 0 ] ; then
+	printf '\n' >&2
+	exit 0
+    else
+	printf ',' >&2
+    fi
+
+    /usr/bin/time --format='%e' "$@"
+fi
