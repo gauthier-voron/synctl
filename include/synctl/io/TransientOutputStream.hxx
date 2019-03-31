@@ -6,6 +6,7 @@
 #include <cstdlib>
 #include <string>
 
+#include "synctl/io/FileOutputStream.hxx"
 #include "synctl/io/OutputStream.hxx"
 
 
@@ -18,13 +19,15 @@ class Reference;
 
 class TransientOutputStream : public OutputStream
 {
-	ObjectStore  *_ostore = nullptr;
-	std::string   _buffer;
+	ObjectStore       *_ostore = nullptr;
+	std::string        _path;
+	FileOutputStream   _output;
 
 
  public:
 	TransientOutputStream();
-	TransientOutputStream(ObjectStore *ostore);
+	TransientOutputStream(ObjectStore *ostore, const std::string &path,
+			      FileOutputStream &&output);
 	TransientOutputStream(const TransientOutputStream &other) = delete;
 	TransientOutputStream(TransientOutputStream &&other);
 	virtual ~TransientOutputStream();

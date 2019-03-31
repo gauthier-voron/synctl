@@ -6,6 +6,7 @@
 
 #include <cstdint>
 #include <memory>
+#include <random>
 #include <string>
 
 #include "synctl/io/Directory.hxx"
@@ -19,8 +20,15 @@
 #include "synctl/repo/OverwriteException.hxx"
 
 
+#define TRANSIENT_NAME_LENGTH   20
+
+
 using std::make_unique;
+using std::move;
+using std::mt19937;
+using std::random_device;
 using std::string;
+using std::uniform_int_distribution;
 using std::unique_ptr;
 using synctl::Directory;
 using synctl::FileInputStream;
@@ -129,6 +137,40 @@ unique_ptr<OutputStream> ObjectStore::_writeReferencePath(const Reference &ref,
 	return make_unique<FileOutputStream>(path);
 }
 
+string ObjectStore::_buildTransientPath() const
+{
+	random_device rd;
+	mt19937 gen = mt19937(rd());
+	uniform_int_distribution<uint64_t> dis;
+	uint64_t number, digit;
+	struct stat st;
+	size_t i, len;
+	string path;
+	int ret;
+
+	path = _path;
+	path += "/transient-";
+	len = path.length();
+
+	do {
+		path.resize(len);
+		number = dis(gen);
+		for (i = 0; i < TRANSIENT_NAME_LENGTH; i++) {
+			digit = number & 0xf;
+			if (digit < 10)
+				digit = digit + '0';
+			else
+				digit = digit - 10 + 'a';
+			path.push_back(static_cast<char> (digit));
+			number >>= 4;
+		}
+
+		ret = stat(path.c_str(), &st);
+	} while (ret == 0);
+
+	return path;
+}
+
 ObjectStore::ObjectStore(const string &path)
 	: _path(path)
 {
@@ -195,7 +237,13 @@ void ObjectStore::takeReference(const Reference &reference)
 
 unique_ptr<TransientOutputStream> ObjectStore::newObject()
 {
-	return make_unique<TransientOutputStream>(this);
+	string path = _buildTransientPath();
+	FileOutputStream output = FileOutputStream(path);
+	Refcount refcnt = 0;
+
+	output.write(&refcnt, sizeof (refcnt));
+
+	return make_unique<TransientOutputStream>(this, path, move(output));
 }
 
 unique_ptr<OutputStream> ObjectStore::newObject(const Reference &reference)
@@ -206,4 +254,18 @@ unique_ptr<OutputStream> ObjectStore::newObject(const Reference &reference)
 	output->write(&refcnt, sizeof (refcnt));
 
 	return output;
+}
+
+void ObjectStore::putObject(const string &path, const Reference &reference)
+{
+	string dest = _buildReferencePath(reference);
+	struct stat st;
+	int ret;
+
+	if (::stat(dest.c_str(), &st) == 0)
+		throw OverwriteException();
+
+	ret = ::rename(path.c_str(), dest.c_str());
+	if (ret != 0)
+		throw IOException();
 }
