@@ -1,10 +1,11 @@
 #!/bin/bash
 #
-#   validation.sh - run a set of validation test scripts
+#   execute.sh - run a set of test/benchmark scripts
 #
-#   Execute executable provided on the command line or located in the
-#   validation test directory in a (relatively) safe environment, collect the
-#   log and the result and indicate if the tests are passing or not.
+#   Launch executables provided on the command line or located in the
+#   test / benchmark directory in a (relatively) safe environment, collect the
+#   log and the result, indicate if the cases are passing or not and write
+#   measure results on disk.
 #
 
 # Name of the script without the path.
@@ -16,26 +17,48 @@ SCRIPT_NAME="${0##*/}"
 #
 SCRIPT_PWD="$PWD"
 
-# Root directory of test cases.
+# Root directory of this script.
 # This script is expected to be under this directory.
 #
-TEST_ROOT="${0%/*}"
+SCRIPT_ROOT="${0%/*}"
 
-# Root directory for validation test cases.
+# Root directory of the project.
+#
+PROJECT_ROOT="${SCRIPT_ROOT}/.."
+
+# Root directory for test/benchmark cases.
 # This is where the script looks for if no script is provided on command line.
 #
-VALIDATION_ROOT="${TEST_ROOT}/validation"
+CASES_ROOT=
 
-# What to add to the PATH of executed test scripts.
+# Root directory for validation test cases.
+# This is the valud of CASES_ROOT when the mode is "validation".
+#
+VALIDATION_ROOT="${SCRIPT_ROOT}/validation"
+
+# Root directory for benchmark cases.
+# This is the valud of CASES_ROOT when the mode is "benchmark".
+#
+BENCHMARK_ROOT="${SCRIPT_ROOT}/benchmark"
+
+# What to add to the PATH of executed programs.
 # Each component (separated by ':') is made absolute before to be added to the
 # PATH variable.
 #
-VALIDATION_PATH="${TEST_ROOT}/../bin":"${TEST_ROOT}/tools"
+CASES_PATH="${PROJECT_ROOT}/bin":"${SCRIPT_ROOT}/tools"
 
 
 # What the user indicates for the --color option on the command line.
 #
 OPTION_COLOR=
+
+# What the user indicates for the --mode option on the command line.
+#
+OPTION_MODE=
+
+# What the user indicates for the --output option on the command line.
+#
+OPTION_OUTPUT=
 
 # What the user indicates for the --quiet option on the command line.
 #
@@ -60,34 +83,44 @@ OPTION_EXECUTABLE=
 #
 ATEXIT_SCRIPT=
 
-# The total number of test to do.
+# The total number of test/benchmark to do.
 #
-TEST_DONE=
+CASE_DONE=
 
-# The number of failed tests.
+# The number of failed test/benchmark.
 #
-TEST_FAILED=
+CASE_FAILED=
 
-# The name of the failed tests.
-# The name of a test is either the file name (without the path) of the script
-# if taken automatically from VALIDATION_ROOT, or what has been passed on the
-# command line.
+# The name of the failed test/benchmark cases.
+# The name of a case is either the file name (without the path) of the script
+# if taken automatically from the default directory, or what has been passed
+# on the command line.
 #
-TEST_FAILED_NAMES=()
+CASE_FAILED_NAMES=()
 
-# The maximum length (in number of character) of test number.
-# Equals to log_10(#test)
+# The maximum length (in number of character) of case number.
+# Equals to log_10(#case)
 #
-TEST_NUM_MAXLEN=0
+CASE_NUM_MAXLEN=0
 
-# The maximum length of test name.
+# The maximum length of case name.
 #
-TEST_NAME_MAXLEN=0
+CASE_NAME_MAXLEN=0
 
 # Use colored output.
 # 0 = yes / 1 = no
 #
 COLOR=1
+
+# Execution mode.
+# validation / benchmark
+#
+MODE='validation'
+
+# Output directory.
+# <empty> / <directory name>
+#
+OUTPUT=
 
 # Timeout to use for test cases.
 # 0 = no timeout
@@ -127,7 +160,30 @@ setup_color() {
 }
 
 
-# Setup the timeout for test cases, given the --timeout option and the default
+# Setup the mode, given the --mode option value and the default choice.
+#
+setup_mode() {
+    case "x${OPTION_MODE}" in
+	'x'|'xvalidation')
+	    MODE='validation'
+	    CASES_ROOT="${VALIDATION_ROOT}"
+	    ;;
+	'xbenchmark')
+	    MODE='benchmark'
+	    CASES_ROOT="${BENCHMARK_ROOT}"
+	    ;;
+    esac
+}
+
+
+# Setup the mode, given the --mode option value.
+#
+setup_output() {
+    OUTPUT="${OPTION_OUTPUT}"
+}
+
+
+# Setup the timeout for cases, given the --timeout option and the default
 # value.
 #
 setup_timeout() {
@@ -136,7 +192,7 @@ setup_timeout() {
     fi
 }
 
-# Indicate if a timeout must be used for test cases.
+# Indicate if a timeout must be used for cases.
 # Return: 0 = yes / 1 = no
 #
 has_timeout() {
@@ -175,10 +231,10 @@ maxlen() {
     echo $len
 }
 
-# Print the name of the test case currently executed.
-# Arg0: name of the test
+# Print the name of the case currently executed.
+# Arg0: name of the case
 #
-print_test() {
+print_case() {
     local name="$1" ; shift
     local num=$1 ; shift
     local cs ce head body
@@ -194,16 +250,16 @@ print_test() {
 	ce="\033[0m"
     fi
 
-    head="${cs}[${ce}%${TEST_NUM_MAXLEN}d${cs}/${ce}%d${cs}]${ce}"
-    body="%-${TEST_NAME_MAXLEN}s "
-    printf "${head} ${body}" $num ${TEST_DONE} "$name"
+    head="${cs}[${ce}%${CASE_NUM_MAXLEN}d${cs}/${ce}%d${cs}]${ce}"
+    body="%-${CASE_NAME_MAXLEN}s "
+    printf "${head} ${body}" $num ${CASE_DONE} "$name"
 }
 
-# Print the name and the result of the test case executed.
-# Arg0: name of the test
-# Arg1: exit value of the test
+# Print the name and the result of the case executed.
+# Arg0: name of the case
+# Arg1: exit value of the case
 #
-print_test_result() {
+print_case_result() {
     local name="$1" ; shift
     local num=$1 ; shift
     local ret=$1 ; shift
@@ -246,18 +302,18 @@ print_test_result() {
     fi
 
     if [ $ph -eq 1 ] ; then
-	head="${cs}[${ce}%${TEST_NUM_MAXLEN}d${cs}/${ce}%d${cs}]${ce}"
-	body="%-${TEST_NAME_MAXLEN}s "
-	printf "${head} ${body}" $num ${TEST_DONE} "$name"
+	head="${cs}[${ce}%${CASE_NUM_MAXLEN}d${cs}/${ce}%d${cs}]${ce}"
+	body="%-${CASE_NAME_MAXLEN}s "
+	printf "${head} ${body}" $num ${CASE_DONE} "$name"
     fi
 
     printf "${cs}%s${ce}\n" "$res"
 }
 
-# Print the log of the test case executed.
-# Arg0: path of the test log
+# Print the log of the case executed.
+# Arg0: path of the case log
 #
-print_test_log() {
+print_case_log() {
     local log="$1" ; shift
 
     if is_silent ; then
@@ -271,13 +327,13 @@ print_test_log() {
     fi
 }
 
-# Print the summary of the test cases, with the number of failed tests.
-# Return: 0 = no failed tests / 1 = at least one failed test.
+# Print the summary of the cases, with the number of failed cases.
+# Return: 0 = no failed cases / 1 = at least one failed case.
 #
-print_test_summary() {
+print_case_summary() {
     local name
 
-    if [ ${TEST_FAILED} -eq 0 ] ; then
+    if [ ${CASE_FAILED} -eq 0 ] ; then
 	if is_quiet ; then
 	    return 0
 	elif is_silent ; then
@@ -301,13 +357,14 @@ print_test_summary() {
 
 	echo
 	if use_color ; then
-	    printf "\033[31m::\033[0m Test failed : %d / %d\n" ${TEST_FAILED} ${TEST_DONE}
-	    for name in "${TEST_FAILED_NAMES[@]}" ; do
+	    printf "\033[31m::\033[0m Test failed : %d / %d\n" ${CASE_FAILED} \
+		   ${CASE_DONE}
+	    for name in "${CASE_FAILED_NAMES[@]}" ; do
 		printf "  \033[31m->\033[0m %s\n" "$name"
 	    done
 	else
-	    printf ":: Test failed : %d / %d\n" ${TEST_FAILED} ${TEST_DONE}
-	    for name in "${TEST_FAILED_NAMES[@]}" ; do
+	    printf ":: Test failed : %d / %d\n" ${CASE_FAILED} ${CASE_DONE}
+	    for name in "${CASE_FAILED_NAMES[@]}" ; do
 		printf "  -> %s\n" "$name"
 	    done
 	fi
@@ -332,18 +389,18 @@ absolute_path() {
     echo "$path"
 }
 
-# Print the name of the validation test scripts under the VALIDATION_ROOT.
+# Print the name of the scripts under the CASES_ROOT.
 # Print one name per line.
 #
-list_default_validation_cases() {
+list_default_cases() {
     local case
 
-    ls -1 "${VALIDATION_ROOT}" | while read case ; do
-	if [ ! -f "${VALIDATION_ROOT}/$case" ] ; then
+    ls -1 "${CASES_ROOT}" | while read case ; do
+	if [ ! -f "${CASES_ROOT}/$case" ] ; then
 	    continue
-	elif [ ! -r "${VALIDATION_ROOT}/$case" ] ; then
+	elif [ ! -r "${CASES_ROOT}/$case" ] ; then
 	    continue
-	elif [ ! -x "${VALIDATION_ROOT}/$case" ] ; then
+	elif [ ! -x "${CASES_ROOT}/$case" ] ; then
 	    continue
 	fi
 
@@ -457,20 +514,21 @@ setup_executable() {
 
 	ln -s "$(absolute_path "${OPTION_EXECUTABLE}")" "$epath/synctl"
 
-        VALIDATION_PATH="$epath:${VALIDATION_PATH}"
+        CASES_PATH="$epath:${CASES_PATH}"
     fi
 }
 
 # Setup the environment variables of the current process so it can execute a
-# test script.
+# case script.
 #
-setup_test_environment() {
+setup_case_environment() {
+    local results="$1" ; shift
     local comp apath
 
-    while [ "x${VALIDATION_PATH}" != 'x' ] ; do
-	comp=$(echo "${VALIDATION_PATH}" | cut -d':' -f1)
-	VALIDATION_PATH="${VALIDATION_PATH#$comp}"
-	VALIDATION_PATH="${VALIDATION_PATH#:}"
+    while [ "x${CASES_PATH}" != 'x' ] ; do
+	comp=$(echo "${CASES_PATH}" | cut -d':' -f1)
+	CASES_PATH="${CASES_PATH#$comp}"
+	CASES_PATH="${CASES_PATH#:}"
 
 	if [ "x$apath" != 'x' ] ; then
 	    apath="$apath:"
@@ -481,31 +539,42 @@ setup_test_environment() {
     done
 
     PATH="$apath:$PATH"
+
+    export MEASURE_OUTPUT="$(absolute_path "$results")"
 }
 
 
-# Execute a validation test case in a (relatively) secure environment with
-# possibility of a timeout and account for the test results.
+# Execute a case in a (relatively) secure environment with possibility of a
+# timeout and account for the test results.
 # Arg0: the path prefix to add to the test name to form the test path.
 # Arg1: the test name
 #
-execute_validation_case() {
+execute_case() {
     local prefix="$1" ; shift
     local name="$1" ; shift
     local num=$1 ; shift
     local path=$(absolute_path "${prefix}${name}")
     local sandbox=$(create_case_sandbox)
     local log=$(mktemp --suffix='.log' "${SCRIPT_NAME}.XXXXXX")
-    local vcpid skpid vcret
+    local vcpid skpid vcret results popresult
 
     push_atexit "rm '$log'"
 
-    print_test "$name" $num
+    if [ "x$MODE" = 'xbenchmark' -a "x$OUTPUT" != 'x' ] ; then
+	results="$OUTPUT/$name.csv"
+	popresult=0
+    else
+	results=$(mktemp --suffix='.csv' "${SCRIPT_NAME}.XXXXXX")
+	push_atexit "rm '$results'"
+	popresult=1
+    fi
+
+    print_case "$name" $num
 
     set -m
     (
 	cd "$sandbox"
-	setup_test_environment
+	setup_case_environment "$results"
 	exec "$path"
     ) > "$log" 2>&1 &
     vcpid=$!
@@ -531,14 +600,20 @@ execute_validation_case() {
 	wait $skpid
     fi
 
-    print_test_result "$name" $num $vcret
+    print_case_result "$name" $num $vcret
     if [ $vcret -ne 0 ] ; then
-	print_test_log "$log"
-	TEST_FAILED=$(( TEST_FAILED + 1 ))
-	TEST_FAILED_NAMES+=("$name")
+	print_case_log "$log"
+	CASE_FAILED=$(( CASE_FAILED + 1 ))
+	CASE_FAILED_NAMES+=("$name")
+    elif [ $popresult -eq 1 ] ; then
+	print_case_log "$results"
     fi
 
     pop_atexit
+
+    if [ $popresult -eq 1 ] ; then
+	pop_atexit
+    fi
 
     delete_case_sandbox "$sandbox"
 }
@@ -549,9 +624,9 @@ usage() {
     cat <<EOF
 Usage: ${SCRIPT_NAME} [<options...>] [<scripts...>]
 
-Execute validation test cases and report test logs and results.
-If no <script> is provided, execute all the executable files in
-'${VALIDATION_ROOT}'.
+Execute test / benchmark cases and report test logs and results.
+If no <script> is provided, execute all the executable files in the appropriate
+default cases directory.
 If at least one <script> is provided, execute only these scripts.
 
 Options:
@@ -560,13 +635,28 @@ Options:
 
   -h, --help                  Print this message and exit.
 
+  -m, --mode <mode>           Set the execution mode (see Modes section).
+
+  -o, --output <path>         Save all measures under <path>.
+
   -q, --quiet                 Print only failure reports.
 
   -s, --silent                Do not print anything except for errors.
 
-  -t, --timeout <sec>         Set a timeout for each validation test case.
+  -t, --timeout <sec>         Set a timeout for each case.
 
   -x, --executable <path>     Alias synctl as <path>. 
+
+Modes:
+
+  validation (default)        Run validation tests either from the command line
+                              or from the default directory ($VALIDATION_ROOT).
+                              Print case log in case of errors and print a
+                              case summary at the end.
+
+  benchmark                   Run benchmark cases either from the command line
+                              or from the default directory ($BENCHMARK_ROOT).
+                              Print case log in case of errors.
 
 EOF
 }
@@ -587,6 +677,42 @@ set_color() {
     fi
 
     OPTION_COLOR="$arg"
+}
+
+# Set the --mode option value.
+# If called more than once, then exit with fatal message
+# Arg0: the option value
+#
+set_mode() {
+    local arg="$1" ; shift
+
+    if [ "x$arg" = 'x' ] ; then
+	fatal "invalid empty value for mode option"
+    elif [ "$arg" != 'validation' -a "$arg" != 'benchmark' ] ; then
+	fatal "invalid value for color option: '$arg'"
+    elif [ "x${OPTION_MODE}" != 'x' ] ; then
+	fatal "option mode set twice: '${OPTION_MODE}' , '$arg'"
+    fi
+
+    OPTION_MODE="$arg"
+}
+
+# Set the --output option value.
+# If called more than once, then exit with fatal message
+# Arg0: the option value
+#
+set_output() {
+    local arg="$1" ; shift
+
+    if [ "x$arg" = 'x' ] ; then
+	fatal "invalid empty value for output option"
+    elif [ ! -d "$arg" -o ! -r "$arg" -o ! -w "$arg" -o ! -x "$arg" ] ; then
+	fatal "invalid value for output option: '$arg'"
+    elif [ "x${OPTION_OUTPUT}" != 'x' ] ; then
+	fatal "option output set twice: '${OPTION_OUTPUT}' , '$arg'"
+    fi
+
+    OPTION_OUTPUT="$arg"
 }
 
 # Set the --quiet option.
@@ -655,6 +781,8 @@ while [ $# -gt 0 ] ; do
     case "$1" in
 	'-c'|'--color')       shift; set_color "$1" ;;
 	'-h'|'--help')        usage; exit 0 ;;
+	'-m'|'--mode')        shift; set_mode "$1" ;;
+	'-o'|'--output')      shift; set_output "$1" ;;
 	'-q'|'--quiet')       set_quiet ;;
 	'-s'|'--silent')      set_silent ;;
 	'-t'|'--timeout')     shift; set_timeout "$1" ;;
@@ -669,39 +797,55 @@ done
 #
 setup_atexit
 setup_color
+setup_mode
+setup_output
 setup_timeout
 setup_executable
 
-TEST_FAILED=0
-TEST_FAILED_NAMES=()
-test_num=0
+if [ "x$MODE" = 'xbenchmark' ] ; then
+    "${SCRIPT_ROOT}/tools/bench" install_synctl
+fi
+
+CASE_FAILED=0
+CASE_FAILED_NAMES=()
+case_num=0
 
 if [ $# -eq 0 ] ; then
-    # No test path has been specified on the command line.
-    # Take the test cases from the VALIDATION_ROOT.
+    # No script path has been specified on the command line.
+    # Take the test cases from the CASES_ROOT.
     #
-    TEST_DONE=$(list_default_validation_cases | wc -l)
-    TEST_NAME_MAXLEN=$(maxlen $(list_default_validation_cases))
-    TEST_NUM_MAXLEN=$(maxlen ${TEST_DONE})
-    for case in $(list_default_validation_cases) ; do
-	    test_num=$(( test_num + 1 ))
-	    execute_validation_case "${VALIDATION_ROOT}/" "$case" ${test_num}
+    CASE_DONE=$(list_default_cases | wc -l)
+    CASE_NAME_MAXLEN=$(maxlen $(list_default_cases))
+    CASE_NUM_MAXLEN=$(maxlen ${CASE_DONE})
+    for case in $(list_default_cases) ; do
+	    case_num=$(( case_num + 1 ))
+	    execute_case "${CASES_ROOT}/" "$case" ${case_num}
     done
 else
-    # Some test cases has been specified on the command line.
+    # Some cases has been specified on the command line.
     # Execute them without asking questions.
     #
-    TEST_DONE=$#
-    TEST_NAME_MAXLEN=$(maxlen "$@")
-    TEST_NUM_MAXLEN=$(maxlen ${TEST_DONE})
+    CASE_DONE=$#
+    CASE_NAME_MAXLEN=$(maxlen "$@")
+    CASE_NUM_MAXLEN=$(maxlen ${CASE_DONE})
     for case in "$@" ; do
-	    test_num=$(( test_num + 1 ))
-	    execute_validation_case "" "$case" ${test_num}
+	    case_num=$(( case_num + 1 ))
+	    execute_case "" "$case" ${case_num}
     done
 fi
 
-# Print the test summary.
-# The print_test_summary() function exits with 0 if no test failed and 1
+# Print the summary.
+# The print_case_summary() function exits with 0 if no test failed and 1
 # otherwise, so we can simply call it at the very end of the script to have
 # this return value as the exit value.
-print_test_summary
+case "x$MODE" in
+    'xvalidation')
+	print_case_summary
+	;;
+    'xbenchmark')
+	test ${CASE_FAILED} -eq 0
+	;;
+    *)
+	false
+	;;
+esac

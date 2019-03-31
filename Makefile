@@ -53,13 +53,13 @@ all: $(BIN)synctl
 
 test: validation-test
 
-validation-test: test/validation.sh $(BIN)synctl
-	$(call cmd-call, $<,                  \
-          $(if $(filter $(V), 0), -s,         \
-          $(if $(filter $(V), 1), -q)))
+validation-test: test/execute.sh $(BIN)synctl
+	$(call cmd-call, $< --mode validation, \
+          $(if $(filter $(V), 0), --silent,    \
+          $(if $(filter $(V), 1), --quiet)))
 
-.validation-test-gcov: test/validation.sh $(BIN)synctl-gcov
-	-$(call cmd-call, $<,                    \
+.validation-test-gcov: test/execute.sh $(BIN)synctl-gcov
+	-$(call cmd-call, $< --mode validation,  \
           --executable $(BIN)synctl-gcov         \
           $(if $(filter $(V), 0 1 2), --silent))
 
