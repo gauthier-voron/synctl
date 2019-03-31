@@ -1,0 +1,38 @@
+#!/bin/bash
+#
+#   mkflat - generate random files
+#
+#   Generate a given number of files with a given name pattern and fill them
+#   with a specified number of random bytes.
+#
+
+
+num=$1 ; shift
+pattern="$1" ; shift
+size=$1 ; shift
+
+ncpu=$(grep 'processor' '/proc/cpuinfo' | wc -l)
+chunk=$(( num / ncpu ))
+did=0
+num=$(( num - 1 ))
+
+for i in $(seq 1 $ncpu) ; do
+    (
+	for j in $(seq $did $(( did + chunk - 1 ))) ; do
+	    file=$(printf "$pattern" $j)
+	    dd if='/dev/urandom' of="$file" count=1 bs=$size \
+	       > /dev/null 2> /dev/null
+	done
+    ) &
+    did=$(( did + chunk ))
+done
+
+if [ $did -le $num ] ; then
+    for j in $(seq $did $num) ; do
+	file=$(printf "$pattern" $j)
+	dd if='/dev/urandom' of="$file" count=1 bs=$size \
+	   > /dev/null 2> /dev/null
+    done
+fi
+
+wait
