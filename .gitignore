@@ -1,0 +1,5 @@
+.config
+.depends
+.depends.d
+bin
+obj
