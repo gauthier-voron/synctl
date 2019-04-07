@@ -4,12 +4,14 @@
 #include <sys/types.h>
 #include <unistd.h>
 
+#include <map>
 #include <set>
 #include <string>
 #include <vector>
 
 #include "synctl/io/Directory.hxx"
 #include "synctl/io/NullOutputStream.hxx"
+#include "synctl/io/Xattribute.hxx"
 #include "synctl/tree/Filter.hxx"
 #include "synctl/plan/Opcode.hxx"
 #include "synctl/tree/Directory_1.hxx"
@@ -18,6 +20,7 @@
 #include "synctl/tree/Symlink_1.hxx"
 
 
+using std::map;
 using std::set;
 using std::string;
 using std::vector;
@@ -71,6 +74,7 @@ bool Push_1::_pushDirectory(const Context *context, Reference *reference)
 {
 	Directory fsdir = Directory(context->apath);
 	opcode_t op = OP_TREE_DIRECTORY_1;
+	map<string, string> xattrs;
 	NullOutputStream null;
 	size_t pushedCount;
 	Directory_1 dir;
@@ -104,8 +108,14 @@ bool Push_1::_pushDirectory(const Context *context, Reference *reference)
 		if (ret < 0)
 			goto next;  // insufficient permission
 
+		try {
+			xattrs = getXattributes(ctx.apath);
+		} catch (IOException &) {
+			// unsupported on this filesystem
+		}
+
 		if (_pushEntry(&ctx, &ref)) {
-			dir.addChild(name, ctx.stat, ref);
+			dir.addChild(name, ctx.stat, xattrs, ref);
 			pushedCount += 1;
 		}
 

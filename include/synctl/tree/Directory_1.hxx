@@ -32,26 +32,39 @@ class Directory_1
 		uint64_t  mtime;
 	};
 
+	struct EntryXattr
+	{
+		std::string  name;
+		std::string  value;
+
+		EntryXattr(const std::string &name, const std::string &value);
+	};
+
 	struct EntryInfo
 	{
-		EntryStat    stat;
-		std::string  user;
-		std::string  group;
-		Reference    reference;
+		EntryStat                stat;
+		std::string              user;
+		std::string              group;
+		std::vector<EntryXattr>  xattrs;
+		Reference                reference;
 
 		EntryInfo() = default;
-		EntryInfo(const struct stat &stat, const Reference &reference);
+		EntryInfo(const struct stat &stat,
+			  const std::map<std::string, std::string> &xattrs,
+			  const Reference &reference);
 	};
 
 
  public:
 	struct Entry
 	{
-		std::string  name;
-		struct stat  stat;
-		Reference    reference;
+		std::string                         name;
+		struct stat                         stat;
+		std::map<std::string, std::string>  xattrs;
+		Reference                           reference;
 
 		Entry(const std::string &name, const struct stat &stat,
+		      const std::map<std::string, std::string> &xattrs,
 		      const Reference &reference);
 		Entry(const std::string &name, const EntryInfo &einfo);
 	};
@@ -61,10 +74,11 @@ class Directory_1
 	std::map<std::string, EntryInfo>  _children;
 
 
+	void _writeXattr(OutputStream *output, const EntryInfo &einfo) const;
 	void _writeInfo(OutputStream *output, const EntryInfo &einfo) const;
 	void _write(OutputStream *output) const;
 
-	bool _readCstr(InputStream *input, std::string *dest);
+	void _readXattr(InputStream *input, EntryInfo *einfo);
 	void _readInfo(InputStream *input, EntryInfo *einfo);
 	void _read(InputStream *input);
 
@@ -77,6 +91,7 @@ class Directory_1
 
 
 	void addChild(const std::string &name, const struct stat &statbuf,
+		      const std::map<std::string, std::string> &xattrs,
 		      const Reference &reference);
 
 	void removeChild(const std::string &path);
