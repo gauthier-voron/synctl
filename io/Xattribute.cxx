@@ -34,6 +34,18 @@ string synctl::getXattribute(const string &path, const string &name)
 	return value;
 }
 
+void synctl::setXattribute(const string &path, const string &name,
+			   const string &value)
+{
+	int ret;
+
+	ret = lsetxattr(path.c_str(), name.c_str(), value.data(),
+			value.size(), 0);
+
+	if (ret != 0)
+		throw IOException();
+}
+
 void synctl::getXattributes(const string &path, map<string, string> *dest)
 {
 	string buffer, name, value;
@@ -66,4 +78,11 @@ map<string, string> synctl::getXattributes(const string &path)
 
 	getXattributes(path, &ret);
 	return ret;
+}
+
+void synctl::setXattributes(const string &path,
+			    const map<string, string> &attrs)
+{
+	for (auto &a : attrs)
+		setXattribute(path, a.first, a.second);
 }
