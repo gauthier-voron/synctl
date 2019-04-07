@@ -13,6 +13,7 @@
 #include "synctl/io/IOException.hxx"
 #include "synctl/io/LimitedInputStream.hxx"
 #include "synctl/io/Symlink.hxx"
+#include "synctl/io/Xattribute.hxx"
 #include "synctl/plan/Opcode.hxx"
 #include "synctl/tree/Directory_1.hxx"
 #include "synctl/tree/Regular_1.hxx"
@@ -118,6 +119,7 @@ void Pull_1::_createDirectory(const Context *context)
 
 		_pullObject(&ctx);
 		__applyStat(ctx.apath, entry.stat);
+		setXattributes(ctx.apath, entry.xattrs);
 
 		ctx.apath.resize(ctx.apath.length() - entry.name.length());
 	}
@@ -159,6 +161,7 @@ void Pull_1::_mergeDirectory(const Context *context)
 
 		_pullObject(&ctx);
 		__applyStat(ctx.apath, remoteChildren[j].stat);
+		setXattributes(ctx.apath, remoteChildren[j].xattrs);
 
 		ctx.apath.resize(ctx.apath.length() -
 				 remoteChildren[j].name.length());
