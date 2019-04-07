@@ -74,10 +74,12 @@ class Directory_1
 	std::map<std::string, EntryInfo>  _children;
 
 
+	void _writeXattr(OutputStream *output, const EntryInfo &einfo) const;
 	void _writeInfo(OutputStream *output, const EntryInfo &einfo) const;
 	void _write(OutputStream *output) const;
 
 	bool _readCstr(InputStream *input, std::string *dest);
+	void _readXattr(InputStream *input, EntryInfo *einfo);
 	void _readInfo(InputStream *input, EntryInfo *einfo);
 	void _read(InputStream *input);
 

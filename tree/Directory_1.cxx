@@ -123,6 +123,22 @@ Directory_1::EntryInfo::EntryInfo(const struct stat &_stat,
 		xattrs.emplace_back(x.first, x.second);
 }
 
+void Directory_1::_writeXattr(OutputStream *output, const EntryInfo &einfo)
+	const
+{
+	uint64_t vlen;
+
+	for (auto &x : einfo.xattrs) {
+		vlen = x.value.size();
+
+		output->writeStr(x.name);
+		output->writeInt(vlen);
+		output->write(x.value.data(), vlen);
+	}
+
+	output->writeStr("");
+}
+
 void Directory_1::_writeInfo(OutputStream *output, const EntryInfo &einfo)
 	const
 {
@@ -130,6 +146,27 @@ void Directory_1::_writeInfo(OutputStream *output, const EntryInfo &einfo)
 	output->writeStr(einfo.user);
 	output->writeStr(einfo.group);
 	output->write(einfo.reference.data(), einfo.reference.size());
+	_writeXattr(output, einfo);
+}
+
+void Directory_1::_readXattr(InputStream *input, EntryInfo *einfo)
+{
+	string name, value;
+	uint64_t vlen;
+
+	einfo->xattrs.clear();
+
+	input->readStr(&name);
+
+	while (name != "") {
+		vlen = input->readInt<uint64_t>();
+
+		value.resize(vlen);
+		input->readall(value.data(), vlen);
+		einfo->xattrs.emplace_back(name, value);
+
+		input->readStr(&name);
+	}
 }
 
 void Directory_1::_readInfo(InputStream *input, EntryInfo *einfo)
@@ -138,6 +175,7 @@ void Directory_1::_readInfo(InputStream *input, EntryInfo *einfo)
 	input->readStr(&einfo->user);
 	input->readStr(&einfo->group);
 	input->readall(einfo->reference.data(), einfo->reference.size());
+	_readXattr(input, einfo);
 }
 
 void Directory_1::_write(OutputStream *output) const
