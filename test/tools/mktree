@@ -1,6 +1,42 @@
 #!/bin/bash
 #
+#   mktree - create a file hierarchy with specific properties
 #
+#   Create a file hierarchy including directories, regular files and symbolic
+#   links with specified paths, permissions, access and modification times,
+#   contents and optionaly xattrs.
+#   For convenience, the specification format is the same than for chktree:
+#
+#       path mode atime mtime [options] [suffix]
+#
+#       path:    path of the entry staring from the hierarchy root
+#       mode:    octal mode of the entry with optional wildcard permission
+#       atime:   access time in the fomat YYYYMMDD or wildcard
+#       mtime:   modification time in the fomat YYYYMMDD or wildcard
+#       options: optional additional attributes
+#       suffix:  mode dependant content specifier
+#
+#   Examples of entry:
+#
+#        permission access time
+#              vvvv vvvvvvvv
+#       root 040755 19700101 19700101
+#       ^^^^ ^^              ^^^^^^^^
+#       path directory       modification time
+#
+#
+#   wildcard permission  atime     regular file content suffix
+#                  vvvv vvvvvvvv   vvvvvvvvvvv
+#       root/f0 010**** 20190403 * < content\n
+#       ^^^^^^^ ^^^              ^
+#       path    regular file     wildcard modification time
+#
+#
+#    wildcard atime & mtime  optional xattr
+#                       v v vvvvvvvvvvvvvvvvv
+#       root/l0 0120777 * * x:user.name=value = f0
+#       ^^^^^^^ ^^^^^^^                       ^^^^
+#       path    symbolic link                 symbolic link target suffix
 #
 
 set -e
