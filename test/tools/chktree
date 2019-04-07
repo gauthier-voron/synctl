@@ -37,26 +37,72 @@ vtest() {
     fi
 }
 
+get_suffix() {
+    local rem="$1" ; shift
+
+    while [ "x$rem" != 'x' ] ; do
+	read -r opt rem <<< "$rem"
+	if [ "x$opt" = 'x=' -o "x$opt" = 'x<' ] ; then
+	    echo "$opt" "$rem"
+	    return
+	fi
+    done
+}
+
+check_xattr() {
+    local path="$1" ; shift
+    local opt="$1" ; shift
+    local name="${opt%%=*}"
+    local value="${opt#*=}"
+
+    test "x$name" != 'x'
+    vtest "$path" "x:$opt" "x$(getfattr -h --only-values -n "$name" "$path")" = "x$value"
+}
+
+check_options() {
+    local path="$1" ; shift
+    local rem="$1" ; shift
+
+    while [ "x$rem" != 'x' ] ; do
+	read -r opt rem <<< "$rem"
+	if [ "x$opt" = 'x=' -o "x$opt" = 'x<' ] ; then
+	    return
+	fi
+
+	if [ "x${opt:0:2}" = 'xx:' ] ; then
+	    check_xattr "$path" "${opt:2}"
+	else
+	    false
+	fi
+    done
+}
+
 check_dir() {
     local path="$1" ; shift
+    local rem="$1" ; shift
+
+    test "x$(get_suffix "$rem")" = 'x'
 
     vtest "$path" 'type' ! -L "$path"
     vtest "$path" 'type' -d "$path"
+
+    check_options "$path" "$rem"
 }
 
 check_regular() {
     local path="$1" ; shift
     local rem="$1" ; shift
+    local symbol content
 
     vtest "$path" 'type' ! -L "$path"
     vtest "$path" 'type' -f "$path"
 
-    read -r symbol rem <<< "$rem"
+    read -r symbol content <<< "$(get_suffix "$rem")"
 
     case $symbol in
 	'<')
 	    temp=$(mktemp -t --suffix='.txt' 'chktree.XXXXXXXXX')
-	    printf "$rem" > "$temp"
+	    printf "$content" > "$temp"
 	    if ! diff -Naur "$temp" "$path" ; then
 		rm "$temp"
 		false
@@ -67,20 +113,25 @@ check_regular() {
 	'')  vtest "$path" 'empty' $(stat -c '%s' "$path") = 0 ;;
 	*)   false ;;
     esac
+
+    check_options "$path" "$rem"
 }
 
 check_symlink() {
     local path="$1" ; shift
     local rem="$1" ; shift
+    local symbol target
 
     vtest "$path" 'type' -L "$path"
 
-    read -r symbol rem <<< "$rem"
+    read -r symbol target <<< "$(get_suffix "$rem")"
 
     case $symbol in
-	'=') vtest "$path" 'target' "x$(readlink "$path")" = "x$rem" ;;
+	'=') vtest "$path" 'target' "x$(readlink "$path")" = "x$target" ;;
 	*)   false ;;
     esac
+
+    check_options "$path" "$rem"
 }
 
 prefix=

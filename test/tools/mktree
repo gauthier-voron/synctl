@@ -27,38 +27,87 @@ get_perm() {
     echo "$perm"
 }
 
+get_suffix() {
+    local rem="$1" ; shift
+
+    while [ "x$rem" != 'x' ] ; do
+	read -r opt rem <<< "$rem"
+	if [ "x$opt" = 'x=' -o "x$opt" = 'x<' ] ; then
+	    echo "$opt" "$rem"
+	    return
+	fi
+    done
+}
+
+do_xattr() {
+    local path="$1" ; shift
+    local opt="$1" ; shift
+    local name="${opt%%=*}"
+    local value="${opt#*=}"
+
+    test "x$name" != 'x'
+
+    setfattr -h -n "$name" -v "$value" "$path"
+}
+
+do_options() {
+    local path="$1" ; shift
+    local rem="$1" ; shift
+
+    while [ "x$rem" != 'x' ] ; do
+	read -r opt rem <<< "$rem"
+	if [ "x$opt" = 'x=' -o "x$opt" = 'x<' ] ; then
+	    return
+	fi
+
+	if [ "x${opt:0:2}" = 'xx:' ] ; then
+	    do_xattr "$path" "${opt:2}"
+	else
+	    false
+	fi
+    done
+}
+
 create_dir() {
     local path="$1" ; shift
     local rem="$1" ; shift
 
-    test "x$rem" = 'x'
+    test "x$(get_suffix "$rem")" = 'x'
 
     mkdir "$path"
+
+    do_options "$path" "$rem"
 }
 
 create_regular() {
     local path="$1" ; shift
     local rem="$1" ; shift
+    local symbol content
 
-    read -r symbol rem <<< "$rem"
+    read -r symbol content <<< "$(get_suffix "$rem")"
 
     case $symbol in
-	'<') printf "$rem" > "$path" ;;
+	'<') printf "$content" > "$path" ;;
 	'')  touch "$path" ;;
 	*)   false ;;
     esac
+
+    do_options "$path" "$rem"
 }
 
 create_symlink() {
     local path="$1" ; shift
     local rem="$1" ; shift
+    local symbol target
 
-    read -r symbol rem <<< "$rem"
+    read -r symbol target <<< "$(get_suffix "$rem")"
 
     case $symbol in
-	'=') ln -s "$rem" "$path" ;;
+	'=') ln -s "$target" "$path" ;;
 	*)   false ;;
     esac
+
+    do_options "$path" "$rem"
 }
 
 prefix=
