@@ -207,10 +207,10 @@ void Directory_1::_read(InputStream *input)
 }
 
 void Directory_1::addChild(const string &name, const struct stat &statbuf,
+			   const map<string, string> &xattrs,
 			   const Reference &reference)
 {
-	map<string, string> empty;
-	_children[name] = EntryInfo(statbuf, empty, reference);
+	_children[name] = EntryInfo(statbuf, xattrs, reference);
 }
 
 void Directory_1::removeChild(const string &name)
