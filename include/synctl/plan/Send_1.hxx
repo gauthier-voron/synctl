@@ -5,6 +5,8 @@
 #include <cstdint>
 #include <string>
 
+#include "synctl/repo/Repository.hxx"
+#include "synctl/repo/Snapshot.hxx"
 #include "synctl/tree/Filter.hxx"
 #include "synctl/tree/Reference.hxx"
 
@@ -47,7 +49,7 @@ class Send_1
 	void setFilter(Filter *filter);
 
 	void send(OutputStream *output, const Repository *repository,
-		  const Reference &root);
+		  const Snapshot::Content &content);
 };
 
 

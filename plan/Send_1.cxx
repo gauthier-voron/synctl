@@ -8,9 +8,10 @@
 #include "synctl/io/InputStream.hxx"
 #include "synctl/io/NullOutputStream.hxx"
 #include "synctl/io/OutputStream.hxx"
-#include "synctl/tree/Filter.hxx"
 #include "synctl/plan/Opcode.hxx"
 #include "synctl/repo/Repository.hxx"
+#include "synctl/repo/Snapshot.hxx"
+#include "synctl/tree/Filter.hxx"
 #include "synctl/tree/Directory_1.hxx"
 
 
@@ -26,6 +27,7 @@ using synctl::InputStream;
 using synctl::NullOutputStream;
 using synctl::OutputStream;
 using synctl::Send_1;
+using synctl::Snapshot;
 
 
 Filter::Action Send_1::_filterPath(const Context *context) const
@@ -133,7 +135,7 @@ void Send_1::setFilter(Filter *filter)
 }
 
 void Send_1::send(OutputStream *output, const Repository *repository,
-		    const Reference &root)
+		  const Snapshot::Content &content)
 {
 	opcode_t op = OP_TREE_NONE;
 	Context ctx;
@@ -142,7 +144,7 @@ void Send_1::send(OutputStream *output, const Repository *repository,
 	ctx.defact = Filter::Accept;
 	ctx.output = output;
 	ctx.repository = repository;
-	ctx.reference = root;
+	ctx.reference = content.tree;
 
 	_sendObject(&ctx);
 	output->writeInt(op);

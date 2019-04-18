@@ -123,13 +123,13 @@ void Receive_1::_receiveSymlink(const Context *context)
 }
 
 void Receive_1::receive(InputStream *input, Repository *repository,
-			Reference *reference)
+			Snapshot::Content *content)
 {
 	Context ctx;
 
 	ctx.input = input;
 	ctx.repository = repository;
-	ctx.reference = reference;
+	ctx.reference = &content->tree;
 
 	while (_receiveEntry(&ctx))
 		;
