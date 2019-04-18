@@ -34,14 +34,15 @@ using synctl::Reference;
 
 
 Directory_1::Entry::Entry(const string &_name, const struct stat &_stat,
-			  const map<string, string> &_xattrs,
+			  const map<string, string> &_xattrs, opcode_t _opcode,
 			  const Reference &_reference)
-	: name(_name), stat(_stat), xattrs(_xattrs), reference(_reference)
+	: name(_name), stat(_stat), xattrs(_xattrs), opcode(_opcode),
+	  reference(_reference)
 {
 }
 
 Directory_1::Entry::Entry(const string &_name, const EntryInfo &_einfo)
-	: name(_name), reference(_einfo.reference)
+	: name(_name), opcode(_einfo.opcode), reference(_einfo.reference)
 {
 	struct passwd *passwd;
 	struct group *grp;
@@ -88,8 +89,9 @@ Directory_1::EntryXattr::EntryXattr(const string &_name, const string &_value)
 
 Directory_1::EntryInfo::EntryInfo(const struct stat &_stat,
 				  const map<string, string> &_xattrs,
+				  opcode_t _opcode,
 				  const Reference &_reference)
-	: reference(_reference)
+	: opcode(_opcode), reference(_reference)
 {
 	struct passwd *passwd;
 	struct group *grp;
@@ -145,6 +147,7 @@ void Directory_1::_writeInfo(OutputStream *output, const EntryInfo &einfo)
 	output->write(&einfo.stat, sizeof (einfo.stat));
 	output->writeStr(einfo.user);
 	output->writeStr(einfo.group);
+	output->writeInt(einfo.opcode);
 	output->write(einfo.reference.data(), einfo.reference.size());
 	_writeXattr(output, einfo);
 }
@@ -174,6 +177,7 @@ void Directory_1::_readInfo(InputStream *input, EntryInfo *einfo)
 	input->readall(&einfo->stat, sizeof (einfo->stat));
 	input->readStr(&einfo->user);
 	input->readStr(&einfo->group);
+	einfo->opcode = input->readInt<opcode_t>();
 	input->readall(einfo->reference.data(), einfo->reference.size());
 	_readXattr(input, einfo);
 }
@@ -207,10 +211,10 @@ void Directory_1::_read(InputStream *input)
 }
 
 void Directory_1::addChild(const string &name, const struct stat &statbuf,
-			   const map<string, string> &xattrs,
+			   const map<string, string> &xattrs, opcode_t opcode,
 			   const Reference &reference)
 {
-	_children[name] = EntryInfo(statbuf, xattrs, reference);
+	_children[name] = EntryInfo(statbuf, xattrs, opcode, reference);
 }
 
 void Directory_1::removeChild(const string &name)

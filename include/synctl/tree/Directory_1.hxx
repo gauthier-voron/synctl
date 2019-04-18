@@ -10,6 +10,7 @@
 #include <string>
 #include <vector>
 
+#include "synctl/plan/Opcode.hxx"
 #include "synctl/tree/Reference.hxx"
 
 
@@ -46,12 +47,13 @@ class Directory_1
 		std::string              user;
 		std::string              group;
 		std::vector<EntryXattr>  xattrs;
+		opcode_t                 opcode;
 		Reference                reference;
 
 		EntryInfo() = default;
 		EntryInfo(const struct stat &stat,
 			  const std::map<std::string, std::string> &xattrs,
-			  const Reference &reference);
+			  opcode_t opcode, const Reference &reference);
 	};
 
 
@@ -61,11 +63,12 @@ class Directory_1
 		std::string                         name;
 		struct stat                         stat;
 		std::map<std::string, std::string>  xattrs;
+		opcode_t                            opcode;
 		Reference                           reference;
 
 		Entry(const std::string &name, const struct stat &stat,
 		      const std::map<std::string, std::string> &xattrs,
-		      const Reference &reference);
+		      opcode_t opcode, const Reference &reference);
 		Entry(const std::string &name, const EntryInfo &einfo);
 	};
 
@@ -92,7 +95,7 @@ class Directory_1
 
 	void addChild(const std::string &name, const struct stat &statbuf,
 		      const std::map<std::string, std::string> &xattrs,
-		      const Reference &reference);
+		      opcode_t opcode, const Reference &reference);
 
 	void removeChild(const std::string &path);
 

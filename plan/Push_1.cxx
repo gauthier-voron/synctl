@@ -115,7 +115,7 @@ bool Push_1::_pushDirectory(const Context *context, Reference *reference)
 		}
 
 		if (_pushEntry(&ctx, &ref)) {
-			dir.addChild(name, ctx.stat, xattrs, ref);
+			dir.addChild(name, ctx.stat, xattrs, 0, ref);
 			pushedCount += 1;
 		}
 
