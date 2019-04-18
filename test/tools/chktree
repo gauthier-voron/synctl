@@ -92,7 +92,7 @@ check_dir() {
 check_regular() {
     local path="$1" ; shift
     local rem="$1" ; shift
-    local symbol content
+    local symbol content target
 
     vtest "$path" 'type' ! -L "$path"
     vtest "$path" 'type' -f "$path"
@@ -108,6 +108,12 @@ check_regular() {
 		false
 	    else
 		rm "$temp"
+	    fi
+	    ;;
+	'=')
+	    target="${prefix}${content}"
+	    if ! diff -Naur "$target" "$path" ; then
+		false
 	    fi
 	    ;;
 	'')  vtest "$path" 'empty' $(stat -c '%s' "$path") = 0 ;;
@@ -134,6 +140,36 @@ check_symlink() {
     check_options "$path" "$rem"
 }
 
+INODE_PROPERTIES=()
+
+set_inode_properties() {
+    local devino="$1" ; shift
+    local perm="$1" ; shift
+    local atime="$1" ; shift
+    local mtime="$1" ; shift
+
+    INODE_PROPERTIES+=("$devino:$perm:$atime:$mtime")
+}
+
+get_inode_properties() {
+    local devino="$1" ; shift
+    local pair key value
+
+    for pair in "${INODE_PROPERTIES[@]}" ; do
+	key="${pair%%:*}"
+	if [ "x$key" != "x$devino" ] ; then
+	    continue
+	fi
+
+	value="${pair#*:}"
+	printf "%s" "${value%%:*}"
+
+	value="${value#*:}"
+	printf " %s %s\n" "${value%:*}" "${value#*:}"
+    done
+}
+
+
 prefix=
 roots=()
 entries=()
@@ -157,19 +193,28 @@ while read -r path mode atime mtime rem ; do
     ftype=$(get_type $mode)
     perm="$(get_perm $mode)"
 
+    gatime=$(stat -c '%x' "$path" | cut -d' ' -f1 | tr -d '-')
+    gmtime=$(stat -c '%y' "$path" | cut -d' ' -f1 | tr -d '-')
+    gperm=$(stat -c '%a' "$path")
+    gdevino=$(stat -c '%D.%i' "$path")
+    gstored=$(get_inode_properties "$gdevino")
+
+    if [ "x$gstored" != 'x' ] ; then
+	read gperm gatime gmtime <<< "$gstored"
+    else
+	set_inode_properties "$gdevino" "$gperm" "$gatime" "$gmtime"
+    fi
+
     if [ "$atime" != '*' ] ; then
-	vtest "$path" 'access time' \
-	      $(stat -c '%x' "$path" | cut -d' ' -f1 | tr -d '-') = $atime
+	vtest "$path" 'access time' $gatime = $atime
     fi
 
     if [ "$mtime" != '*' ] ; then
-	vtest "$path" 'modification time' \
-	      $(stat -c '%y' "$path" | cut -d' ' -f1 | tr -d '-') = $mtime
+	vtest "$path" 'modification time' $gmtime = $mtime
     fi
 
     if [ "$perm" != '****' ] ; then
-	vtest "$path" 'permissions' \
-	      $perm -eq $(stat -c '%a' "$path")
+	vtest "$path" 'permissions' $gperm -eq $perm
     fi
 
     if [ $ftype -ne 12 ] ; then
