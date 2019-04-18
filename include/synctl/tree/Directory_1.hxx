@@ -26,8 +26,6 @@ class Directory_1
         #pragma pack(1)
 	struct EntryStat
 	{
-		uint8_t   dev;
-		uint8_t   ino;
 		uint16_t  mode;
 		uint64_t  atime;
 		uint64_t  mtime;

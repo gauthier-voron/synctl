@@ -49,9 +49,6 @@ Directory_1::Entry::Entry(const string &_name, const EntryInfo &_einfo)
 	uint64_t tmp;
 	size_t pos;
 
-	stat.st_dev = _einfo.stat.dev;
-	stat.st_ino = _einfo.stat.ino;
-
 	stat.st_mode = le16toh(_einfo.stat.mode);
 
 	tmp = le64toh(_einfo.stat.atime);
@@ -105,9 +102,6 @@ Directory_1::EntryInfo::EntryInfo(const struct stat &_stat,
 		group = grp->gr_name;
 	else
 		group = to_string(_stat.st_gid);
-
-	stat.dev = _stat.st_dev;
-	stat.ino = _stat.st_ino;
 
 	stat.mode = htole16(_stat.st_mode);
 
