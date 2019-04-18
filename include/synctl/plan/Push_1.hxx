@@ -9,6 +9,7 @@
 #include <set>
 #include <string>
 
+#include "synctl/plan/Opcode.hxx"
 #include "synctl/tree/Filter.hxx"
 
 
@@ -40,13 +41,18 @@ class Push_1
 
 	Filter::Action _filterPath(const Context *context) const;
 
-	bool _pushEntry(const Context *context, Reference *reference);
+	bool _pushEntry(const Context *context, Reference *reference,
+			opcode_t *opcode);
 
-	bool _pushDirectory(const Context *context, Reference *reference);
+	bool _pushDirectory(const Context *context, Reference *reference,
+			    opcode_t *opcode);
 
-	bool _pushRegular(const Context *context, Reference *reference);
+	bool _pushRegular(const Context *context, Reference *reference,
+			  opcode_t *opcode);
 
-	bool _pushSymlink(const Context *context, Reference *reference);
+	bool _pushSymlink(const Context *context, Reference *reference,
+			  opcode_t *opcode);
+
 
 
  public:

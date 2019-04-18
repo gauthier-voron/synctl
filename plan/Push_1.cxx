@@ -56,24 +56,25 @@ Filter::Action Push_1::_filterPath(const Context *context) const
 	return ret;
 }
 
-bool Push_1::_pushEntry(const Context *context, Reference *reference)
+bool Push_1::_pushEntry(const Context *context, Reference *reference,
+			opcode_t *opcode)
 {
 	switch (context->stat.st_mode & S_IFMT) {
 	case S_IFREG:
-		return _pushRegular(context, reference);
+		return _pushRegular(context, reference, opcode);
 	case S_IFLNK:
-		return _pushSymlink(context, reference);
+		return _pushSymlink(context, reference, opcode);
 	case S_IFDIR:
-		return _pushDirectory(context, reference);
+		return _pushDirectory(context, reference, opcode);
 	default:
 		return false;
 	}
 }
 
-bool Push_1::_pushDirectory(const Context *context, Reference *reference)
+bool Push_1::_pushDirectory(const Context *context, Reference *reference,
+			    opcode_t *opcode)
 {
 	Directory fsdir = Directory(context->apath);
-	opcode_t op = OP_TREE_DIRECTORY_1;
 	map<string, string> xattrs;
 	NullOutputStream null;
 	size_t pushedCount;
@@ -81,6 +82,7 @@ bool Push_1::_pushDirectory(const Context *context, Reference *reference)
 	Reference ref;
 	uint64_t dlen;
 	Context ctx;
+	opcode_t op;
 	int ret;
 
 	ctx.defact = _filterPath(context);
@@ -114,8 +116,8 @@ bool Push_1::_pushDirectory(const Context *context, Reference *reference)
 			// unsupported on this filesystem
 		}
 
-		if (_pushEntry(&ctx, &ref)) {
-			dir.addChild(name, ctx.stat, xattrs, 0, ref);
+		if (_pushEntry(&ctx, &ref, &op)) {
+			dir.addChild(name, ctx.stat, xattrs, op, ref);
 			pushedCount += 1;
 		}
 
@@ -128,21 +130,23 @@ bool Push_1::_pushDirectory(const Context *context, Reference *reference)
 		return false;
 
  write:
+	*opcode = OP_TREE_DIRECTORY_1;
 	dir.write(&null, reference);
+
 	if (_isReferenceKnown(*reference))
 		return true;
 	dlen = null.written();
 
-	context->output->writeInt(op);
+	context->output->writeInt(*opcode);
 	context->output->writeInt(dlen);
 	dir.write(context->output, nullptr);
 
 	return true;
 }
 
-bool Push_1::_pushRegular(const Context *context, Reference *reference)
+bool Push_1::_pushRegular(const Context *context, Reference *reference,
+			  opcode_t *opcode)
 {
-	opcode_t op = OP_TREE_REGULAR_1;
 	NullOutputStream null;
 	Regular_1 reg;
 	Reference ref;
@@ -150,6 +154,8 @@ bool Push_1::_pushRegular(const Context *context, Reference *reference)
 
 	if (_filterPath(context) != Filter::Accept)
 		return false;
+
+	*opcode = OP_TREE_REGULAR_1;
 
 	try {
 		reg = Regular_1::makeFrom(context->apath);
@@ -163,7 +169,7 @@ bool Push_1::_pushRegular(const Context *context, Reference *reference)
 
 	flen = context->stat.st_size;
 
-	context->output->writeInt(op);
+	context->output->writeInt(*opcode);
 	context->output->writeInt(flen);
 	reg = Regular_1::makeFrom(context->apath);
 	reg.write(context->output, nullptr);
@@ -171,9 +177,9 @@ bool Push_1::_pushRegular(const Context *context, Reference *reference)
 	return true;
 }
 
-bool Push_1::_pushSymlink(const Context *context, Reference *reference)
+bool Push_1::_pushSymlink(const Context *context, Reference *reference,
+			  opcode_t *opcode)
 {
-	opcode_t op = OP_TREE_SYMLINK_1;
 	NullOutputStream null;
 	Symlink_1 link;
 	Reference ref;
@@ -181,13 +187,15 @@ bool Push_1::_pushSymlink(const Context *context, Reference *reference)
 	if (_filterPath(context) != Filter::Accept)
 		return false;
 
+	*opcode = OP_TREE_SYMLINK_1;
+
 	link = Symlink_1::make(context->apath);
 
 	link.write(&null, reference);
 	if (_isReferenceKnown(*reference))
 		return true;
 
-	context->output->writeInt(op);
+	context->output->writeInt(*opcode);
 	link.write(context->output, nullptr);
 
 	return true;
@@ -219,7 +227,7 @@ void Push_1::push(OutputStream *output, const string &root)
 	if (ret < 0)
 		throw 0;
 
-	_pushEntry(&ctx, &holder);
+	_pushEntry(&ctx, &holder, &op);
 
 	op = OP_TREE_REFERENCE;
 	output->writeInt(op);
