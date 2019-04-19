@@ -2,6 +2,7 @@
 #define _INCLUDE_SYNCTL_PULL_1_HXX_
 
 
+#include <set>
 #include <string>
 
 #include "synctl/io/LinkTracker.hxx"
@@ -18,15 +19,19 @@ class Pull_1
 {
 	struct Context
 	{
-		std::string   apath;
-		opcode_t      opcode;
-		InputStream  *input;
-		LinkTracker  *tracker;
+		std::string             apath;
+		std::string             rpath;
+		opcode_t                opcode;
+		std::set<std::string>  *rdone;
+		InputStream            *input;
+		LinkTracker            *tracker;
 	};
 
 
 	void _delete(const std::string &path);
 	void _delete(const Context *context);
+
+	bool _linkLocally(const Context *context);
 
 	void _pullObject(const Context *context);
 
