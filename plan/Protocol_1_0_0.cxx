@@ -116,6 +116,7 @@ void Protocol_1_0_0::_servePush(Repository *repository) const
 
 	receiver.receive(_channel->inputStream(), repository, &snapshot);
 	repository->takeReference(snapshot.tree);
+	repository->takeReference(snapshot.links);
 
 	branch->newSnapshot(snapshot, &snapshotName);
 
