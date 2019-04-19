@@ -228,8 +228,8 @@ void Push_1::push(OutputStream *output, const string &root)
 		throw 0;
 
 	_pushEntry(&ctx, &holder, &op);
+	output->writeInt<opcode_t>(OP_TREE_REFERENCE);
 
-	op = OP_TREE_REFERENCE;
 	output->writeInt(op);
 	output->write(holder.data(), holder.size());
 }

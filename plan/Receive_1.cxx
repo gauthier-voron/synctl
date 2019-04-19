@@ -42,8 +42,6 @@ bool Receive_1::_receiveEntry(const Context *context)
 		_receiveDirectory(context);
 		break;
 	case OP_TREE_REFERENCE:
-		context->input->readall(context->reference->data(),
-					context->reference->size());
 		return false;
 	default:
 		throw 0;
@@ -57,6 +55,7 @@ void Receive_1::_receiveDirectory(const Context *context)
 	unique_ptr<TransientOutputStream> tos;
 	opcode_t op = OP_TREE_DIRECTORY_1;
 	LimitedInputStream lis;
+	Reference reference;
 	Directory_1 dir;
 	uint64_t dlen;
 
@@ -66,13 +65,13 @@ void Receive_1::_receiveDirectory(const Context *context)
 
 	tos = context->repository->newObject();
 	tos->writeInt(op);
-	dir.write(tos.get(), context->reference);
+	dir.write(tos.get(), &reference);
 
 	for (Directory_1::Entry &child : dir.getChildren())
 		context->repository->takeReference(child.reference);
 
 	try {
-		tos->commit(*context->reference);
+		tos->commit(reference);
 	} catch (OverwriteException &e) {
 		// FIXME: ignore for now
 	}
@@ -83,6 +82,7 @@ void Receive_1::_receiveRegular(const Context *context)
 	unique_ptr<TransientOutputStream> tos;
 	opcode_t op = OP_TREE_REGULAR_1;
 	LimitedInputStream lis;
+	Reference reference;
 	Regular_1 reg;
 	uint64_t flen;
 
@@ -93,10 +93,10 @@ void Receive_1::_receiveRegular(const Context *context)
 	tos->write(&op, sizeof (op));
 
 	reg = Regular_1(tos.get());
-	reg.read(&lis, context->reference);
+	reg.read(&lis, &reference);
 
 	try {
-		tos->commit(*context->reference);
+		tos->commit(reference);
 	} catch (OverwriteException &e) {
 		// FIXME: ignore for now
 	}
@@ -106,17 +106,18 @@ void Receive_1::_receiveSymlink(const Context *context)
 {
 	unique_ptr<TransientOutputStream> tos;
 	opcode_t op = OP_TREE_SYMLINK_1;
+	Reference reference;
 	Symlink_1 link;
 
 	link.read(context->input, nullptr);
 
 	tos = context->repository->newObject();
 	tos->write(&op, sizeof (op));
+	link.write(tos.get(), &reference);
 
-	link.write(tos.get(), context->reference);
 
 	try {
-		tos->commit(*context->reference);
+		tos->commit(reference);
 	} catch (OverwriteException &e) {
 		// FIXME: ignore for now
 	}
@@ -129,8 +130,10 @@ void Receive_1::receive(InputStream *input, Repository *repository,
 
 	ctx.input = input;
 	ctx.repository = repository;
-	ctx.reference = &content->tree;
 
 	while (_receiveEntry(&ctx))
 		;
+
+	content->opcode = input->readInt<opcode_t>();
+	input->readall(content->tree.data(), content->tree.size());
 }

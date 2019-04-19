@@ -19,7 +19,6 @@ class Receive_1
 	{
 		InputStream  *input;
 		Repository   *repository;
-		Reference    *reference;
 	};
 
 

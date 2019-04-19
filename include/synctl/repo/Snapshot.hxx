@@ -6,6 +6,7 @@
 #include <string>
 
 #include "synctl/io/Directory.hxx"
+#include "synctl/plan/Opcode.hxx"
 #include "synctl/tree/Reference.hxx"
 
 
@@ -20,6 +21,7 @@ class Snapshot
 	struct Content
 	{
 		Date       date = 0;  // UNIX time of creation (0 = now)
+		opcode_t   opcode;    // Opcode of the object pointed by tree
 		Reference  tree;      // Root of the snapshot
 	};
 
