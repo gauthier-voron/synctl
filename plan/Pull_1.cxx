@@ -76,11 +76,7 @@ void Pull_1::_delete(const Context *context)
 
 void Pull_1::_pullObject(const Context *context)
 {
-	opcode_t op;
-
-	op = context->input->readInt<opcode_t>();
-
-	switch (op) {
+	switch (context->opcode) {
 	case OP_TREE_NONE:
 		break;
 	case OP_TREE_DIRECTORY_1:
@@ -116,6 +112,7 @@ void Pull_1::_createDirectory(const Context *context)
 
 	for (const Directory_1::Entry &entry : dir.getChildren()) {
 		ctx.apath += entry.name;
+		ctx.opcode = entry.opcode;
 
 		_pullObject(&ctx);
 		__applyStat(ctx.apath, entry.stat);
@@ -158,6 +155,7 @@ void Pull_1::_mergeDirectory(const Context *context)
 		}
 
 		ctx.apath += remoteChildren[j].name;
+		ctx.opcode = remoteChildren[j].opcode;
 
 		_pullObject(&ctx);
 		__applyStat(ctx.apath, remoteChildren[j].stat);
@@ -237,5 +235,6 @@ void Pull_1::pull(InputStream *input, const string &root)
 	ctx.apath = root;
 	ctx.input = input;
 
+	ctx.opcode = input->readInt<opcode_t>();
 	_pullObject(&ctx);
 }

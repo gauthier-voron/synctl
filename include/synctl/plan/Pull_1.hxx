@@ -4,6 +4,8 @@
 
 #include <string>
 
+#include "synctl/plan/Opcode.hxx"
+
 
 namespace synctl {
 
@@ -16,6 +18,7 @@ class Pull_1
 	struct Context
 	{
 		std::string   apath;
+		opcode_t      opcode;
 		InputStream  *input;
 	};
 

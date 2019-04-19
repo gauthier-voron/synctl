@@ -51,7 +51,6 @@ void Send_1::_sendObject(const Context *context)
 
 	input = context->repository->readObject(context->reference);
 	size = context->repository->getObjectSize(context->reference);
-	context->output->writeInt(context->opcode);
 
 	switch (context->opcode) {
 	case OP_TREE_DIRECTORY_1:
@@ -143,6 +142,7 @@ void Send_1::send(OutputStream *output, const Repository *repository,
 	ctx.repository = repository;
 	ctx.reference = content.tree;
 
+	output->writeInt(ctx.opcode);
 	_sendObject(&ctx);
 	output->writeInt(op);
 }
