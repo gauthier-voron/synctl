@@ -23,6 +23,7 @@ class Snapshot
 		Date       date = 0;  // UNIX time of creation (0 = now)
 		opcode_t   opcode;    // Opcode of the object pointed by tree
 		Reference  tree;      // Root of the snapshot
+		Reference  links;     // Pointer to the LinkTable_1 object
 	};
 
 

@@ -38,6 +38,7 @@ void Snapshot::_store() const
 	out.writeInt(_content.date);
 	out.writeInt(_content.opcode);
 	out.write(_content.tree.data(), _content.tree.size());
+	out.write(_content.links.data(), _content.links.size());
 
 	_loaded = true;
 }
@@ -81,6 +82,7 @@ void Snapshot::load() const
 	_content.date = input.readInt<Date>();
 	_content.opcode = input.readInt<opcode_t>();
 	input.readall(_content.tree.data(), _content.tree.size());
+	input.readall(_content.links.data(), _content.links.size());
 
 	_loaded = true;
 }
