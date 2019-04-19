@@ -54,6 +54,8 @@ class Push_1
 
 	Filter::Action _filterPath(const Context *context) const;
 
+	void _fixAccessTime(const Context *context);
+
 	bool _pushEntry(const Context *context, Reference *reference,
 			opcode_t *opcode);
 

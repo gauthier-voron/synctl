@@ -1,5 +1,6 @@
 #include "synctl/plan/Push_1.hxx"
 
+#include <fcntl.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <unistd.h>
@@ -79,6 +80,17 @@ Filter::Action Push_1::_filterPath(const Context *context) const
 	return ret;
 }
 
+void Push_1::_fixAccessTime(const Context *context)
+{
+	string path = context->apath;
+	struct timespec times[2];
+
+	times[0] = context->stat.st_atim;
+	times[1] = context->stat.st_mtim;
+
+	utimensat(AT_FDCWD, path.c_str(), times, AT_SYMLINK_NOFOLLOW);
+}
+
 bool Push_1::_pushEntry(const Context *context, Reference *reference,
 			opcode_t *opcode)
 {
@@ -151,6 +163,8 @@ bool Push_1::_pushDirectory(const Context *context, Reference *reference,
 		ctx.rpath.resize(ctx.rpath.length() - name.length());
 	}
 
+	_fixAccessTime(context);
+
 	if ((ctx.defact == Filter::Traverse) && (pushedCount == 0))
 		return false;
 
@@ -185,8 +199,10 @@ bool Push_1::_pushRegular(const Context *context, Reference *reference,
 	try {
 		reg = Regular_1::makeFrom(context->apath);
 		reg.write(&null, reference);
-		if (_isReferenceKnown(*reference))
+		if (_isReferenceKnown(*reference)) {
+			_fixAccessTime(context);
 			return true;
+		}
 	} catch (IOException &) {
 		// TODO: indicate it?
 		return false;
@@ -198,6 +214,7 @@ bool Push_1::_pushRegular(const Context *context, Reference *reference,
 	context->output->writeInt(flen);
 	reg = Regular_1::makeFrom(context->apath);
 	reg.write(context->output, nullptr);
+	_fixAccessTime(context);
 
 	return true;
 }
@@ -215,6 +232,7 @@ bool Push_1::_pushSymlink(const Context *context, Reference *reference,
 	*opcode = OP_TREE_SYMLINK_1;
 
 	link = Symlink_1::make(context->apath);
+	_fixAccessTime(context);
 
 	link.write(&null, reference);
 	if (_isReferenceKnown(*reference))
