@@ -53,7 +53,6 @@ bool Receive_1::_receiveEntry(const Context *context)
 void Receive_1::_receiveDirectory(const Context *context)
 {
 	unique_ptr<TransientOutputStream> tos;
-	opcode_t op = OP_TREE_DIRECTORY_1;
 	LimitedInputStream lis;
 	Reference reference;
 	Directory_1 dir;
@@ -64,7 +63,6 @@ void Receive_1::_receiveDirectory(const Context *context)
 	dir.read(&lis, nullptr);
 
 	tos = context->repository->newObject();
-	tos->writeInt(op);
 	dir.write(tos.get(), &reference);
 
 	for (Directory_1::Entry &child : dir.getChildren())
@@ -80,7 +78,6 @@ void Receive_1::_receiveDirectory(const Context *context)
 void Receive_1::_receiveRegular(const Context *context)
 {
 	unique_ptr<TransientOutputStream> tos;
-	opcode_t op = OP_TREE_REGULAR_1;
 	LimitedInputStream lis;
 	Reference reference;
 	Regular_1 reg;
@@ -90,8 +87,6 @@ void Receive_1::_receiveRegular(const Context *context)
 	lis = LimitedInputStream(context->input, flen);
 
 	tos = context->repository->newObject();
-	tos->write(&op, sizeof (op));
-
 	reg = Regular_1(tos.get());
 	reg.read(&lis, &reference);
 
@@ -105,14 +100,12 @@ void Receive_1::_receiveRegular(const Context *context)
 void Receive_1::_receiveSymlink(const Context *context)
 {
 	unique_ptr<TransientOutputStream> tos;
-	opcode_t op = OP_TREE_SYMLINK_1;
 	Reference reference;
 	Symlink_1 link;
 
 	link.read(context->input, nullptr);
 
 	tos = context->repository->newObject();
-	tos->write(&op, sizeof (op));
 	link.write(tos.get(), &reference);
 
 

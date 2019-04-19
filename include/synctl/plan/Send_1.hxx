@@ -5,6 +5,7 @@
 #include <cstdint>
 #include <string>
 
+#include "synctl/plan/Opcode.hxx"
 #include "synctl/repo/Repository.hxx"
 #include "synctl/repo/Snapshot.hxx"
 #include "synctl/tree/Filter.hxx"
@@ -24,6 +25,7 @@ class Send_1
 	struct Context
 	{
 		std::string        rpath;
+		opcode_t           opcode;
 		Reference          reference;
 		const Repository  *repository;
 		Filter::Action     defact;

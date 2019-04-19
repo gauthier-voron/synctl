@@ -47,18 +47,13 @@ Filter::Action Send_1::_filterPath(const Context *context) const
 void Send_1::_sendObject(const Context *context)
 {
 	unique_ptr<InputStream> input;
-	opcode_t op;
 	uint64_t size;
 
 	input = context->repository->readObject(context->reference);
-	input->readall(&op, sizeof (op));
-
 	size = context->repository->getObjectSize(context->reference);
-	size -= sizeof (op);
+	context->output->writeInt(context->opcode);
 
-	context->output->writeInt(op);
-
-	switch (op) {
+	switch (context->opcode) {
 	case OP_TREE_DIRECTORY_1:
 		_sendDirectory(context, input.get(), size);
 		break;
@@ -109,6 +104,7 @@ void Send_1::_sendDirectory(const Context *context, InputStream *input,
 			dir.removeChild(entry.name);
 			altered = true;
 		} else {
+			ctx.opcode = entry.opcode;
 			ctx.reference = entry.reference;
 			ctxs.push_back(ctx);
 		}
@@ -142,6 +138,7 @@ void Send_1::send(OutputStream *output, const Repository *repository,
 
 	ctx.rpath = "/";
 	ctx.defact = Filter::Accept;
+	ctx.opcode = content.opcode;
 	ctx.output = output;
 	ctx.repository = repository;
 	ctx.reference = content.tree;
