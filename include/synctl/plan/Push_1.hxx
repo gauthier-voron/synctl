@@ -9,6 +9,7 @@
 #include <set>
 #include <string>
 
+#include "synctl/io/LinkTracker.hxx"
 #include "synctl/plan/Opcode.hxx"
 #include "synctl/tree/Filter.hxx"
 
@@ -22,13 +23,25 @@ class Reference;
 
 class Push_1
 {
+	struct EntryId
+	{
+		dev_t  dev;
+		ino_t  ino;
+
+		EntryId(const struct stat &stat);
+		EntryId(EntryId &&other);
+
+		bool operator<(const EntryId &other) const;
+	};
+
 	struct Context
 	{
-		std::string         apath;
-		std::string         rpath;
-		struct stat         stat;
-		Filter::Action      defact;
-		OutputStream       *output;
+		std::string      apath;
+		std::string      rpath;
+		struct stat      stat;
+		Filter::Action   defact;
+		LinkTracker     *links;
+		OutputStream    *output;
 	};
 
 

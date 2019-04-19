@@ -10,10 +10,11 @@
 #include <vector>
 
 #include "synctl/io/Directory.hxx"
+#include "synctl/io/LinkTracker.hxx"
 #include "synctl/io/NullOutputStream.hxx"
 #include "synctl/io/Xattribute.hxx"
-#include "synctl/tree/Filter.hxx"
 #include "synctl/plan/Opcode.hxx"
+#include "synctl/tree/Filter.hxx"
 #include "synctl/tree/Directory_1.hxx"
 #include "synctl/tree/Reference.hxx"
 #include "synctl/tree/Regular_1.hxx"
@@ -27,12 +28,30 @@ using std::vector;
 using synctl::Directory;
 using synctl::Directory_1;
 using synctl::Filter;
+using synctl::LinkTracker;
 using synctl::NullOutputStream;
 using synctl::Reference;
 using synctl::Regular_1;
 using synctl::Push_1;
 using synctl::Symlink_1;
 
+
+Push_1::EntryId::EntryId(const struct stat &stat)
+	: dev(stat.st_dev), ino(stat.st_ino)
+{
+}
+
+Push_1::EntryId::EntryId(EntryId &&other)
+	: dev(other.dev), ino(other.ino)
+{
+}
+
+bool Push_1::EntryId::operator<(const Push_1::EntryId &other) const
+{
+	if (dev != other.dev)
+		return (dev < other.dev);
+	return (ino < other.ino);
+}
 
 bool Push_1::_isReferenceKnown(const Reference &reference) const
 {
@@ -95,6 +114,7 @@ bool Push_1::_pushDirectory(const Context *context, Reference *reference,
 		ctx.rpath = context->rpath + "/";
 
 	ctx.apath = context->apath + "/";
+	ctx.links = context->links;
 	ctx.output = context->output;
 
 	if (fsdir.listable() == false)
@@ -118,6 +138,7 @@ bool Push_1::_pushDirectory(const Context *context, Reference *reference,
 
 		if (_pushEntry(&ctx, &ref, &op)) {
 			dir.addChild(name, ctx.stat, xattrs, op, ref);
+			context->links->track(ctx.rpath, ctx.stat);
 			pushedCount += 1;
 		}
 
@@ -213,6 +234,7 @@ void Push_1::setFilter(Filter *filter)
 
 void Push_1::push(OutputStream *output, const string &root)
 {
+	LinkTracker links;
 	Reference holder;
 	Context ctx;
 	opcode_t op;
@@ -221,6 +243,7 @@ void Push_1::push(OutputStream *output, const string &root)
 	ctx.apath = root;
 	ctx.rpath = "/";
 	ctx.defact = Filter::Accept;
+	ctx.links = &links;
 	ctx.output = output;
 
 	ret = ::lstat(root.c_str(), &ctx.stat);
