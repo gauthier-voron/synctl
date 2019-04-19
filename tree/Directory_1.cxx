@@ -179,7 +179,7 @@ void Directory_1::_readInfo(InputStream *input, EntryInfo *einfo)
 void Directory_1::_write(OutputStream *output) const
 {
 	for (auto it : _children) {
-		const std::string &name = it.first;
+		const string &name = it.first;
 		EntryInfo &einfo = it.second;
 
 		output->writeStr(name);
