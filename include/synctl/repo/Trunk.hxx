@@ -1,5 +1,5 @@
-#ifndef _INCLUDE_SYNCTL_BRANCH_HXX_
-#define _INCLUDE_SYNCTL_BRANCH_HXX_
+#ifndef _INCLUDE_SYNCTL_TRUNK_HXX_
+#define _INCLUDE_SYNCTL_TRUNK_HXX_
 
 
 #include <memory>
@@ -16,7 +16,7 @@ namespace synctl {
 class Reference;
 
 
-class Branch
+class Trunk
 {
 	Directory                                       _dir;
 	mutable std::vector<std::unique_ptr<Snapshot>>  _snapshots;
@@ -33,7 +33,7 @@ class Branch
 
 
  public:
-	Branch(const std::string &path);
+	Trunk(const std::string &path);
 
 
 	void initialize() const;

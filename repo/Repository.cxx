@@ -15,8 +15,8 @@
 #include "synctl/io/IOException.hxx"
 #include "synctl/io/OutputStream.hxx"
 #include "synctl/tree/Reference.hxx"
-#include "synctl/repo/Branch.hxx"
-#include "synctl/repo/BranchStore.hxx"
+#include "synctl/repo/Trunk.hxx"
+#include "synctl/repo/TrunkStore.hxx"
 #include "synctl/io/TransientOutputStream.hxx"
 
 
@@ -29,43 +29,15 @@ using synctl::InputStream;
 using synctl::IOException;
 using synctl::OutputStream;
 using synctl::Reference;
-using synctl::Branch;
 using synctl::Repository;
 using synctl::TransientOutputStream;
+using synctl::Trunk;
 
 
-// unique_ptr<InputStream> Repository::_readObject(const Reference &ref) const
-// {
-// 	string object_path = string(_path + "/objects/" + ref.toHex());
-// 	return make_unique<FileInputStream>(object_path);
-// }
-
-// Repository::Refcount Repository::_readRefcount(const Reference &reference) const
-// {
-// 	unique_ptr<InputStream> is = _readObject(reference);
-// 	Refcount ret;
-
-// 	is->readall(&ret, sizeof (ret));
-
-// 	return ret;
-// }
-
-// unique_ptr<OutputStream> Repository::_writeObject(const Reference &reference)
-// {
-// 	string object_path = string(_path + "/objects/" + reference.toHex());
-// 	return make_unique<FileOutputStream>(object_path);
-// }
-
-// void Repository::_writeRefcount(const Reference &reference, Refcount cnt)
-// {
-// 	unique_ptr<OutputStream> os = _writeObject(reference);
-// 	os->write(&cnt, sizeof (cnt));
-// }
-
-static string __bstorePath(const string &path)
+static string __tstorePath(const string &path)
 {
-	string bstore = path + "/branches";
-	return bstore;
+	string tstore = path + "/trunks";
+	return tstore;
 }
 
 static string __ostorePath(const string &path)
@@ -75,7 +47,7 @@ static string __ostorePath(const string &path)
 }
 
 Repository::Repository(const string &path)
-	: _path(path), _bstore(__bstorePath(path)), _ostore(__ostorePath(path))
+	: _path(path), _tstore(__tstorePath(path)), _ostore(__ostorePath(path))
 {
 }
 
@@ -108,7 +80,7 @@ void Repository::initialize() const
 		closedir(dd);
 	}
 
-	_bstore.initialize();
+	_tstore.initialize();
 	_ostore.initialize();
 }
 
@@ -138,17 +110,17 @@ size_t Repository::getObjectSize(const Reference &reference) const
 	return _ostore.getObjectSize(reference);
 }
 
-Branch *Repository::newBranch(const string &name)
+Trunk *Repository::newTrunk(const string &name)
 {
-	return _bstore.newBranch(name);
+	return _tstore.newTrunk(name);
 }
 
-Branch *Repository::branch(const string &name)
+Trunk *Repository::trunk(const string &name)
 {
-	return _bstore.branch(name);
+	return _tstore.trunk(name);
 }
 
-const Branch *Repository::branch(const string &name) const
+const Trunk *Repository::trunk(const string &name) const
 {
-	return _bstore.branch(name);
+	return _tstore.trunk(name);
 }

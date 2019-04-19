@@ -16,8 +16,8 @@
 #include "synctl/plan/Push_1.hxx"
 #include "synctl/plan/Receive_1.hxx"
 #include "synctl/plan/Send_1.hxx"
-#include "synctl/repo/Branch.hxx"
 #include "synctl/repo/Repository.hxx"
+#include "synctl/repo/Trunk.hxx"
 #include "synctl/tree/FilterCodec.hxx"
 #include "synctl/tree/Reference.hxx"
 
@@ -26,7 +26,6 @@ using std::move;
 using std::string;
 using std::unique_ptr;
 using std::vector;
-using synctl::Branch;
 using synctl::Channel;
 using synctl::InputStream;
 using synctl::OutputStream;
@@ -41,6 +40,7 @@ using synctl::Receive_1;
 using synctl::Reference;
 using synctl::Repository;
 using synctl::Send_1;
+using synctl::Trunk;
 
 
 Protocol_1_0_0::Protocol_1_0_0(Channel *channel)
@@ -71,7 +71,7 @@ void Protocol_1_0_0::push(const PushSettings &settings) const
 	Push_1 pusher;
 
 	_channel->outputStream()->writeInt(op);
-	_channel->outputStream()->writeStr(settings.branchName);
+	_channel->outputStream()->writeStr(settings.trunkName);
 
 	while (1) {
 		_channel->inputStream()->readall(ref.data(), ref.size());
@@ -96,17 +96,17 @@ void Protocol_1_0_0::push(const PushSettings &settings) const
 void Protocol_1_0_0::_servePush(Repository *repository) const
 {
 	Reference ref = Reference::zero();
-	string branchName, snapshotName;
+	string trunkName, snapshotName;
 	Snapshot::Content snapshot;
 	Receive_1 receiver;
 	FilterCodec codec;
-	Branch *branch;
+	Trunk *trunk;
 
-	_channel->inputStream()->readStr(&branchName);
+	_channel->inputStream()->readStr(&trunkName);
 
-	branch = repository->branch(branchName);
-	if (branch == nullptr)
-		branch = repository->newBranch(branchName);
+	trunk = repository->trunk(trunkName);
+	if (trunk == nullptr)
+		trunk = repository->newTrunk(trunkName);
 
 	repository->dumpReferences(_channel->outputStream());
 	_channel->outputStream()->write(ref.data(), ref.size());
@@ -118,7 +118,7 @@ void Protocol_1_0_0::_servePush(Repository *repository) const
 	repository->takeReference(snapshot.tree);
 	repository->takeReference(snapshot.links);
 
-	branch->newSnapshot(snapshot, &snapshotName);
+	trunk->newSnapshot(snapshot, &snapshotName);
 
 	_channel->outputStream()->writeStr(snapshotName);
 }
@@ -130,7 +130,7 @@ void Protocol_1_0_0::pull(const PullSettings &settings) const
 	Pull_1 puller;
 
 	_channel->outputStream()->writeInt(op);
-	_channel->outputStream()->writeStr(settings.branchName);
+	_channel->outputStream()->writeStr(settings.trunkName);
 	_channel->outputStream()->writeStr(settings.snapshotName);
 
 	codec.encode(settings.filter, _channel->outputStream());
@@ -149,37 +149,37 @@ void Protocol_1_0_0::pull(const PullSettings &settings) const
 
 void Protocol_1_0_0::_servePull(Repository *repository) const
 {
-	string branchName, snapshotName;
+	string trunkName, snapshotName;
 	unique_ptr<Filter> filter;
 	const Snapshot *snapshot;
-	const Branch *branch;
+	const Trunk *trunk;
 	FilterCodec codec;
 	Send_1 sender;
 	opcode_t op;
 
-	_channel->inputStream()->readStr(&branchName);
+	_channel->inputStream()->readStr(&trunkName);
 	_channel->inputStream()->readStr(&snapshotName);
 
 	filter = codec.decode(_channel->inputStream());
 
-	branch = repository->branch(branchName);
+	trunk = repository->trunk(trunkName);
 
-	if (branch == nullptr) {
-		op = OP_RET_INVBRANCH;
+	if (trunk == nullptr) {
+		op = OP_RET_INVTRUNK;
 		_channel->outputStream()->writeInt(op);
 		return;
 	}
 
 	if (snapshotName.empty()) {
 		snapshot = nullptr;
-		for (const Snapshot *sn : branch->snapshots()) {
+		for (const Snapshot *sn : trunk->snapshots()) {
 			if (snapshot == nullptr)
 				snapshot = sn;
 			else if (sn->content().date > snapshot->content().date)
 				snapshot = sn;
 		}
 	} else {
-		snapshot = branch->snapshot(snapshotName);
+		snapshot = trunk->snapshot(snapshotName);
 	}
 
 	if (snapshot == nullptr) {

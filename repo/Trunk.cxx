@@ -1,4 +1,4 @@
-#include "synctl/repo/Branch.hxx"
+#include "synctl/repo/Trunk.hxx"
 
 #include <memory>
 #include <string>
@@ -19,17 +19,17 @@ using std::unique_ptr;
 using std::vector;
 using synctl::IOException;
 using synctl::Reference;
-using synctl::Branch;
 using synctl::Snapshot;
+using synctl::Trunk;
 
 
-void Branch::_ensureLoaded() const
+void Trunk::_ensureLoaded() const
 {
 	if (_loaded == false)
 		load();
 }
 
-Snapshot *Branch::_newSnapshot(const string &path) const
+Snapshot *Trunk::_newSnapshot(const string &path) const
 {
 	Snapshot *ptr;
 
@@ -41,7 +41,7 @@ Snapshot *Branch::_newSnapshot(const string &path) const
 	return ptr;
 }
 
-Snapshot *Branch::_newSnapshot(string *name) const
+Snapshot *Trunk::_newSnapshot(string *name) const
 {
 	string path = _dir.path() + "/";
 	size_t len = path.length();
@@ -54,18 +54,18 @@ Snapshot *Branch::_newSnapshot(string *name) const
 	return _newSnapshot(path);
 }
 
-Branch::Branch(const string &path)
+Trunk::Trunk(const string &path)
 	: _dir(path)
 {
 }
 
-void Branch::initialize() const
+void Trunk::initialize() const
 {
 	_dir.create();
 	_loaded = true;
 }
 
-void Branch::load() const
+void Trunk::load() const
 {
 	string path;
 
@@ -77,14 +77,14 @@ void Branch::load() const
 	_loaded = true;
 }
 
-Snapshot *Branch::newSnapshot(const Snapshot::Content &content, string *name)
+Snapshot *Trunk::newSnapshot(const Snapshot::Content &content, string *name)
 {
 	Snapshot *ret = _newSnapshot(name);
 	ret->initialize(content);
 	return ret;
 }
 
-Snapshot *Branch::snapshot(const string &name) noexcept
+Snapshot *Trunk::snapshot(const string &name) noexcept
 {
 	string path = _dir.path() + "/" + name;
 
@@ -97,7 +97,7 @@ Snapshot *Branch::snapshot(const string &name) noexcept
 	return nullptr;
 }
 
-const Snapshot *Branch::snapshot(const string &name) const noexcept
+const Snapshot *Trunk::snapshot(const string &name) const noexcept
 {
 	string path = _dir.path() + "/" + name;
 
@@ -110,18 +110,18 @@ const Snapshot *Branch::snapshot(const string &name) const noexcept
 	return nullptr;
 }
 
-const string &Branch::path() const noexcept
+const string &Trunk::path() const noexcept
 {
 	return _dir.path();
 }
 
-const vector<Snapshot *> &Branch::snapshots() noexcept
+const vector<Snapshot *> &Trunk::snapshots() noexcept
 {
 	_ensureLoaded();
 	return _rwptrs;
 }
 
-const vector<const Snapshot *> &Branch::snapshots() const noexcept
+const vector<const Snapshot *> &Trunk::snapshots() const noexcept
 {
 	_ensureLoaded();
 	return _roptrs;

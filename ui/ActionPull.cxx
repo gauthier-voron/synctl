@@ -66,7 +66,7 @@ int ActionPull::_execute(const string &root, Channel *channel)
 		return 1;
 
 	psettings.localRoot = root;
-	psettings.branchName = "Laurier";
+	psettings.trunkName = "master";
 	psettings.snapshotName = "";
 	psettings.filter = &_filter;
 	protocol->pull(psettings);
