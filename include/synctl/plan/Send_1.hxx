@@ -46,6 +46,8 @@ class Send_1
 	void _sendDirectory(const Context *context, InputStream *input,
 			    uint64_t size);
 
+	void _sendLinktable(const Context *context);
+
 
  public:
 	void setFilter(Filter *filter);

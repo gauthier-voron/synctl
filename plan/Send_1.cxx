@@ -13,6 +13,7 @@
 #include "synctl/repo/Snapshot.hxx"
 #include "synctl/tree/Filter.hxx"
 #include "synctl/tree/Directory_1.hxx"
+#include "synctl/tree/Linktable_1.hxx"
 
 
 #define TRANSFER_BUFFER_SIZE  2097152
@@ -24,6 +25,7 @@ using std::vector;
 using synctl::Directory_1;
 using synctl::Filter;
 using synctl::InputStream;
+using synctl::Linktable_1;
 using synctl::NullOutputStream;
 using synctl::OutputStream;
 using synctl::Send_1;
@@ -124,6 +126,31 @@ void Send_1::_sendDirectory(const Context *context, InputStream *input,
 	}
 }
 
+void Send_1::_sendLinktable(const Context *context)
+{
+	unique_ptr<InputStream> input;
+	Linktable_1 table;
+	uint64_t size;
+	Context ctx;
+
+	input = context->repository->readObject(context->reference);
+
+	table.read(input.get());
+
+	size = table.size();
+	context->output->writeInt(size);
+
+	ctx.repository = context->repository;
+	ctx.defact = context->defact;
+	ctx.output = context->output;
+	ctx.opcode = OP_TREE_LINK_1;
+
+	for (const Reference &link : table.getLinks()) {
+		ctx.reference = link;
+		_sendObject(&ctx);
+	}
+}
+
 void Send_1::setFilter(Filter *filter)
 {
 	_filter = filter;
@@ -135,11 +162,18 @@ void Send_1::send(OutputStream *output, const Repository *repository,
 	opcode_t op = OP_TREE_NONE;
 	Context ctx;
 
+	ctx.output = output;
+	ctx.repository = repository;
+
+	ctx.defact = Filter::Accept;
+	ctx.opcode = OP_TREE_LINKTABLE_1;
+	ctx.reference = content.links;
+
+	_sendLinktable(&ctx);
+
 	ctx.rpath = "/";
 	ctx.defact = Filter::Accept;
 	ctx.opcode = content.opcode;
-	ctx.output = output;
-	ctx.repository = repository;
 	ctx.reference = content.tree;
 
 	output->writeInt(ctx.opcode);

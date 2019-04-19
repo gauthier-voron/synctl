@@ -12,10 +12,12 @@
 #include "synctl/io/InputStream.hxx"
 #include "synctl/io/IOException.hxx"
 #include "synctl/io/LimitedInputStream.hxx"
+#include "synctl/io/LinkTracker.hxx"
 #include "synctl/io/Symlink.hxx"
 #include "synctl/io/Xattribute.hxx"
 #include "synctl/plan/Opcode.hxx"
 #include "synctl/tree/Directory_1.hxx"
+#include "synctl/tree/Link_1.hxx"
 #include "synctl/tree/Regular_1.hxx"
 #include "synctl/tree/Symlink_1.hxx"
 
@@ -27,6 +29,8 @@ using synctl::Directory_1;
 using synctl::InputStream;
 using synctl::IOException;
 using synctl::LimitedInputStream;
+using synctl::Link_1;
+using synctl::LinkTracker;
 using synctl::Pull_1;
 using synctl::Regular_1;
 using synctl::Symlink;
@@ -228,12 +232,39 @@ void Pull_1::_pullSymlink(const Context *context)
 	link.apply(context->apath);
 }
 
+void Pull_1::_pullLinks(const Context *context)
+{
+	LinkTracker::Entry entry;
+	uint64_t i, count, size;
+	LimitedInputStream lis;
+	Link_1 link;
+
+	count = context->input->readInt<uint64_t>();
+
+	for (i = 0; i < count; i++) {
+		size = context->input->readInt<uint64_t>();
+		lis = LimitedInputStream(context->input, size);
+		link.read(&lis);
+
+		for (const string &path : link.getLocations())
+			entry.insert(path);
+
+		context->tracker->addLink(entry);
+		entry.clear();
+		link.clear();
+	}
+}
+
 void Pull_1::pull(InputStream *input, const string &root)
 {
+	LinkTracker tracker;
 	Context ctx;
 
 	ctx.apath = root;
 	ctx.input = input;
+	ctx.tracker = &tracker;
+
+	_pullLinks(&ctx);
 
 	ctx.opcode = input->readInt<opcode_t>();
 	_pullObject(&ctx);

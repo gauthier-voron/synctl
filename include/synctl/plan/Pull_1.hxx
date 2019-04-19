@@ -4,6 +4,7 @@
 
 #include <string>
 
+#include "synctl/io/LinkTracker.hxx"
 #include "synctl/plan/Opcode.hxx"
 
 
@@ -20,6 +21,7 @@ class Pull_1
 		std::string   apath;
 		opcode_t      opcode;
 		InputStream  *input;
+		LinkTracker  *tracker;
 	};
 
 
@@ -37,6 +39,10 @@ class Pull_1
 	void _pullRegular(const Context *context);
 
 	void _pullSymlink(const Context *context);
+
+	void _pullLinks(const Context *context);
+
+	void _pullLink(const Context *context);
 
 
  public:
