@@ -97,6 +97,7 @@ void Protocol_1_0_0::_servePush(Repository *repository) const
 {
 	Reference ref = Reference::zero();
 	string branchName, snapshotName;
+	Snapshot::Content snapshot;
 	Receive_1 receiver;
 	FilterCodec codec;
 	Branch *branch;
@@ -113,10 +114,11 @@ void Protocol_1_0_0::_servePush(Repository *repository) const
 	// TODO: use it in the receiver
 	codec.decode(_channel->inputStream());
 
-	receiver.receive(_channel->inputStream(), repository, &ref);
-	repository->takeReference(ref);
+	receiver.receive(_channel->inputStream(), repository, &snapshot);
+	repository->takeReference(snapshot.tree);
+	repository->takeReference(snapshot.links);
 
-	branch->newSnapshot(ref, &snapshotName);
+	branch->newSnapshot(snapshot, &snapshotName);
 
 	_channel->outputStream()->writeStr(snapshotName);
 }
@@ -173,7 +175,7 @@ void Protocol_1_0_0::_servePull(Repository *repository) const
 		for (const Snapshot *sn : branch->snapshots()) {
 			if (snapshot == nullptr)
 				snapshot = sn;
-			else if (sn->date() > snapshot->date())
+			else if (sn->content().date > snapshot->content().date)
 				snapshot = sn;
 		}
 	} else {
@@ -190,7 +192,7 @@ void Protocol_1_0_0::_servePull(Repository *repository) const
 	_channel->outputStream()->writeInt(op);
 
 	sender.setFilter(filter.get());
-	sender.send(_channel->outputStream(), repository, snapshot->ref());
+	sender.send(_channel->outputStream(), repository, snapshot->content());
 }
 
 void Protocol_1_0_0::serve(Repository *repository) const

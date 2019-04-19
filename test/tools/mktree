@@ -124,6 +124,7 @@ create_regular() {
 
     case $symbol in
 	'<') printf "$content" > "$path" ;;
+	'=') ln "${prefix}${content}" "$path" ;;
 	'')  touch "$path" ;;
 	*)   false ;;
     esac

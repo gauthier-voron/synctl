@@ -6,6 +6,7 @@
 #include "synctl/io/FileInputStream.hxx"
 #include "synctl/io/FileOutputStream.hxx"
 #include "synctl/io/IOException.hxx"
+#include "synctl/plan/Opcode.hxx"
 #include "synctl/tree/Reference.hxx"
 
 
@@ -26,6 +27,22 @@ using synctl::Reference;
 using synctl::Snapshot;
 
 
+void Snapshot::_store() const
+{
+	FileOutputStream out;
+	string path;
+
+	path = _dir.path() + "/root";
+	out = FileOutputStream(path);
+
+	out.writeInt(_content.date);
+	out.writeInt(_content.opcode);
+	out.write(_content.tree.data(), _content.tree.size());
+	out.write(_content.links.data(), _content.links.size());
+
+	_loaded = true;
+}
+
 void Snapshot::_ensureLoaded() const
 {
 	if (_loaded == false)
@@ -37,68 +54,43 @@ Snapshot::Snapshot(const string &path)
 {
 }
 
-void Snapshot::initialize(const Reference &reference)
-{
-	Date now = duration_cast<nanoseconds>
-		(system_clock::now().time_since_epoch()).count();
-	initialize(now, reference);
-}
-
-void Snapshot::initialize(Snapshot::Date date, const Reference &reference)
+void Snapshot::initialize(const Content &content)
 {
 	FileOutputStream out;
 	string path, data;
 
+	_content = content;
+
+	if (_content.date == 0)
+		_content.date = duration_cast<nanoseconds>
+			(system_clock::now().time_since_epoch())
+			.count();
+
 	_dir.create();
 
-	path = _dir.path() + "/date";
-	data = to_string(date);
-	out = FileOutputStream(path);
-	out.write(data.data(), data.size());
-	_date = date;
-
-	path = _dir.path() + "/ref";
-	data = reference.toHex();
-	out = FileOutputStream(path);
-	out.write(data.data(), data.size());
-	_ref = reference;
-
-	_loaded = true;
+	_store();
 }
 
 void Snapshot::load() const
 {
 	FileInputStream input;
-	string path, data;
-	size_t size;
+	string path;
 
-	path = _dir.path() + "/date";
+	path = _dir.path() + "/root";
 	input = FileInputStream(path);
-	data.resize(UINT64_STRING_MAXLEN);
-	size = input.read(data.data(), data.size());
-	data.resize(size);
-	_date = stoll(data);
 
-	path = _dir.path() + "/ref";
-	input = FileInputStream(path);
-	data.resize(REFERENCE_STRING_MAXLEN);
-	size = input.read(data.data(), data.size());
-	data.resize(size);
-	_ref = Reference::fromHex(data);
+	_content.date = input.readInt<Date>();
+	_content.opcode = input.readInt<opcode_t>();
+	input.readall(_content.tree.data(), _content.tree.size());
+	input.readall(_content.links.data(), _content.links.size());
 
 	_loaded = true;
 }
 
-Snapshot::Date Snapshot::date() const
+const Snapshot::Content &Snapshot::content() const
 {
 	_ensureLoaded();
-	return _date;
-}
-
-const Reference &Snapshot::ref() const
-{
-	_ensureLoaded();
-	return _ref;
+	return _content;
 }
 
 const string &Snapshot::path() const noexcept

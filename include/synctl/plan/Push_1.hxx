@@ -9,6 +9,8 @@
 #include <set>
 #include <string>
 
+#include "synctl/io/LinkTracker.hxx"
+#include "synctl/plan/Opcode.hxx"
 #include "synctl/tree/Filter.hxx"
 
 
@@ -21,13 +23,25 @@ class Reference;
 
 class Push_1
 {
+	struct EntryId
+	{
+		dev_t  dev;
+		ino_t  ino;
+
+		EntryId(const struct stat &stat);
+		EntryId(EntryId &&other);
+
+		bool operator<(const EntryId &other) const;
+	};
+
 	struct Context
 	{
-		std::string         apath;
-		std::string         rpath;
-		struct stat         stat;
-		Filter::Action      defact;
-		OutputStream       *output;
+		std::string      apath;
+		std::string      rpath;
+		struct stat      stat;
+		Filter::Action   defact;
+		LinkTracker     *links;
+		OutputStream    *output;
 	};
 
 
@@ -40,13 +54,21 @@ class Push_1
 
 	Filter::Action _filterPath(const Context *context) const;
 
-	bool _pushEntry(const Context *context, Reference *reference);
+	void _fixAccessTime(const Context *context);
 
-	bool _pushDirectory(const Context *context, Reference *reference);
+	bool _pushEntry(const Context *context, Reference *reference,
+			opcode_t *opcode);
 
-	bool _pushRegular(const Context *context, Reference *reference);
+	bool _pushDirectory(const Context *context, Reference *reference,
+			    opcode_t *opcode);
 
-	bool _pushSymlink(const Context *context, Reference *reference);
+	bool _pushRegular(const Context *context, Reference *reference,
+			  opcode_t *opcode);
+
+	bool _pushSymlink(const Context *context, Reference *reference,
+			  opcode_t *opcode);
+
+	void _pushLinks(const Context *context, Reference *reference);
 
 
  public:

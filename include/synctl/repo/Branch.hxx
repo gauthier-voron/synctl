@@ -40,8 +40,7 @@ class Branch
 	void load() const;
 
 
-	Snapshot *newSnapshot(const Reference &ref, std::string *name=nullptr);
-	Snapshot *newSnapshot(Snapshot::Date d, const Reference &ref,
+	Snapshot *newSnapshot(const Snapshot::Content &content,
 			      std::string *name = nullptr);
 
 	Snapshot *snapshot(const std::string &name) noexcept;

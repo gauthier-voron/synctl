@@ -77,18 +77,10 @@ void Branch::load() const
 	_loaded = true;
 }
 
-Snapshot *Branch::newSnapshot(const Reference &ref, string *name)
+Snapshot *Branch::newSnapshot(const Snapshot::Content &content, string *name)
 {
 	Snapshot *ret = _newSnapshot(name);
-	ret->initialize(ref);
-	return ret;
-}
-
-Snapshot *Branch::newSnapshot(Snapshot::Date d, const Reference &ref,
-			      string *name)
-{
-	Snapshot *ret = _newSnapshot(name);
-	ret->initialize(d, ref);
+	ret->initialize(content);
 	return ret;
 }
 
