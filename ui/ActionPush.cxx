@@ -88,6 +88,7 @@ ActionPush::ActionPush()
 	  })
 {
 	addOption(&_optionCommand);
+	addOption(&_optionBranch);
 	addOption(&_optionExclude);
 	addOption(&_optionInclude);
 	addOption(&_optionRoot);
@@ -106,6 +107,8 @@ int ActionPush::execute(const vector<string> &operands)
 	if (_optionServer.affected() == false)
 		throw OperandMissingException(_optionServer.longName());
 
+	if (_optionBranch.affected() == false)
+		_optionBranch.affect("client");  // TODO: remove, test-only
 	if (_optionTrunk.affected() == false)
 		_optionTrunk.affect("master");  // TODO: remove, test-only
 

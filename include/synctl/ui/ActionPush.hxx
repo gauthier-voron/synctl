@@ -19,6 +19,7 @@ namespace synctl {
 class ActionPush : public Action
 {
 	FirstMatchFilter  _filter;
+	OptionString      _optionBranch  = OptionString("branch", 'b');
 	OptionString      _optionCommand = OptionString("command", 'c');
 	OptionLambda      _optionExclude;
 	OptionLambda      _optionInclude;
