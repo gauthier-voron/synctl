@@ -66,7 +66,7 @@ int ActionPush::_execute(const string &root, Channel *channel)
 		return 1;
 
 	psettings.localRoot = root;
-	psettings.trunkName = "master";
+	psettings.trunkName = _optionTrunk.value();
 	psettings.snapshotName = nullptr;
 	psettings.filter = &_filter;
 	protocol->push(psettings);
@@ -92,6 +92,7 @@ ActionPush::ActionPush()
 	addOption(&_optionInclude);
 	addOption(&_optionRoot);
 	addOption(&_optionServer);
+	addOption(&_optionTrunk);
 }
 
 int ActionPush::execute(const vector<string> &operands)
@@ -104,6 +105,9 @@ int ActionPush::execute(const vector<string> &operands)
 		throw OperandMissingException(_optionRoot.longName());
 	if (_optionServer.affected() == false)
 		throw OperandMissingException(_optionServer.longName());
+
+	if (_optionTrunk.affected() == false)
+		_optionTrunk.affect("master");  // TODO: remove, test-only
 
 	channel = _openChannel(_optionServer.value());
 

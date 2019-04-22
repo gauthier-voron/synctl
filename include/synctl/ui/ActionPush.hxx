@@ -24,6 +24,7 @@ class ActionPush : public Action
 	OptionLambda      _optionInclude;
 	OptionString      _optionRoot    = OptionString("root", 'r');
 	OptionString      _optionServer  = OptionString("server", 's');
+	OptionString      _optionTrunk   = OptionString("trunk", 't');
 
 
 	std::unique_ptr<Channel> _openChannel(const std::string &server);
