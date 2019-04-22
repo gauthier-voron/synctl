@@ -72,6 +72,7 @@ void Protocol_1_0_0::push(const PushSettings &settings) const
 
 	_channel->outputStream()->writeInt(op);
 	_channel->outputStream()->writeStr(settings.trunkName);
+	_channel->outputStream()->writeStr(settings.branchName);
 
 	while (1) {
 		_channel->inputStream()->readall(ref.data(), ref.size());
@@ -100,9 +101,11 @@ void Protocol_1_0_0::_servePush(Repository *repository) const
 	Snapshot::Content snapshot;
 	Receive_1 receiver;
 	FilterCodec codec;
+	string branchName;
 	Trunk *trunk;
 
-	_channel->inputStream()->readStr(&trunkName);
+	trunkName = _channel->inputStream()->readStr();
+	branchName = _channel->inputStream()->readStr();
 
 	trunk = repository->trunk(trunkName);
 	if (trunk == nullptr)

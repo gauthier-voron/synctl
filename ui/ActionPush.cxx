@@ -66,6 +66,7 @@ int ActionPush::_execute(const string &root, Channel *channel)
 		return 1;
 
 	psettings.localRoot = root;
+	psettings.branchName = _optionBranch.value();
 	psettings.trunkName = _optionTrunk.value();
 	psettings.snapshotName = nullptr;
 	psettings.filter = &_filter;

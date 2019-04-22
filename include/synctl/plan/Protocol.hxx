@@ -43,6 +43,9 @@ class Protocol
 		// Root of the local tree to push
 		std::string   localRoot;
 
+		// Name of the remote branch to update
+		std::string   branchName;
+
 		// Name of the remote trunk to create a snapshot on
 		std::string   trunkName;
 
