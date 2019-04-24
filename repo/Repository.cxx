@@ -15,6 +15,8 @@
 #include "synctl/io/IOException.hxx"
 #include "synctl/io/OutputStream.hxx"
 #include "synctl/tree/Reference.hxx"
+#include "synctl/repo/Branch.hxx"
+#include "synctl/repo/BranchStore.hxx"
 #include "synctl/repo/Trunk.hxx"
 #include "synctl/repo/TrunkStore.hxx"
 #include "synctl/io/TransientOutputStream.hxx"
@@ -23,6 +25,8 @@
 using std::make_unique;
 using std::string;
 using std::unique_ptr;
+using synctl::Branch;
+using synctl::BranchStore;
 using synctl::FileInputStream;
 using synctl::FileOutputStream;
 using synctl::InputStream;
@@ -33,6 +37,12 @@ using synctl::Repository;
 using synctl::TransientOutputStream;
 using synctl::Trunk;
 
+
+static string __bstorePath(const string &path)
+{
+	string bstore = path + "/branches";
+	return bstore;
+}
 
 static string __tstorePath(const string &path)
 {
@@ -47,7 +57,8 @@ static string __ostorePath(const string &path)
 }
 
 Repository::Repository(const string &path)
-	: _path(path), _tstore(__tstorePath(path)), _ostore(__ostorePath(path))
+	: _path(path), _bstore(__bstorePath(path))
+	, _tstore(__tstorePath(path)), _ostore(__ostorePath(path))
 {
 }
 
@@ -80,6 +91,7 @@ void Repository::initialize() const
 		closedir(dd);
 	}
 
+	_bstore.initialize();
 	_tstore.initialize();
 	_ostore.initialize();
 }
@@ -108,6 +120,21 @@ unique_ptr<InputStream> Repository::readObject(const Reference &reference)
 size_t Repository::getObjectSize(const Reference &reference) const
 {
 	return _ostore.getObjectSize(reference);
+}
+
+Branch *Repository::setBranch(const string &name, const Branch::Content &cont)
+{
+	return _bstore.setBranch(name, cont);
+}
+
+Branch *Repository::branch(const string &name)
+{
+	return _bstore.branch(name);
+}
+
+const Branch *Repository::branch(const string &name) const
+{
+	return _bstore.branch(name);
 }
 
 Trunk *Repository::newTrunk(const string &name)

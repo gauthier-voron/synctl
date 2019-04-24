@@ -6,6 +6,8 @@
 #include <memory>
 #include <string>
 
+#include "synctl/repo/Branch.hxx"
+#include "synctl/repo/BranchStore.hxx"
 #include "synctl/repo/ObjectStore.hxx"
 #include "synctl/repo/TrunkStore.hxx"
 
@@ -23,6 +25,7 @@ class TransientOutputStream;
 class Repository
 {
 	std::string  _path;
+	BranchStore  _bstore;
 	TrunkStore   _tstore;
 	ObjectStore  _ostore;
 
@@ -45,6 +48,13 @@ class Repository
 	readObject(const Reference &reference) const;
 
 	size_t getObjectSize(const Reference &reference) const;
+
+
+	Branch *setBranch(const std::string &name,
+			  const Branch::Content &content);
+
+	Branch *branch(const std::string &name);
+	const Branch *branch(const std::string &name) const;
 
 
 	Trunk *newTrunk(const std::string &name);
