@@ -29,11 +29,13 @@ void Trunk::_ensureLoaded() const
 		load();
 }
 
-Snapshot *Trunk::_newSnapshot(const string &path) const
+Snapshot *Trunk::_newSnapshot(const string &path,
+			      const Snapshot::Content &content) const
 {
+	unique_ptr<Snapshot> uptr = Snapshot::makePtr(path, content);
 	Snapshot *ptr;
 
-	_snapshots.emplace_back(make_unique<Snapshot>(path));
+	_snapshots.push_back(move(uptr));
 	ptr = _snapshots.back().get();
 	_rwptrs.push_back(ptr);
 	_roptrs.push_back(ptr);
@@ -41,7 +43,8 @@ Snapshot *Trunk::_newSnapshot(const string &path) const
 	return ptr;
 }
 
-Snapshot *Trunk::_newSnapshot(string *name) const
+Snapshot *Trunk::_newSnapshot(string *name, const Snapshot::Content &content)
+	const
 {
 	string path = _dir.path() + "/";
 	size_t len = path.length();
@@ -51,7 +54,19 @@ Snapshot *Trunk::_newSnapshot(string *name) const
 
 	*name = path.substr(len);
 
-	return _newSnapshot(path);
+	return _newSnapshot(path, content);
+}
+
+Snapshot *Trunk::_snapshot(const string &path) const
+{
+	Snapshot *ptr;
+
+	_snapshots.push_back(make_unique<Snapshot>(path));
+	ptr = _snapshots.back().get();
+	_rwptrs.push_back(ptr);
+	_roptrs.push_back(ptr);
+
+	return ptr;
 }
 
 Trunk::Trunk(const string &path)
@@ -71,7 +86,7 @@ void Trunk::load() const
 
 	for (const string &name : _dir.trueChildren()) {
 		path = _dir.path() + "/" + name;
-		_newSnapshot(path);
+		_snapshot(path);
 	}
 
 	_loaded = true;
@@ -79,8 +94,7 @@ void Trunk::load() const
 
 Snapshot *Trunk::newSnapshot(const Snapshot::Content &content, string *name)
 {
-	Snapshot *ret = _newSnapshot(name);
-	ret->initialize(content);
+	Snapshot *ret = _newSnapshot(name, content);
 	return ret;
 }
 

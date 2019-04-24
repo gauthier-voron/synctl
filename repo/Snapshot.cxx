@@ -1,6 +1,7 @@
 #include "synctl/repo/Snapshot.hxx"
 
 #include <chrono>
+#include <memory>
 #include <string>
 
 #include "synctl/io/FileInputStream.hxx"
@@ -17,9 +18,11 @@
 using std::chrono::duration_cast;
 using std::chrono::nanoseconds;
 using std::chrono::system_clock;
+using std::make_unique;
 using std::stoll;
 using std::string;
 using std::to_string;
+using std::unique_ptr;
 using synctl::FileInputStream;
 using synctl::FileOutputStream;
 using synctl::IOException;
@@ -27,57 +30,9 @@ using synctl::Reference;
 using synctl::Snapshot;
 
 
-void Snapshot::_store() const
+void Snapshot::_load() const
 {
-	FileOutputStream out;
-	string path;
-
-	path = _dir.path() + "/root";
-	out = FileOutputStream(path);
-
-	out.writeInt(_content.date);
-	out.writeInt(_content.opcode);
-	out.write(_content.tree.data(), _content.tree.size());
-	out.write(_content.links.data(), _content.links.size());
-
-	_loaded = true;
-}
-
-void Snapshot::_ensureLoaded() const
-{
-	if (_loaded == false)
-		load();
-}
-
-Snapshot::Snapshot(const string &path)
-	: _dir(path)
-{
-}
-
-void Snapshot::initialize(const Content &content)
-{
-	FileOutputStream out;
-	string path, data;
-
-	_content = content;
-
-	if (_content.date == 0)
-		_content.date = duration_cast<nanoseconds>
-			(system_clock::now().time_since_epoch())
-			.count();
-
-	_dir.create();
-
-	_store();
-}
-
-void Snapshot::load() const
-{
-	FileInputStream input;
-	string path;
-
-	path = _dir.path() + "/root";
-	input = FileInputStream(path);
+	FileInputStream input = FileInputStream(_path);
 
 	_content.date = input.readInt<Date>();
 	_content.opcode = input.readInt<opcode_t>();
@@ -87,13 +42,64 @@ void Snapshot::load() const
 	_loaded = true;
 }
 
+void Snapshot::_store() const
+{
+	FileOutputStream out = FileOutputStream(_path);
+
+	out.writeInt(_content.date);
+	out.writeInt(_content.opcode);
+	out.write(_content.tree.data(), _content.tree.size());
+	out.write(_content.links.data(), _content.links.size());
+
+	_loaded = true;
+}
+
+Snapshot::Snapshot(const string &path, const Content &content)
+	: _path(path), _content(content)
+{
+}
+
+Snapshot::Snapshot(const string &path)
+	: _path(path)
+{
+}
+
 const Snapshot::Content &Snapshot::content() const
 {
-	_ensureLoaded();
+	if (_loaded == false)
+		_load();
 	return _content;
 }
 
 const string &Snapshot::path() const noexcept
 {
-	return _dir.path();
+	return _path;
+}
+
+Snapshot Snapshot::make(const string &path, const Content &content)
+{
+	Snapshot ret = Snapshot(path, content);
+
+	if (ret._content.date == 0)
+		ret._content.date = duration_cast<nanoseconds>
+			(system_clock::now().time_since_epoch())
+			.count();
+
+	ret._store();
+	return ret;
+}
+
+unique_ptr<Snapshot> Snapshot::makePtr(const string &path,
+				       const Content &content)
+{
+	Snapshot *pointed = new Snapshot(path, content);
+	unique_ptr<Snapshot> ret = unique_ptr<Snapshot>(pointed);
+
+	if (ret->_content.date == 0)
+		ret->_content.date = duration_cast<nanoseconds>
+			(system_clock::now().time_since_epoch())
+			.count();
+
+	ret->_store();
+	return ret;
 }

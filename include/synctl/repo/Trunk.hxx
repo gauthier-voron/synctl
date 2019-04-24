@@ -27,9 +27,13 @@ class Trunk
 
 	void _ensureLoaded() const;
 
-	std::string _newSnapshotPath(std::string *name) const;
-	Snapshot *_newSnapshot(const std::string &path) const;
-	Snapshot *_newSnapshot(std::string *name) const;
+	Snapshot *_newSnapshot(const std::string &path,
+			       const Snapshot::Content &content) const;
+
+	Snapshot *_newSnapshot(std::string *name,
+			       const Snapshot::Content &content) const;
+
+	Snapshot *_snapshot(const std::string &path) const;
 
 
  public:
