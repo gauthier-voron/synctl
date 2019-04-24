@@ -6,14 +6,16 @@
 #include <memory>
 #include <string>
 
+#include "synctl/repo/Branch.hxx"
 #include "synctl/repo/BranchStore.hxx"
 #include "synctl/repo/ObjectStore.hxx"
+#include "synctl/repo/TrunkStore.hxx"
 
 
 namespace synctl {
 
 
-class Branch;
+class Trunk;
 class InputStream;
 class OutputStream;
 class Reference;
@@ -24,18 +26,8 @@ class Repository
 {
 	std::string  _path;
 	BranchStore  _bstore;
+	TrunkStore   _tstore;
 	ObjectStore  _ostore;
-
-
-	// std::unique_ptr<synctl::InputStream>
-	// _readObject(const synctl::Reference &reference) const;
-
-	// Refcount _readRefcount(const synctl::Reference &reference) const;
-
-	// std::unique_ptr<synctl::OutputStream>
-	// _writeObject(const synctl::Reference &reference);
-
-	// void _writeRefcount(const synctl::Reference &reference, Refcount cnt);
 
 
  public:
@@ -58,20 +50,17 @@ class Repository
 	size_t getObjectSize(const Reference &reference) const;
 
 
-	Branch *newBranch(const std::string &name);
+	Branch *setBranch(const std::string &name,
+			  const Branch::Content &content);
 
 	Branch *branch(const std::string &name);
 	const Branch *branch(const std::string &name) const;
 
-	
-	// const RepositorySnapshot &getTrunk() const;
-	// void setTrunk(const RepositorySnapshot &trunk);
 
-	// void dumpReflist(std::ostream &os);
+	Trunk *newTrunk(const std::string &name);
 
-	// NewRepositoryObject newObject();
-	// RepositoryObject getObject(const synctl::Reference &ref) const;
-	// void delObject(const synctl::Reference &ref);
+	Trunk *trunk(const std::string &name);
+	const Trunk *trunk(const std::string &name) const;
 };
 
 

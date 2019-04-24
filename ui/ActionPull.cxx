@@ -66,7 +66,7 @@ int ActionPull::_execute(const string &root, Channel *channel)
 		return 1;
 
 	psettings.localRoot = root;
-	psettings.branchName = "Laurier";
+	psettings.trunkName = _optionTrunk.value();
 	psettings.snapshotName = "";
 	psettings.filter = &_filter;
 	protocol->pull(psettings);
@@ -92,6 +92,7 @@ ActionPull::ActionPull()
 	addOption(&_optionInclude);
 	addOption(&_optionRoot);
 	addOption(&_optionServer);
+	addOption(&_optionTrunk);
 }
 
 int ActionPull::execute(const vector<string> &operands)
@@ -104,6 +105,9 @@ int ActionPull::execute(const vector<string> &operands)
 		throw OperandMissingException(_optionRoot.longName());
 	if (_optionServer.affected() == false)
 		throw OperandMissingException(_optionServer.longName());
+
+	if (_optionTrunk.affected() == false)
+		_optionTrunk.affect("master");  // TODO: remove, test-only
 
 	channel = _openChannel(_optionServer.value());
 

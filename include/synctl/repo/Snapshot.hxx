@@ -3,6 +3,7 @@
 
 
 #include <cstdint>
+#include <memory>
 #include <string>
 
 #include "synctl/io/Directory.hxx"
@@ -28,23 +29,28 @@ class Snapshot
 
 
  private:
-	Directory        _dir;
-	mutable Content  _content;
-	mutable bool     _loaded = false;
+	const std::string  _path;
+	mutable Content    _content;
+	mutable bool       _loaded = false;
 
 
+	Snapshot(const std::string &path, const Snapshot::Content &content);
+
+	void _load() const;
 	void _store() const;
-	void _ensureLoaded() const;
 
 
  public:
 	Snapshot(const std::string &path);
 
-	void initialize(const Content &content);
-	void load() const;
-
 	const Content &content() const;
 	const std::string &path() const noexcept;
+
+	static Snapshot make(const std::string &path,
+			     const Snapshot::Content &content);
+
+	static std::unique_ptr<Snapshot>
+	makePtr(const std::string &path, const Snapshot::Content &content);
 };
 
 

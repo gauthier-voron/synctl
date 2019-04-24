@@ -4,7 +4,7 @@
 #include <string>
 #include <vector>
 
-#include "synctl/io/IOException.hxx"
+#include "synctl/io/Directory.hxx"
 #include "synctl/repo/Branch.hxx"
 
 
@@ -12,16 +12,12 @@ using std::make_unique;
 using std::move;
 using std::string;
 using std::unique_ptr;
-using std::vector;
-using synctl::IOException;
 using synctl::Branch;
 using synctl::BranchStore;
 
 
 void BranchStore::_ensureLoaded() const
 {
-	if (_loaded == false)
-		load();
 }
 
 BranchStore::BranchStore(const string &path)
@@ -54,20 +50,27 @@ void BranchStore::load() const
 	_loaded = true;
 }
 
-Branch *BranchStore::newBranch(const string &name)
+Branch *BranchStore::setBranch(const string &name, const Branch::Content &cont)
 {
 	string path = _dir.path() + "/" + name;
-	unique_ptr<Branch> branch = make_unique<Branch>(path);
-	Branch *ptr;
-
-	branch->initialize();
+	Branch *ptr = nullptr;
 
 	_ensureLoaded();
 
-	ptr = branch.get();
-	_branches.push_back(move(branch));
-	_rwptrs.push_back(ptr);
-	_roptrs.push_back(ptr);
+	for (Branch *br : _rwptrs)
+		if (br->path() == path) {
+			ptr = br;
+			break;
+		}
+
+	if (ptr == nullptr) {
+		_branches.push_back(make_unique<Branch>(path));
+		ptr = _branches.back().get();
+		_rwptrs.push_back(ptr);
+		_roptrs.push_back(ptr);
+	}
+
+	ptr->store(cont);
 
 	return ptr;
 }
@@ -96,16 +99,4 @@ const Branch *BranchStore::branch(const string &name) const noexcept
 			return br;
 
 	return nullptr;
-}
-
-const vector<Branch *> &BranchStore::branches() noexcept
-{
-	_ensureLoaded();
-	return _rwptrs;
-}
-
-const vector<const Branch *> &BranchStore::branches() const noexcept
-{
-	_ensureLoaded();
-	return _roptrs;
 }

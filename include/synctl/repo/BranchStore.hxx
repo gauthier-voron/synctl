@@ -13,9 +13,6 @@
 namespace synctl {
 
 
-class Branch;
-
-
 class BranchStore
 {
 	Directory                                     _dir;
@@ -36,14 +33,11 @@ class BranchStore
 	void load() const;
 
 
-	Branch *newBranch(const std::string &name);
+	Branch *setBranch(const std::string &name,
+			  const Branch::Content &content);
 
 	Branch *branch(const std::string &name) noexcept;
 	const Branch *branch(const std::string &name) const noexcept;
-
-
-	const std::vector<Branch *> &branches() noexcept;
-	const std::vector<const Branch *> &branches() const noexcept;
 };
 
 

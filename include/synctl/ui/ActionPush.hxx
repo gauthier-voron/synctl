@@ -19,11 +19,13 @@ namespace synctl {
 class ActionPush : public Action
 {
 	FirstMatchFilter  _filter;
+	OptionString      _optionBranch  = OptionString("branch", 'b');
 	OptionString      _optionCommand = OptionString("command", 'c');
 	OptionLambda      _optionExclude;
 	OptionLambda      _optionInclude;
 	OptionString      _optionRoot    = OptionString("root", 'r');
 	OptionString      _optionServer  = OptionString("server", 's');
+	OptionString      _optionTrunk   = OptionString("trunk", 't');
 
 
 	std::unique_ptr<Channel> _openChannel(const std::string &server);

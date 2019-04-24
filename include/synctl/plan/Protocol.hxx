@@ -43,8 +43,11 @@ class Protocol
 		// Root of the local tree to push
 		std::string   localRoot;
 
-		// Name of the remote branch to create a snapshot on
+		// Name of the remote branch to update
 		std::string   branchName;
+
+		// Name of the remote trunk to create a snapshot on
+		std::string   trunkName;
 
 		// Filter to select what entries to push
 		Filter       *filter;
@@ -62,8 +65,8 @@ class Protocol
 		// Root of the local tree to pull to
 		std::string   localRoot;
 
-		// Name of the remote branch to pull from
-		std::string   branchName;
+		// Name of the remote trunk to pull from
+		std::string   trunkName;
 
 		// If not empty, name of the snapshot to pull
 		// If empty, pull the latest snapshot

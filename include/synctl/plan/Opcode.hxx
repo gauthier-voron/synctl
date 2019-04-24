@@ -24,7 +24,7 @@ typedef uint8_t opcode_t;
 #define OP_ACT_PULL           ((opcode_t) 2)
 
 #define OP_RET_OK             ((opcode_t) 0)
-#define OP_RET_INVBRANCH      ((opcode_t) 1)
+#define OP_RET_INVTRUNK       ((opcode_t) 1)
 #define OP_RET_INVSNAPSHOT    ((opcode_t) 2)
 
 
