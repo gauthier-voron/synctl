@@ -50,10 +50,13 @@ class Trunk
 	Snapshot *snapshot(const std::string &name) noexcept;
 	const Snapshot *snapshot(const std::string &name) const noexcept;
 
+	Snapshot *lastSnapshot();
+	const Snapshot *lastSnapshot() const;
 
-	const std::string &path() const noexcept;
 	const std::vector<Snapshot *> &snapshots() noexcept;
 	const std::vector<const Snapshot *> &snapshots() const noexcept;
+
+	const std::string &path() const noexcept;
 };
 
 

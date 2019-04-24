@@ -124,9 +124,38 @@ const Snapshot *Trunk::snapshot(const string &name) const noexcept
 	return nullptr;
 }
 
-const string &Trunk::path() const noexcept
+Snapshot *Trunk::lastSnapshot()
 {
-	return _dir.path();
+	Snapshot *last = nullptr;
+	Snapshot::Date date, lastDate;
+
+	for (Snapshot *s : snapshots()) {
+		date = s->content().date;
+
+		if ((last == nullptr) || (date > lastDate)) {
+			last = s;
+			lastDate = date;
+		}
+	}
+
+	return last;
+}
+
+const Snapshot *Trunk::lastSnapshot() const
+{
+	const Snapshot *last = nullptr;
+	Snapshot::Date date, lastDate;
+
+	for (const Snapshot *s : snapshots()) {
+		date = s->content().date;
+
+		if ((last == nullptr) || (date > lastDate)) {
+			last = s;
+			lastDate = date;
+		}
+	}
+
+	return last;
 }
 
 const vector<Snapshot *> &Trunk::snapshots() noexcept
@@ -139,4 +168,9 @@ const vector<const Snapshot *> &Trunk::snapshots() const noexcept
 {
 	_ensureLoaded();
 	return _roptrs;
+}
+
+const string &Trunk::path() const noexcept
+{
+	return _dir.path();
 }
