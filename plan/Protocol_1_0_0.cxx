@@ -97,19 +97,19 @@ void Protocol_1_0_0::push(const PushSettings &settings) const
 void Protocol_1_0_0::_servePush(Repository *repository) const
 {
 	Reference ref = Reference::zero();
-	string trunkName, snapshotName;
 	Snapshot::Content snapshot;
+	Branch::Content branch;
 	Receive_1 receiver;
 	FilterCodec codec;
 	string branchName;
 	Trunk *trunk;
 
-	trunkName = _channel->inputStream()->readStr();
+	branch.trunk = _channel->inputStream()->readStr();
 	branchName = _channel->inputStream()->readStr();
 
-	trunk = repository->trunk(trunkName);
+	trunk = repository->trunk(branch.trunk);
 	if (trunk == nullptr)
-		trunk = repository->newTrunk(trunkName);
+		trunk = repository->newTrunk(branch.trunk);
 
 	repository->dumpReferences(_channel->outputStream());
 	_channel->outputStream()->write(ref.data(), ref.size());
@@ -121,9 +121,10 @@ void Protocol_1_0_0::_servePush(Repository *repository) const
 	repository->takeReference(snapshot.tree);
 	repository->takeReference(snapshot.links);
 
-	trunk->newSnapshot(snapshot, &snapshotName);
+	trunk->newSnapshot(snapshot, &branch.snapshot);
+	repository->setBranch(branchName, branch);
 
-	_channel->outputStream()->writeStr(snapshotName);
+	_channel->outputStream()->writeStr(branch.snapshot);
 }
 
 void Protocol_1_0_0::pull(const PullSettings &settings) const
