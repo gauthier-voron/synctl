@@ -3,6 +3,7 @@
 #include <map>
 #include <memory>
 #include <string>
+#include <vector>
 
 #include "synctl/io/HashOutputStream.hxx"
 #include "synctl/io/LimitedInputStream.hxx"
@@ -24,6 +25,7 @@ using std::map;
 using std::move;
 using std::string;
 using std::unique_ptr;
+using std::vector;
 using synctl::Directory_1;
 using synctl::Filter;
 using synctl::HashOutputStream;
@@ -162,6 +164,127 @@ bool Receive_1::_findBaseref(MergeContext *context) const
 	return _loadBaseref(context);
 }
 
+void Receive_1::_storeDirectory(const Context *context, const Directory_1 &dir,
+				const Reference &reference)
+{
+	unique_ptr<TransientOutputStream> tos;
+
+	for (Directory_1::Entry &child : dir.getChildren())
+		context->repository->takeReference(child.reference);
+
+	tos = context->repository->newObject();
+	dir.write(tos.get());
+
+	try {
+		tos->commit(reference);
+	} catch (OverwriteException &e) {
+		// May happen legally after a merge
+	}
+}
+
+void Receive_1::_storeDirectory(const Context *context, const Directory_1 &dir,
+				Reference *reference)
+{
+	unique_ptr<TransientOutputStream> tos;
+	Reference ref;
+
+	for (Directory_1::Entry &child : dir.getChildren())
+		context->repository->takeReference(child.reference);
+
+	tos = context->repository->newObject();
+
+	if (reference == nullptr)
+		reference = &ref;
+	dir.write(tos.get(), reference);
+
+	try {
+		tos->commit(*reference);
+	} catch (OverwriteException &e) {
+		// May happen legally after a merge
+	}
+}
+
+bool Receive_1::_mergeDirectory(MergeContext *context)
+{
+	vector<Directory_1::Entry> baseChildren, recvChildren;
+	bool modified = false;
+	size_t rlen, i, j;
+	MergeContext mctx;
+	bool hasRecv;
+
+	_findBasedir(context);
+
+	baseChildren = context->basedir->getChildren();
+	recvChildren = context->recvdir->getChildren();
+
+	if (context->path[context->path.length() - 1] == '/')
+		mctx.path = context->path;
+	else
+		mctx.path = context->path + "/";
+	rlen = mctx.path.length();
+
+	mctx.rcontext = context->rcontext;
+
+	i = j = 0;
+	while (i < baseChildren.size()) {
+		hasRecv = j < recvChildren.size();
+		if (hasRecv && (recvChildren[j].name < baseChildren[i].name)) {
+			j++;
+			continue;
+		}
+
+		mctx.path += baseChildren[i].name;
+
+		if (!hasRecv || (recvChildren[j].name > baseChildren[i].name)){
+			if (_filterPath(mctx.path) == Filter::Reject) {
+				context->recvdir->addChild(baseChildren[i]);
+				modified = true;
+			}
+
+			i++;
+			mctx.path.resize(rlen);
+			continue;
+		}
+
+		if (recvChildren[j].opcode != OP_TREE_DIRECTORY_1)
+			goto skip;
+		if (baseChildren[i].opcode != OP_TREE_DIRECTORY_1)
+			goto skip;
+		if (baseChildren[i].reference == recvChildren[j].reference)
+			goto skip;
+
+		_findBaseref(&mctx);
+
+		if (mctx.baseref->merged == false) {
+			_findRecvdir(&mctx, recvChildren[j].reference);
+			if (_mergeDirectory(&mctx))
+				_storeDirectory(context->rcontext,
+						*mctx.recvdir,
+						&mctx.baseref->mergeAs);
+			else
+				mctx.baseref->mergeAs =
+					recvChildren[j].reference;
+		}
+
+		if (mctx.baseref->mergeAs != recvChildren[j].reference) {
+			context->recvdir->removeChild(recvChildren[j].name);
+			recvChildren[j].reference = mctx.baseref->mergeAs;
+			context->recvdir->addChild(recvChildren[j]);
+			modified = true;
+		}
+
+	 skip:
+		i++;
+		j++;
+		mctx.path.resize(rlen);
+	}
+
+	context->baseref->merged = true;
+
+	return modified;
+}
+
+
 Filter::Action Receive_1::_filterPath(const string &path) const
 {
 	Filter::Action ret;
@@ -200,27 +323,38 @@ bool Receive_1::_receiveEntry(const Context *context)
 
 void Receive_1::_receiveDirectory(const Context *context)
 {
-	unique_ptr<TransientOutputStream> tos;
 	LimitedInputStream lis;
-	Reference reference;
+	MergeContext mctx;
 	Directory_1 dir;
 	uint64_t dlen;
+	Reference ref;
 
-	context->input->readStr();
+	mctx.path = context->input->readStr();
 	dlen = context->input->readInt<uint64_t>();
 	lis = LimitedInputStream(context->input, dlen);
-	dir.read(&lis, nullptr);
+	dir.read(&lis, &ref);
 
-	tos = context->repository->newObject();
-	dir.write(tos.get(), &reference);
+	if (_filter == nullptr) {
+		_storeDirectory(context, dir, ref);
+		return;
+	}
 
-	for (Directory_1::Entry &child : dir.getChildren())
-		context->repository->takeReference(child.reference);
+	mctx.rcontext = context;
 
-	try {
-		tos->commit(reference);
-	} catch (OverwriteException &e) {
-		// FIXME: ignore for now
+	if ((_findBaseref(&mctx) == false) ||
+	    (mctx.baseref->opcode != OP_TREE_DIRECTORY_1) ||
+	    (mctx.baseref->reference == ref)) {
+		_storeDirectory(context, dir, ref);
+		return;
+	}
+
+	mctx.recvdir = &dir;
+
+	if (_mergeDirectory(&mctx)) {
+		_storeDirectory(context, dir, &mctx.baseref->mergeAs);
+	} else {
+		_storeDirectory(context, dir, ref);
+		mctx.baseref->mergeAs = ref;
 	}
 }
 
@@ -359,6 +493,16 @@ void Receive_1::receive(InputStream *input, Repository *repository,
 
 	content->opcode = input->readInt<opcode_t>();
 	input->readall(content->tree.data(), content->tree.size());
+
+	if ((_filter != nullptr) && (content->opcode == OP_TREE_DIRECTORY_1)) {
+		mctx.path = "/";
+		mctx.rcontext = &ctx;
+
+		_findBaseref(&mctx);
+
+		if (mctx.baseref->merged)
+			content->tree = mctx.baseref->mergeAs;
+	}
 
 	while (_receiveLinks(&ctx))
 		;

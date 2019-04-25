@@ -26,6 +26,8 @@ class Receive_1
 	{
 		Reference  reference;
 		opcode_t   opcode;
+		bool       merged = false;
+		Reference  mergeAs;
 
 		Baseref() = default;
 		Baseref(const Reference &reference, opcode_t opcode);
@@ -70,6 +72,14 @@ class Receive_1
 	bool _loadBaseref(MergeContext *context) const;
 
 	bool _findBaseref(MergeContext *context) const;
+
+	void _storeDirectory(const Context *context, const Directory_1 &dir,
+			     const Reference &reference);
+
+	void _storeDirectory(const Context *context, const Directory_1 &dir,
+			     Reference *reference = nullptr);
+
+	bool _mergeDirectory(MergeContext *context);
 
 
 	bool _receiveEntry(const Context *context);
