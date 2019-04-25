@@ -213,6 +213,12 @@ void Directory_1::addChild(const string &name, const struct stat &statbuf,
 	_children[name] = EntryInfo(statbuf, xattrs, opcode, reference);
 }
 
+void Directory_1::addChild(const Entry &entry)
+{
+	_children[entry.name] = EntryInfo(entry.stat, entry.xattrs,
+					  entry.opcode, entry.reference);
+}
+
 void Directory_1::removeChild(const string &name)
 {
 	auto it = _children.find(name);
