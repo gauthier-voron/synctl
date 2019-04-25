@@ -1,6 +1,7 @@
 #include "synctl/plan/Receive_1.hxx"
 
 #include <memory>
+#include <string>
 
 #include "synctl/io/HashOutputStream.hxx"
 #include "synctl/io/LimitedInputStream.hxx"
@@ -15,6 +16,7 @@
 #include "synctl/tree/Symlink_1.hxx"
 
 
+using std::string;
 using std::unique_ptr;
 using synctl::Directory_1;
 using synctl::HashOutputStream;
@@ -62,6 +64,7 @@ void Receive_1::_receiveDirectory(const Context *context)
 	Directory_1 dir;
 	uint64_t dlen;
 
+	context->input->readStr();
 	dlen = context->input->readInt<uint64_t>();
 	lis = LimitedInputStream(context->input, dlen);
 	dir.read(&lis, nullptr);

@@ -177,6 +177,7 @@ bool Push_1::_pushDirectory(const Context *context, Reference *reference,
 	dlen = null.written();
 
 	context->output->writeInt(*opcode);
+	context->output->writeStr(context->rpath);
 	context->output->writeInt(dlen);
 	dir.write(context->output, nullptr);
 
