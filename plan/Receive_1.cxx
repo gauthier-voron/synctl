@@ -1,10 +1,12 @@
 #include "synctl/plan/Receive_1.hxx"
 
+#include <map>
 #include <memory>
 #include <string>
 
 #include "synctl/io/HashOutputStream.hxx"
 #include "synctl/io/LimitedInputStream.hxx"
+#include "synctl/io/Path.hxx"
 #include "synctl/io/TransientOutputStream.hxx"
 #include "synctl/plan/Opcode.hxx"
 #include "synctl/repo/OverwriteException.hxx"
@@ -17,6 +19,9 @@
 #include "synctl/tree/Symlink_1.hxx"
 
 
+using std::make_unique;
+using std::map;
+using std::move;
 using std::string;
 using std::unique_ptr;
 using synctl::Directory_1;
@@ -32,6 +37,104 @@ using synctl::Repository;
 using synctl::Symlink_1;
 using synctl::TransientOutputStream;
 
+
+Receive_1::Baseref::Baseref(const Reference &_reference, opcode_t _opcode)
+	: reference(_reference), opcode(_opcode)
+{
+}
+
+Receive_1::Baseref *Receive_1::_loadBasedir(MergeContext *context,
+					    const string &name) const
+{
+	unique_ptr<Directory_1> dir = make_unique<Directory_1>();
+	const Context *rc = context->rcontext;
+	unique_ptr<InputStream> input;
+	unique_ptr<Baseref> uptr;
+	Baseref *base;
+	string cpath;
+	size_t cplen;
+
+	input = rc->repository->readObject(context->baseref->reference);
+	if (input == nullptr)
+		return nullptr;
+
+	context->basedir = dir.get();
+	dir->read(input.get());
+
+	if (context->path[context->path.length() - 1] == '/')
+		cpath = context->path;
+	else
+		cpath = context->path + "/";
+	cplen = cpath.length();
+
+	for (const Directory_1::Entry &child : dir->getChildren()) {
+		cpath += child.name;
+
+		uptr = make_unique<Baseref>(child.reference, child.opcode);
+		if (name == child.name)
+			base = uptr.get();
+		rc->baserefs->emplace(make_pair(cpath, move(uptr)));
+
+		cpath.resize(cplen);
+	}
+
+	rc->basedirs->emplace
+		(make_pair(context->baseref->reference, move(dir)));
+	return base;
+}
+
+void Receive_1::_findBasedir(MergeContext *context) const
+{
+	const Context *rc = context->rcontext;
+	auto it = rc->basedirs->find(context->baseref->reference);
+
+	if (it != rc->basedirs->end())
+		context->basedir = it->second.get();
+
+	_loadBasedir(context, "");
+}
+
+bool Receive_1::_loadBaseref(MergeContext *context) const
+{
+	unique_ptr<Baseref> uptr;
+	MergeContext mctx;
+	const Context *rc;
+	string name;
+
+	if (context->path == "/") {
+		uptr = make_unique<Baseref>(_base.tree, _base.opcode);
+		context->baseref = uptr.get();
+
+		rc = context->rcontext;
+		rc->baserefs->emplace(make_pair(context->path, move(uptr)));
+
+		return true;
+	}
+
+	mctx.rcontext = context->rcontext;
+	split(context->path, &mctx.path, &name);
+
+	if (_findBaseref(&mctx) == false)
+		return false;
+	if (mctx.baseref->opcode != OP_TREE_DIRECTORY_1)
+		return false;
+
+	context->baseref = _loadBasedir(&mctx, name);
+
+	return (context->baseref != nullptr);
+}
+
+bool Receive_1::_findBaseref(MergeContext *context) const
+{
+	auto it = context->rcontext->baserefs->find(context->path);
+
+	if (it != context->rcontext->baserefs->end()) {
+		context->baseref = it->second.get();
+		return true;
+	}
+
+	return _loadBaseref(context);
+}
 
 bool Receive_1::_receiveEntry(const Context *context)
 {
@@ -202,8 +305,13 @@ void Receive_1::setBaseFilter(const Snapshot::Content &base, Filter *filter)
 void Receive_1::receive(InputStream *input, Repository *repository,
 			Snapshot::Content *content)
 {
+	map<string, unique_ptr<Baseref>> baserefs;
+	map<Reference, unique_ptr<Directory_1>> basedirs;
+	MergeContext mctx;
 	Context ctx;
 
+	ctx.baserefs = &baserefs;
+	ctx.basedirs = &basedirs;
 	ctx.input = input;
 	ctx.repository = repository;
 
