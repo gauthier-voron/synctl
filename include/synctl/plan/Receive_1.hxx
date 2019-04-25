@@ -54,6 +54,8 @@ class Receive_1
 	Filter             *_filter = nullptr;
 
 
+	Filter::Action _filterPath(const std::string &path) const;
+
 	Baseref *_loadBasedir(MergeContext *context, const std::string &name)
 		const;
 

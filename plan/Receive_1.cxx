@@ -136,6 +136,17 @@ bool Receive_1::_findBaseref(MergeContext *context) const
 	return _loadBaseref(context);
 }
 
+Filter::Action Receive_1::_filterPath(const string &path) const
+{
+	Filter::Action ret;
+
+	ret = _filter->apply(path);
+	if (ret == Filter::Ignore)
+		ret = Filter::Accept;
+
+	return ret;
+}
+
 bool Receive_1::_receiveEntry(const Context *context)
 {
 	opcode_t op;
