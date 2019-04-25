@@ -10,6 +10,7 @@
 #include "synctl/repo/OverwriteException.hxx"
 #include "synctl/repo/Repository.hxx"
 #include "synctl/tree/Directory_1.hxx"
+#include "synctl/tree/Filter.hxx"
 #include "synctl/tree/Link_1.hxx"
 #include "synctl/tree/Linktable_1.hxx"
 #include "synctl/tree/Regular_1.hxx"
@@ -19,6 +20,7 @@
 using std::string;
 using std::unique_ptr;
 using synctl::Directory_1;
+using synctl::Filter;
 using synctl::HashOutputStream;
 using synctl::LimitedInputStream;
 using synctl::Link_1;
@@ -189,6 +191,12 @@ void Receive_1::_receiveLinktable(const Context *context)
 	} catch (OverwriteException &e) {
 		// FIXME: ignore for now
 	}
+}
+
+void Receive_1::setBaseFilter(const Snapshot::Content &base, Filter *filter)
+{
+	_base = base;
+	_filter = filter;
 }
 
 void Receive_1::receive(InputStream *input, Repository *repository,

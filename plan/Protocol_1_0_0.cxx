@@ -98,10 +98,12 @@ void Protocol_1_0_0::_servePush(Repository *repository) const
 {
 	Reference ref = Reference::zero();
 	Snapshot::Content snapshot;
+	unique_ptr<Filter> filter;
 	Branch::Content branch;
 	Receive_1 receiver;
 	FilterCodec codec;
 	string branchName;
+	Snapshot *base;
 	Trunk *trunk;
 
 	branch.trunk = _channel->inputStream()->readStr();
@@ -114,8 +116,11 @@ void Protocol_1_0_0::_servePush(Repository *repository) const
 	repository->dumpReferences(_channel->outputStream());
 	_channel->outputStream()->write(ref.data(), ref.size());
 
-	// TODO: use it in the receiver
-	codec.decode(_channel->inputStream());
+	filter = codec.decode(_channel->inputStream());
+	base = trunk->lastSnapshot();
+
+	if (base != nullptr)
+		receiver.setBaseFilter(base->content(), filter.get());
 
 	receiver.receive(_channel->inputStream(), repository, &snapshot);
 	repository->takeReference(snapshot.tree);

@@ -3,6 +3,7 @@
 
 
 #include "synctl/repo/Snapshot.hxx"
+#include "synctl/tree/Filter.hxx"
 
 
 namespace synctl {
@@ -21,6 +22,9 @@ class Receive_1
 		Repository   *repository;
 	};
 
+	Snapshot::Content   _base;
+	Filter             *_filter = nullptr;
+
 
 	bool _receiveEntry(const Context *context);
 
@@ -38,6 +42,8 @@ class Receive_1
 
 
  public:
+	void setBaseFilter(const Snapshot::Content &base, Filter *filter);
+
 	void receive(InputStream *input, Repository *repository,
 		     Snapshot::Content *content);
 };
