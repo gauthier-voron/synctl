@@ -94,6 +94,32 @@ void Receive_1::_findBasedir(MergeContext *context) const
 	_loadBasedir(context, "");
 }
 
+void Receive_1::_loadRecvdir(MergeContext *context, const Reference &ref) const
+{
+	unique_ptr<Directory_1> dir = make_unique<Directory_1>();
+	const Context *rc = context->rcontext;
+	unique_ptr<InputStream> input;
+
+	input = rc->repository->readObject(ref);
+
+	context->recvdir = dir.get();
+	dir->read(input.get());
+
+	rc->basedirs->emplace(make_pair(ref, move(dir)));
+}
+
+void Receive_1::_findRecvdir(MergeContext *context, const Reference &ref) const
+{
+	const Context *rc = context->rcontext;
+	auto it = rc->basedirs->find(ref);
+
+	if (it != rc->basedirs->end()) {
+		context->recvdir = it->second.get();
+	} else {
+		_loadRecvdir(context, ref);
+	}
+}
+
 bool Receive_1::_loadBaseref(MergeContext *context) const
 {
 	unique_ptr<Baseref> uptr;
@@ -318,11 +344,13 @@ void Receive_1::receive(InputStream *input, Repository *repository,
 {
 	map<string, unique_ptr<Baseref>> baserefs;
 	map<Reference, unique_ptr<Directory_1>> basedirs;
+	map<Reference, unique_ptr<Directory_1>> recvdirs;
 	MergeContext mctx;
 	Context ctx;
 
 	ctx.baserefs = &baserefs;
 	ctx.basedirs = &basedirs;
+	ctx.recvdirs = &recvdirs;
 	ctx.input = input;
 	ctx.repository = repository;
 

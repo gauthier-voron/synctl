@@ -37,6 +37,7 @@ class Receive_1
 	{
 		std::map<std::string, std::unique_ptr<Baseref>>    *baserefs;
 		std::map<Reference, std::unique_ptr<Directory_1>>  *basedirs;
+		std::map<Reference, std::unique_ptr<Directory_1>>  *recvdirs;
 		InputStream                                        *input;
 		Repository                                         *repository;
 	};
@@ -46,6 +47,7 @@ class Receive_1
 		std::string     path;      // path of the merged directory
 		Baseref        *baseref;   // ref/opcode in the base snapshot
 		Directory_1    *basedir;   // directory in the base snapshot
+		Directory_1    *recvdir;   // directory received from client
 		const Context  *rcontext;
 	};
 
@@ -60,6 +62,10 @@ class Receive_1
 		const;
 
 	void _findBasedir(MergeContext *context) const;
+
+	void _loadRecvdir(MergeContext *context, const Reference &ref) const;
+
+	void _findRecvdir(MergeContext *context, const Reference &ref) const;
 
 	bool _loadBaseref(MergeContext *context) const;
 
