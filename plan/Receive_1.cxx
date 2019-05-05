@@ -181,9 +181,14 @@ void Receive_1::receive(InputStream *input, Repository *repository,
 	content->opcode = input->readInt<opcode_t>();
 	input->readall(content->tree.data(), content->tree.size());
 
-	if (ctx.scombiner != nullptr)
+	if (ctx.scombiner != nullptr) {
 		ctx.scombiner->merged("/", &content->tree);
 
+		for (const string &path : scombiner.importedPaths())
+			lbuilder.mergePath(path);
+
+		lbuilder.loadBase(_base);
+	}
 
 	lbuilder.buildLinktable(content);
 }
