@@ -69,3 +69,31 @@ FileOutputStream synctl::randomHexOutput(string *path, size_t len)
 		}
 	} while (1);
 }
+
+void synctl::split(const string &path, string *prefix, string *suffix)
+{
+	size_t idx = path.length() - 1;
+	size_t st;
+
+	while ((idx > 0) && (path[idx] != '/'))
+		idx--;
+
+	st = idx;
+
+	while ((idx > 0) && (path[idx] == '/'))
+		idx--;
+
+	if (prefix != nullptr)
+		*prefix = path.substr(0, idx + 1);
+	if (suffix != nullptr)
+		*suffix = path.substr(st + 1);
+}
+
+string synctl::prefix(const string &path)
+{
+	string ret;
+
+	split(path, &ret, nullptr);
+
+	return ret;
+}

@@ -48,9 +48,9 @@ class LinkTracker
 	LinkTracker(const LinkTracker &other) = delete;
 
 
-	void track(const std::string &path, const struct stat &stat);
+	const Entry &track(const std::string &path, const struct stat &stat);
 
-	void addLink(const Entry &entry);
+	const Entry &addLink(const Entry &entry);
 
 	void getLinks(std::set<Entry> *dest) const;
 

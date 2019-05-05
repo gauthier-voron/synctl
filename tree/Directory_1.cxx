@@ -15,6 +15,7 @@
 #include <vector>
 
 #include "synctl/io/EOFException.hxx"
+#include "synctl/io/HashInputStream.hxx"
 #include "synctl/io/HashOutputStream.hxx"
 #include "synctl/io/InputStream.hxx"
 #include "synctl/tree/Reference.hxx"
@@ -28,6 +29,7 @@ using std::to_string;
 using std::vector;
 using synctl::Directory_1;
 using synctl::EOFException;
+using synctl::HashInputStream;
 using synctl::HashOutputStream;
 using synctl::InputStream;
 using synctl::Reference;
@@ -211,6 +213,12 @@ void Directory_1::addChild(const string &name, const struct stat &statbuf,
 	_children[name] = EntryInfo(statbuf, xattrs, opcode, reference);
 }
 
+void Directory_1::addChild(const Entry &entry)
+{
+	_children[entry.name] = EntryInfo(entry.stat, entry.xattrs,
+					  entry.opcode, entry.reference);
+}
+
 void Directory_1::removeChild(const string &name)
 {
 	auto it = _children.find(name);
@@ -254,7 +262,13 @@ void Directory_1::write(OutputStream *output, Reference *ref) const
 
 void Directory_1::read(InputStream *input, Reference *ref)
 {
-	if (ref != nullptr)
-		throw 0;  // not yet implemented
-	_read(input);
+	HashInputStream his;
+
+	if (ref == nullptr) {
+		_read(input);
+	} else {
+		his = HashInputStream(input);
+		_read(&his);
+		his.digest(ref);
+	}
 }

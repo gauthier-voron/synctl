@@ -38,15 +38,16 @@ bool LinkTracker::Inode::operator<(const Inode &other) const
 	return (ino < other.ino);
 }
 
-void LinkTracker::track(const string &path, const struct stat &stat)
+const LinkTracker::Entry &LinkTracker::track(const string &path,
+					     const struct stat &stat)
 {
 	size_t index, found;
 	Inode inode;
 
 	if (stat.st_nlink <= 1)
-		return;
+		return __empty;
 	if ((stat.st_mode & S_IFMT) == S_IFDIR)
-		return;
+		return __empty;
 
 	inode.dev = stat.st_dev;
 	inode.ino = stat.st_ino;
@@ -61,9 +62,11 @@ void LinkTracker::track(const string &path, const struct stat &stat)
 
 	_entries[index].insert(path);
 	_reverse.emplace(make_pair(path, index));
+
+	return _entries[index];
 }
 
-void LinkTracker::addLink(const Entry &entry)
+const LinkTracker::Entry &LinkTracker::addLink(const Entry &entry)
 {
 	size_t index;
 
@@ -72,6 +75,8 @@ void LinkTracker::addLink(const Entry &entry)
 
 	for (const string &path : entry)
 		_reverse.emplace(make_pair(path, index));
+
+	return entry;
 }
 
 void LinkTracker::getLinks(set<Entry> *dest) const

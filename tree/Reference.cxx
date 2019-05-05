@@ -116,13 +116,17 @@ Reference Reference::fromHex(const string &hex)
 	return ref;
 }
 
-Reference Reference::zero()
+const Reference &Reference::zero()
 {
-	Reference ref;
+	static bool initialized = false;
+	static Reference ref;
 	size_t i;
 
-	for (i = 0; i < sizeof (ref._array); i++)
-		ref._array[i] = 0;
+	if (initialized == false) {
+		for (i = 0; i < sizeof (ref._array); i++)
+			ref._array[i] = 0;
+		initialized = true;
+	}
 
 	return ref;
 }

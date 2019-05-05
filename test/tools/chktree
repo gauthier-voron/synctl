@@ -4,6 +4,35 @@
 
 set -e
 
+INODE_PROPERTIES=()
+
+set_inode_properties() {
+    local devino="$1" ; shift
+    local perm="$1" ; shift
+    local atime="$1" ; shift
+    local mtime="$1" ; shift
+
+    INODE_PROPERTIES+=("$devino:$perm:$atime:$mtime")
+}
+
+get_inode_properties() {
+    local devino="$1" ; shift
+    local pair key value
+
+    for pair in "${INODE_PROPERTIES[@]}" ; do
+	key="${pair%%:*}"
+	if [ "x$key" != "x$devino" ] ; then
+	    continue
+	fi
+
+	value="${pair#*:}"
+	printf "%s" "${value%%:*}"
+
+	value="${value#*:}"
+	printf " %s %s\n" "${value%:*}" "${value#*:}"
+    done
+}
+
 get_type() {
     local mode="$1" ; shift
     local ftype ntype
@@ -59,6 +88,15 @@ check_xattr() {
     vtest "$path" "x:$opt" "x$(getfattr -h --only-values -n "$name" "$path")" = "x$value"
 }
 
+check_hardlink() {
+    local path0="$1" ; shift
+    local path1="$1" ; shift
+    local devino0=$(stat -c '%D.%i' "$path0")
+    local devino1=$(stat -c '%D.%i' "$path1")
+
+    vtest "$path0" "hard link of '$path1'" "$devino0" = "$devino1"
+}
+
 check_options() {
     local path="$1" ; shift
     local rem="$1" ; shift
@@ -112,9 +150,7 @@ check_regular() {
 	    ;;
 	'=')
 	    target="${prefix}${content}"
-	    if ! diff -Naur "$target" "$path" ; then
-		false
-	    fi
+	    check_hardlink "$target" "$path"
 	    ;;
 	'')  vtest "$path" 'empty' $(stat -c '%s' "$path") = 0 ;;
 	*)   false ;;
@@ -138,35 +174,6 @@ check_symlink() {
     esac
 
     check_options "$path" "$rem"
-}
-
-INODE_PROPERTIES=()
-
-set_inode_properties() {
-    local devino="$1" ; shift
-    local perm="$1" ; shift
-    local atime="$1" ; shift
-    local mtime="$1" ; shift
-
-    INODE_PROPERTIES+=("$devino:$perm:$atime:$mtime")
-}
-
-get_inode_properties() {
-    local devino="$1" ; shift
-    local pair key value
-
-    for pair in "${INODE_PROPERTIES[@]}" ; do
-	key="${pair%%:*}"
-	if [ "x$key" != "x$devino" ] ; then
-	    continue
-	fi
-
-	value="${pair#*:}"
-	printf "%s" "${value%%:*}"
-
-	value="${value#*:}"
-	printf " %s %s\n" "${value%:*}" "${value#*:}"
-    done
 }
 
 

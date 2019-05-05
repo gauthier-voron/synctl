@@ -94,6 +94,7 @@ class Directory_1
 	void addChild(const std::string &name, const struct stat &statbuf,
 		      const std::map<std::string, std::string> &xattrs,
 		      opcode_t opcode, const Reference &reference);
+	void addChild(const Entry &entry);
 
 	void removeChild(const std::string &path);
 

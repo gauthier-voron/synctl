@@ -1,30 +1,37 @@
 #include "synctl/plan/Receive_1.hxx"
 
 #include <memory>
+#include <string>
 
 #include "synctl/io/HashOutputStream.hxx"
 #include "synctl/io/LimitedInputStream.hxx"
+#include "synctl/io/Path.hxx"
 #include "synctl/io/TransientOutputStream.hxx"
+#include "synctl/plan/Explorer.hxx"
+#include "synctl/plan/LinkBuilder.hxx"
 #include "synctl/plan/Opcode.hxx"
+#include "synctl/plan/SnapshotCombiner.hxx"
 #include "synctl/repo/OverwriteException.hxx"
 #include "synctl/repo/Repository.hxx"
 #include "synctl/tree/Directory_1.hxx"
-#include "synctl/tree/Link_1.hxx"
-#include "synctl/tree/Linktable_1.hxx"
+#include "synctl/tree/Filter.hxx"
 #include "synctl/tree/Regular_1.hxx"
 #include "synctl/tree/Symlink_1.hxx"
 
 
+using std::string;
 using std::unique_ptr;
+using synctl::Explorer;
 using synctl::Directory_1;
+using synctl::Filter;
 using synctl::HashOutputStream;
 using synctl::LimitedInputStream;
-using synctl::Link_1;
-using synctl::Linktable_1;
+using synctl::LinkBuilder;
 using synctl::OverwriteException;
 using synctl::Receive_1;
 using synctl::Regular_1;
 using synctl::Repository;
+using synctl::SnapshotCombiner;
 using synctl::Symlink_1;
 using synctl::TransientOutputStream;
 
@@ -47,6 +54,9 @@ bool Receive_1::_receiveEntry(const Context *context)
 		break;
 	case OP_TREE_REFERENCE:
 		return false;
+	case OP_PUSH_1_LINKTRACK:
+		_receiveLinktrack(context);
+		break;
 	default:
 		throw 0;
 	}
@@ -57,26 +67,37 @@ bool Receive_1::_receiveEntry(const Context *context)
 void Receive_1::_receiveDirectory(const Context *context)
 {
 	unique_ptr<TransientOutputStream> tos;
+	Reference reference, *dest;
 	LimitedInputStream lis;
-	Reference reference;
 	Directory_1 dir;
 	uint64_t dlen;
+	string path;
 
+	path = context->input->readStr();
 	dlen = context->input->readInt<uint64_t>();
 	lis = LimitedInputStream(context->input, dlen);
-	dir.read(&lis, nullptr);
+	dir.read(&lis, &reference);
 
-	tos = context->repository->newObject();
-	dir.write(tos.get(), &reference);
+	dest = nullptr;
+	if (context->scombiner != nullptr) {
+		if (context->scombiner->merge(path, reference, &dir))
+			dest = &reference;
+	}
 
 	for (Directory_1::Entry &child : dir.getChildren())
 		context->repository->takeReference(child.reference);
 
+	tos = context->repository->newObject();
+	dir.write(tos.get(), dest);
+
 	try {
 		tos->commit(reference);
 	} catch (OverwriteException &e) {
-		// FIXME: ignore for now
+		// May happen legally after a merge
 	}
+
+	if (context->scombiner != nullptr)
+		context->scombiner->assign(path, reference);
 }
 
 void Receive_1::_receiveRegular(const Context *context)
@@ -119,82 +140,44 @@ void Receive_1::_receiveSymlink(const Context *context)
 	}
 }
 
-bool Receive_1::_receiveLinks(const Context *context)
+void Receive_1::_receiveLinktrack(const Context *context)
 {
-	opcode_t op;
+	string p0, p1;
 
-	op = context->input->readInt<opcode_t>();
+	p0 = context->input->readStr();
+	while (p0.empty() == false) {
+		p1 = context->input->readStr();
+		context->lbuilder->bindReceived(p0, p1);
 
-	switch (op) {
-	case OP_TREE_LINK_1:
-		_receiveLink(context);
-		break;
-	case OP_TREE_LINKTABLE_1:
-		_receiveLinktable(context);
-		break;
-	case OP_TREE_REFERENCE:
-		return false;
-	default:
-		throw 0;
-	}
-
-	return true;
-}
-
-void Receive_1::_receiveLink(const Context *context)
-{
-	unique_ptr<TransientOutputStream> tos;
-	LimitedInputStream lis;
-	Reference reference;
-	uint64_t len;
-	Link_1 link;
-
-	len = context->input->readInt<uint64_t>();
-	lis = LimitedInputStream(context->input, len);
-	link.read(&lis);
-
-	tos = context->repository->newObject();
-	link.write(tos.get(), &reference);
-
-	try {
-		tos->commit(reference);
-	} catch (OverwriteException &e) {
-		// FIXME: ignore for now
+		p0 = context->input->readStr();
 	}
 }
 
-void Receive_1::_receiveLinktable(const Context *context)
+void Receive_1::setBaseFilter(const Snapshot::Content &base, Filter *filter)
 {
-	unique_ptr<TransientOutputStream> tos;
-	LimitedInputStream lis;
-	Reference reference;
-	Linktable_1 table;
-	uint64_t len;
-
-	len = context->input->readInt<uint64_t>();
-	lis = LimitedInputStream(context->input, len);
-	table.read(&lis);
-
-	tos = context->repository->newObject();
-	table.write(tos.get(), &reference);
-
-	for (const Reference &ref : table.getLinks())
-		context->repository->takeReference(ref);
-
-	try {
-		tos->commit(reference);
-	} catch (OverwriteException &e) {
-		// FIXME: ignore for now
-	}
+	_base = base;
+	_filter = filter;
 }
 
 void Receive_1::receive(InputStream *input, Repository *repository,
 			Snapshot::Content *content)
 {
+	Explorer explorer = Explorer(repository);
+	LinkBuilder lbuilder = LinkBuilder(repository, &explorer);
+	SnapshotCombiner scombiner;
 	Context ctx;
 
+	ctx.lbuilder = &lbuilder;
 	ctx.input = input;
 	ctx.repository = repository;
+
+	if (_filter != nullptr) {
+		scombiner = SnapshotCombiner(repository, _filter, _base,
+					     &explorer);
+		ctx.scombiner = &scombiner;
+	} else {
+		ctx.scombiner = nullptr;
+	}
 
 	while (_receiveEntry(&ctx))
 		;
@@ -202,8 +185,14 @@ void Receive_1::receive(InputStream *input, Repository *repository,
 	content->opcode = input->readInt<opcode_t>();
 	input->readall(content->tree.data(), content->tree.size());
 
-	while (_receiveLinks(&ctx))
-		;
+	if (ctx.scombiner != nullptr) {
+		ctx.scombiner->merged("/", &content->tree);
 
-	input->readall(content->links.data(), content->links.size());
+		for (const string &path : scombiner.importedPaths())
+			lbuilder.mergePath(path);
+
+		lbuilder.loadBase(_base);
+	}
+
+	lbuilder.buildLinktable(content);
 }
