@@ -6,6 +6,7 @@
 #include <memory>
 #include <string>
 
+#include "synctl/plan/LinkBuilder.hxx"
 #include "synctl/plan/Opcode.hxx"
 #include "synctl/repo/Snapshot.hxx"
 #include "synctl/tree/Filter.hxx"
@@ -27,6 +28,7 @@ class Receive_1
 	struct Context
 	{
 		SnapshotCombiner                                   *scombiner;
+		LinkBuilder                                        *lbuilder;
 		InputStream                                        *input;
 		Repository                                         *repository;
 	};
@@ -43,6 +45,8 @@ class Receive_1
 	void _receiveRegular(const Context *context);
 
 	void _receiveSymlink(const Context *context);
+
+	void _receiveLinktrack(const Context *context);
 
 	bool _receiveLinks(const Context *context);
 

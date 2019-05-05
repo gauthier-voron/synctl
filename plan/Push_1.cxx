@@ -111,6 +111,7 @@ bool Push_1::_pushDirectory(const Context *context, Reference *reference,
 {
 	Directory fsdir = Directory(context->apath);
 	map<string, string> xattrs;
+	map<string, string> hlinks;
 	NullOutputStream null;
 	size_t pushedCount;
 	Directory_1 dir;
@@ -154,7 +155,13 @@ bool Push_1::_pushDirectory(const Context *context, Reference *reference,
 
 		if (_pushEntry(&ctx, &ref, &op)) {
 			dir.addChild(name, ctx.stat, xattrs, op, ref);
-			context->links->track(ctx.rpath, ctx.stat);
+			auto link = context->links->track(ctx.rpath, ctx.stat);
+
+			if (link.size() > 1)
+				for (const string &path : link)
+					if (path != ctx.rpath)
+						hlinks[ctx.rpath] = path;
+
 			pushedCount += 1;
 		}
 
@@ -171,6 +178,15 @@ bool Push_1::_pushDirectory(const Context *context, Reference *reference,
  write:
 	*opcode = OP_TREE_DIRECTORY_1;
 	dir.write(&null, reference);
+
+	if (hlinks.empty() == false) {
+		context->output->writeInt<opcode_t>(OP_PUSH_1_LINKTRACK);
+		for (const auto &pair : hlinks) {
+			context->output->writeStr(pair.first);
+			context->output->writeStr(pair.second);
+		}
+		context->output->writeStr("");
+	}
 
 	if (_isReferenceKnown(*reference))
 		return true;

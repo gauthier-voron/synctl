@@ -7,6 +7,7 @@
 #include "synctl/io/LimitedInputStream.hxx"
 #include "synctl/io/Path.hxx"
 #include "synctl/io/TransientOutputStream.hxx"
+#include "synctl/plan/LinkBuilder.hxx"
 #include "synctl/plan/Opcode.hxx"
 #include "synctl/plan/SnapshotCombiner.hxx"
 #include "synctl/repo/OverwriteException.hxx"
@@ -25,6 +26,7 @@ using synctl::Directory_1;
 using synctl::Filter;
 using synctl::HashOutputStream;
 using synctl::LimitedInputStream;
+using synctl::LinkBuilder;
 using synctl::OverwriteException;
 using synctl::Receive_1;
 using synctl::Regular_1;
@@ -52,6 +54,9 @@ bool Receive_1::_receiveEntry(const Context *context)
 		break;
 	case OP_TREE_REFERENCE:
 		return false;
+	case OP_PUSH_1_LINKTRACK:
+		_receiveLinktrack(context);
+		break;
 	default:
 		throw 0;
 	}
@@ -135,6 +140,19 @@ void Receive_1::_receiveSymlink(const Context *context)
 	}
 }
 
+void Receive_1::_receiveLinktrack(const Context *context)
+{
+	string p0, p1;
+
+	p0 = context->input->readStr();
+	while (p0.empty() == false) {
+		p1 = context->input->readStr();
+		context->lbuilder->bindReceived(p0, p1);
+
+		p0 = context->input->readStr();
+	}
+}
+
 bool Receive_1::_receiveLinks(const Context *context)
 {
 	opcode_t op;
@@ -213,9 +231,11 @@ void Receive_1::setBaseFilter(const Snapshot::Content &base, Filter *filter)
 void Receive_1::receive(InputStream *input, Repository *repository,
 			Snapshot::Content *content)
 {
+	LinkBuilder lbuilder = LinkBuilder(repository);
 	SnapshotCombiner scombiner;
 	Context ctx;
 
+	ctx.lbuilder = &lbuilder;
 	ctx.input = input;
 	ctx.repository = repository;
 
