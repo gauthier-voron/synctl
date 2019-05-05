@@ -7,6 +7,7 @@
 #include "synctl/io/LimitedInputStream.hxx"
 #include "synctl/io/Path.hxx"
 #include "synctl/io/TransientOutputStream.hxx"
+#include "synctl/plan/Explorer.hxx"
 #include "synctl/plan/LinkBuilder.hxx"
 #include "synctl/plan/Opcode.hxx"
 #include "synctl/plan/SnapshotCombiner.hxx"
@@ -20,6 +21,7 @@
 
 using std::string;
 using std::unique_ptr;
+using synctl::Explorer;
 using synctl::Directory_1;
 using synctl::Filter;
 using synctl::HashOutputStream;
@@ -160,7 +162,8 @@ void Receive_1::setBaseFilter(const Snapshot::Content &base, Filter *filter)
 void Receive_1::receive(InputStream *input, Repository *repository,
 			Snapshot::Content *content)
 {
-	LinkBuilder lbuilder = LinkBuilder(repository);
+	Explorer explorer = Explorer(repository);
+	LinkBuilder lbuilder = LinkBuilder(repository, &explorer);
 	SnapshotCombiner scombiner;
 	Context ctx;
 
@@ -169,7 +172,8 @@ void Receive_1::receive(InputStream *input, Repository *repository,
 	ctx.repository = repository;
 
 	if (_filter != nullptr) {
-		scombiner = SnapshotCombiner(repository, _filter, _base);
+		scombiner = SnapshotCombiner(repository, _filter, _base,
+					     &explorer);
 		ctx.scombiner = &scombiner;
 	} else {
 		ctx.scombiner = nullptr;
