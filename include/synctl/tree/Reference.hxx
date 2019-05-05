@@ -35,7 +35,7 @@ class Reference
 
 
 	static Reference fromHex(const std::string &hex);
-	static Reference zero();
+	static const Reference &zero();
 	std::string toHex() const;
 };
 
