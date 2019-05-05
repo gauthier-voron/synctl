@@ -68,8 +68,6 @@ class Push_1
 	bool _pushSymlink(const Context *context, Reference *reference,
 			  opcode_t *opcode);
 
-	void _pushLinks(const Context *context, Reference *reference);
-
 
  public:
 	void addKnownReference(const Reference &reference);

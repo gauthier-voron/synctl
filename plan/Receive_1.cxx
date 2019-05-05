@@ -14,8 +14,6 @@
 #include "synctl/repo/Repository.hxx"
 #include "synctl/tree/Directory_1.hxx"
 #include "synctl/tree/Filter.hxx"
-#include "synctl/tree/Link_1.hxx"
-#include "synctl/tree/Linktable_1.hxx"
 #include "synctl/tree/Regular_1.hxx"
 #include "synctl/tree/Symlink_1.hxx"
 
@@ -153,75 +151,6 @@ void Receive_1::_receiveLinktrack(const Context *context)
 	}
 }
 
-bool Receive_1::_receiveLinks(const Context *context)
-{
-	opcode_t op;
-
-	op = context->input->readInt<opcode_t>();
-
-	switch (op) {
-	case OP_TREE_LINK_1:
-		_receiveLink(context);
-		break;
-	case OP_TREE_LINKTABLE_1:
-		_receiveLinktable(context);
-		break;
-	case OP_TREE_REFERENCE:
-		return false;
-	default:
-		throw 0;
-	}
-
-	return true;
-}
-
-void Receive_1::_receiveLink(const Context *context)
-{
-	unique_ptr<TransientOutputStream> tos;
-	LimitedInputStream lis;
-	Reference reference;
-	uint64_t len;
-	Link_1 link;
-
-	len = context->input->readInt<uint64_t>();
-	lis = LimitedInputStream(context->input, len);
-	link.read(&lis);
-
-	tos = context->repository->newObject();
-	link.write(tos.get(), &reference);
-
-	try {
-		tos->commit(reference);
-	} catch (OverwriteException &e) {
-		// FIXME: ignore for now
-	}
-}
-
-void Receive_1::_receiveLinktable(const Context *context)
-{
-	unique_ptr<TransientOutputStream> tos;
-	LimitedInputStream lis;
-	Reference reference;
-	Linktable_1 table;
-	uint64_t len;
-
-	len = context->input->readInt<uint64_t>();
-	lis = LimitedInputStream(context->input, len);
-	table.read(&lis);
-
-	tos = context->repository->newObject();
-	table.write(tos.get(), &reference);
-
-	for (const Reference &ref : table.getLinks())
-		context->repository->takeReference(ref);
-
-	try {
-		tos->commit(reference);
-	} catch (OverwriteException &e) {
-		// FIXME: ignore for now
-	}
-}
-
 void Receive_1::setBaseFilter(const Snapshot::Content &base, Filter *filter)
 {
 	_base = base;
@@ -255,8 +184,6 @@ void Receive_1::receive(InputStream *input, Repository *repository,
 	if (ctx.scombiner != nullptr)
 		ctx.scombiner->merged("/", &content->tree);
 
-	while (_receiveLinks(&ctx))
-		;
 
-	input->readall(content->links.data(), content->links.size());
+	lbuilder.buildLinktable(content);
 }

@@ -261,45 +261,6 @@ bool Push_1::_pushSymlink(const Context *context, Reference *reference,
 	return true;
 }
 
-void Push_1::_pushLinks(const Context *context, Reference *reference)
-{
-	opcode_t op = OP_TREE_LINK_1;
-	NullOutputStream null;
-	Linktable_1 table;
-	Reference holder;
-	uint64_t len;
-	Link_1 link;
-
-	for (const auto &lnk : context->links->getLinks()) {
-		for (const auto &rpath : lnk)
-			link.addLocation(rpath);
-
-		link.write(&null, &holder);
-		table.addLink(holder);
-
-		if (_isReferenceKnown(holder) == false) {
-			len = null.written();
-			context->output->writeInt(op);
-			context->output->writeInt(len);
-			link.write(context->output);
-		}
-
-		null.reset();
-		link.clear();
-	}
-
-	table.write(&null, reference);
-	if (_isReferenceKnown(*reference))
-		return;
-
-	op = OP_TREE_LINKTABLE_1;
-	len = null.written();
-
-	context->output->writeInt(op);
-	context->output->writeInt(len);
-	table.write(context->output);
-}
-
 void Push_1::addKnownReference(const Reference &reference)
 {
 	_knownReferences.emplace(reference);
@@ -332,10 +293,5 @@ void Push_1::push(OutputStream *output, const string &root)
 	output->writeInt<opcode_t>(OP_TREE_REFERENCE);
 
 	output->writeInt(op);
-	output->write(holder.data(), holder.size());
-
-	_pushLinks(&ctx, &holder);
-	output->writeInt<opcode_t>(OP_TREE_REFERENCE);
-
 	output->write(holder.data(), holder.size());
 }

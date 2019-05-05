@@ -48,12 +48,6 @@ class Receive_1
 
 	void _receiveLinktrack(const Context *context);
 
-	bool _receiveLinks(const Context *context);
-
-	void _receiveLink(const Context *context);
-
-	void _receiveLinktable(const Context *context);
-
 
  public:
 	void setBaseFilter(const Snapshot::Content &base, Filter *filter);
