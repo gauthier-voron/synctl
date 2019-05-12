@@ -13,10 +13,18 @@ namespace synctl {
 
 class OptionLambda : public Option
 {
-	std::function<void(const std::string &)>  _lambda;
+	bool                                      _withArg;
+	std::function<void(const std::string &)>  _lambdaWithArg;
+	std::function<void()>                     _lambdaWithoutArg;
 
 
  public:
+	OptionLambda(const std::string &longName,
+		     std::function<void()> lambda);
+	OptionLambda(char shortName, std::function<void()> lambda);
+	OptionLambda(const std::string &longName, char shortName,
+		     std::function<void()> lambda);
+
 	OptionLambda(const std::string &longName,
 		     std::function<void(const std::string &)> lambda);
 	OptionLambda(char shortName,
