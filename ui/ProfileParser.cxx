@@ -6,14 +6,14 @@
 
 #include "synctl/io/FileInputStream.hxx"
 #include "synctl/io/InputStream.hxx"
-#include "synctl/ui/Configurationzzz.hxx"
+#include "synctl/ui/Configuration.hxx"
 #include "synctl/ui/Option.hxx"
 #include "synctl/ui/ProfileSyntaxException.hxx"
 
 
 using std::string;
 using std::tolower;
-using synctl::Configurationzzz;
+using synctl::Configuration;
 using synctl::FileInputStream;
 using synctl::InputStream;
 using synctl::Option;
@@ -130,7 +130,7 @@ void ProfileParser::_affectOption(const string &key, const string &value)
 	throw value;
 }
 
-ProfileParser::ProfileParser(Configurationzzz *configuration)
+ProfileParser::ProfileParser(Configuration *configuration)
 	: _configuration(configuration)
 {
 }

@@ -1,4 +1,4 @@
-#include "synctl/ui/Configurationzzz.hxx"
+#include "synctl/ui/Configuration.hxx"
 
 #include <vector>
 
@@ -6,11 +6,11 @@
 
 
 using std::vector;
-using synctl::Configurationzzz;
+using synctl::Configuration;
 using synctl::Option;
 
 
-vector<Option *> Configurationzzz::getOptions()
+vector<Option *> Configuration::getOptions()
 {
 	vector<Option *> options;
 

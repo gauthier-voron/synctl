@@ -9,13 +9,13 @@
 namespace synctl {
 
 
-class Configurationzzz;
+class Configuration;
 class Option;
 
 
 class ArgumentParser
 {
-	Configurationzzz       *_configuration;
+	Configuration       *_configuration;
 	std::vector<Option *>   _options;
 	bool                    _requireOrder = true;
 
@@ -29,7 +29,7 @@ class ArgumentParser
 
  public:
 	ArgumentParser() = default;
-	ArgumentParser(Configurationzzz *configuration);
+	ArgumentParser(Configuration *configuration);
 	ArgumentParser(const ArgumentParser &other) = default;
 
 

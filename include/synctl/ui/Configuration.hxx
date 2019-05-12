@@ -1,5 +1,5 @@
-#ifndef _INCLUDE_SYNCTL_CONFIGURATIONZZZ_HXX_
-#define _INCLUDE_SYNCTL_CONFIGURATIONZZZ_HXX_
+#ifndef _INCLUDE_SYNCTL_CONFIGURATION_HXX_
+#define _INCLUDE_SYNCTL_CONFIGURATION_HXX_
 
 
 #include <vector>
@@ -10,10 +10,10 @@
 namespace synctl {
 
 
-class Configurationzzz
+class Configuration
 {
  public:
-	virtual ~Configurationzzz() = default;
+	virtual ~Configuration() = default;
 
 
 	virtual size_t getOperands(const std::vector<std::string> &args) = 0;

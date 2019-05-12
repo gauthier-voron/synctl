@@ -9,14 +9,14 @@
 namespace synctl {
 
 
-class Configurationzzz;
+class Configuration;
 class InputStream;
 class Option;
 
 
 class ProfileParser
 {
-	Configurationzzz       *_configuration;
+	Configuration       *_configuration;
 	std::vector<Option *>   _options;
 
 
@@ -30,7 +30,7 @@ class ProfileParser
 
  public:
 	ProfileParser() = default;
-	ProfileParser(Configurationzzz *configuration);
+	ProfileParser(Configuration *configuration);
 	ProfileParser(const ProfileParser &other) = default;
 
 	ProfileParser &operator=(const ProfileParser &other) = default;

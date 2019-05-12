@@ -3,7 +3,7 @@
 #include <string>
 #include <vector>
 
-#include "synctl/ui/Configurationzzz.hxx"
+#include "synctl/ui/Configuration.hxx"
 #include "synctl/ui/Option.hxx"
 #include "synctl/ui/OptionUnknownException.hxx"
 #include "synctl/ui/OptionWithArgumentException.hxx"
@@ -16,7 +16,7 @@ using std::pair;
 using std::string;
 using std::vector;
 using synctl::ArgumentParser;
-using synctl::Configurationzzz;
+using synctl::Configuration;
 using synctl::Option;
 using synctl::OptionUnknownException;
 using synctl::OptionWithArgumentException;
@@ -105,7 +105,7 @@ pair<bool, Option *> ArgumentParser::_parseOption(const string &word)
 	return _parseShortOptions(word);
 }
 
-ArgumentParser::ArgumentParser(Configurationzzz *configuration)
+ArgumentParser::ArgumentParser(Configuration *configuration)
 	: _configuration(configuration)
 {
 }

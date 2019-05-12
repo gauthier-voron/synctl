@@ -4,7 +4,7 @@
 
 #include <string>
 
-#include "synctl/ui/Configurationzzz.hxx"
+#include "synctl/ui/Configuration.hxx"
 #include "synctl/ui/OptionLambda.hxx"
 #include "synctl/ui/OptionString.hxx"
 
@@ -12,7 +12,7 @@
 namespace synctl {
 
 
-class ConfigurationBase : public Configurationzzz
+class ConfigurationBase : public Configuration
 {
 	OptionString  _optionConfig = OptionString('C');
 	OptionLambda  _optionHelp;
@@ -41,7 +41,7 @@ class ConfigurationBase : public Configurationzzz
 
 	virtual void getOptions(std::vector<Option *> *dest);
 
-	using Configurationzzz::getOptions;
+	using Configuration::getOptions;
 
 };
 

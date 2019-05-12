@@ -13,7 +13,7 @@ namespace synctl {
 class OptionString;
 
 
-class ConfigurationCommand : public Configurationzzz
+class ConfigurationCommand : public Configuration
 {
 	ConfigurationBase  *_inner;
 
@@ -37,7 +37,7 @@ class ConfigurationCommand : public Configurationzzz
 
 	virtual void getOptions(std::vector<Option *> *dest);
 
-	using Configurationzzz::getOptions;
+	using Configuration::getOptions;
 };
 
 
