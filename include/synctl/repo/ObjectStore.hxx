@@ -6,6 +6,8 @@
 #include <memory>
 #include <string>
 
+#include "synctl/repo/ReferenceStore.hxx"
+
 
 namespace synctl {
 
@@ -35,9 +37,6 @@ class ObjectStore
 
 
  public:
-	using Refcount = uint32_t;
-
-
 	ObjectStore(const std::string &path);
 
 
@@ -48,15 +47,6 @@ class ObjectStore
 	readObject(const Reference &reference) const;
 
 	size_t getObjectSize(const Reference &reference) const;
-
-	Refcount readRefcount(const Reference &reference) const;
-
-	void writeRefcount(const Reference &reference, Refcount cnt);
-
-
-	void takeReference(const Reference &reference);
-
-	void dumpReferences(OutputStream *output) const;
 
 
 	std::unique_ptr<TransientOutputStream> newObject();

@@ -35,6 +35,7 @@ using synctl::InputStream;
 using synctl::ObjectStore;
 using synctl::OutputStream;
 using synctl::OverwriteException;
+using synctl::Refcount;
 using synctl::Reference;
 using synctl::TransientOutputStream;
 
@@ -59,33 +60,6 @@ bool ObjectStore::_getReferencePath(const Reference &ref, string *dest) const
 		return false;
 
 	return true;
-}
-
-void ObjectStore::dumpReferences(OutputStream *output) const
-{
-	Directory root = Directory(_path);
-	string path = _path;
-	Directory stub;
-	string hexref;
-	Reference ref;
-
-	path.push_back('/');
-
-	for (const string &stubName : root.trueChildren()) {
-		hexref = stubName;
-
-		path.append(stubName);
-		stub = Directory(path);
-
-		for (const string &queue : stub.trueChildren()) {
-			hexref.append(queue);
-			ref = Reference::fromHex(hexref);
-			output->write(ref.data(), ref.size());
-			hexref.resize(2);
-		}
-
-		path.resize(path.length() - 2);
-	}
 }
 
 string ObjectStore::_buildReferencePath(const Reference &ref)
@@ -151,9 +125,6 @@ unique_ptr<InputStream> ObjectStore::readObject(const Reference &ref) const
 {
 	unique_ptr<InputStream> input = _readReferencePath(ref);
 
-	if (input != nullptr)
-		input->readInt<Refcount>();
-
 	return input;
 }
 
@@ -168,42 +139,13 @@ size_t ObjectStore::getObjectSize(const Reference &reference) const
 	if (::stat(path.c_str(), &st) != 0)
 		return 0;
 
-	return (st.st_size - sizeof (ObjectStore::Refcount));
-}
-
-ObjectStore::Refcount ObjectStore::readRefcount(const Reference &reference)
-	const
-{
-	unique_ptr<InputStream> input = _readReferencePath(reference);
-	Refcount refcnt = 0;
-
-	if (input != nullptr)
-		refcnt = input->readInt<Refcount>();
-
-	return refcnt;
-}
-
-void ObjectStore::writeRefcount(const Reference &reference, Refcount cnt)
-{
-	unique_ptr<OutputStream> output = _writeReferencePath(reference,false);
-
-	if (output != nullptr)
-		output->writeInt(cnt);
-}
-
-void ObjectStore::takeReference(const Reference &reference)
-{
-	Refcount refcnt = readRefcount(reference);
-	writeRefcount(reference, refcnt + 1);
+	return st.st_size;
 }
 
 unique_ptr<TransientOutputStream> ObjectStore::newObject()
 {
 	string path = _path + "/transient-";
 	FileOutputStream out = randomHexOutput(&path, TRANSIENT_NAME_LENGTH);
-	Refcount refcnt = 0;
-
-	out.writeInt(refcnt);
 
 	return make_unique<TransientOutputStream>(this, path, move(out));
 }
@@ -211,9 +153,6 @@ unique_ptr<TransientOutputStream> ObjectStore::newObject()
 unique_ptr<OutputStream> ObjectStore::newObject(const Reference &reference)
 {
 	unique_ptr<OutputStream> output = _writeReferencePath(reference, true);
-	Refcount refcnt = 0;
-
-	output->writeInt(refcnt);
 
 	return output;
 }
