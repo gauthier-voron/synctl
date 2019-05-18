@@ -56,9 +56,16 @@ static string __ostorePath(const string &path)
 	return ostore;
 }
 
+static string __rstorePath(const string &path)
+{
+	string ostore = path + "/references";
+	return ostore;
+}
+
 Repository::Repository(const string &path)
 	: _path(path), _bstore(__bstorePath(path))
-	, _tstore(__tstorePath(path)), _ostore(__ostorePath(path))
+	, _ostore(__ostorePath(path)), _rstore(__rstorePath(path))
+	, _tstore(__tstorePath(path))
 {
 }
 
@@ -94,16 +101,17 @@ void Repository::initialize() const
 	_bstore.initialize();
 	_tstore.initialize();
 	_ostore.initialize();
+	_rstore.initialize();
 }
 
 void Repository::takeReference(const Reference &reference)
 {
-	_ostore.takeReference(reference);
+	_rstore.takeReference(reference);
 }
 
 void Repository::dumpReferences(OutputStream *output) const
 {
-	_ostore.dumpReferences(output);
+	_rstore.dumpReferences(output);
 }
 
 unique_ptr<TransientOutputStream> Repository::newObject()
