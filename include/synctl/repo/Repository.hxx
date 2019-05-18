@@ -9,6 +9,7 @@
 #include "synctl/repo/Branch.hxx"
 #include "synctl/repo/BranchStore.hxx"
 #include "synctl/repo/ObjectStore.hxx"
+#include "synctl/repo/ReferenceStore.hxx"
 #include "synctl/repo/TrunkStore.hxx"
 
 
@@ -24,10 +25,11 @@ class TransientOutputStream;
 
 class Repository
 {
-	std::string  _path;
-	BranchStore  _bstore;
-	TrunkStore   _tstore;
-	ObjectStore  _ostore;
+	std::string     _path;
+	BranchStore     _bstore;
+	ObjectStore     _ostore;
+	ReferenceStore  _rstore;
+	TrunkStore      _tstore;
 
 
  public:

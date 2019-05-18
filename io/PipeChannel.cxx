@@ -48,8 +48,6 @@ OutputStream *PipeChannel::outputStream()
 
 void PipeChannel::close()
 {
-	if (_pid > 0)
-		kill(_pid, SIGTERM);
 	_in.close();
 	_out.close();
 }
