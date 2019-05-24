@@ -6,6 +6,7 @@
 #include <unistd.h>
 
 #include <cstdint>
+#include <map>
 #include <memory>
 #include <string>
 
@@ -23,6 +24,7 @@
 
 
 using std::make_unique;
+using std::map;
 using std::string;
 using std::unique_ptr;
 using synctl::Branch;
@@ -145,6 +147,16 @@ const Branch *Repository::branch(const string &name) const
 	return _bstore.branch(name);
 }
 
+map<string, Branch *> Repository::branches()
+{
+	return _bstore.branches();
+}
+
+map<string, const Branch *> Repository::branches() const
+{
+	return _bstore.branches();
+}
+
 Trunk *Repository::newTrunk(const string &name)
 {
 	return _tstore.newTrunk(name);
@@ -158,4 +170,14 @@ Trunk *Repository::trunk(const string &name)
 const Trunk *Repository::trunk(const string &name) const
 {
 	return _tstore.trunk(name);
+}
+
+map<string, Trunk *> Repository::trunks()
+{
+	return _tstore.trunks();
+}
+
+map<string, const Trunk *> Repository::trunks() const
+{
+	return _tstore.trunks();
 }

@@ -2,9 +2,9 @@
 #define _INCLUDE_SYNCTL_BRANCHSTORE_HXX_
 
 
+#include <map>
 #include <memory>
 #include <string>
-#include <vector>
 
 #include "synctl/io/Directory.hxx"
 #include "synctl/repo/Branch.hxx"
@@ -15,11 +15,11 @@ namespace synctl {
 
 class BranchStore
 {
-	Directory                                     _dir;
-	mutable std::vector<std::unique_ptr<Branch>>  _branches;
-	mutable std::vector<Branch *>                 _rwptrs;
-	mutable std::vector<const Branch *>           _roptrs;
-	mutable bool                                  _loaded = false;
+	Directory                                              _dir;
+	mutable std::map<std::string, std::unique_ptr<Branch>> _branches;
+	mutable std::map<std::string, Branch *>                _rwptrs;
+	mutable std::map<std::string, const Branch *>          _roptrs;
+	mutable bool                                           _loaded = false;
 
 
 	void _ensureLoaded() const;
@@ -38,6 +38,9 @@ class BranchStore
 
 	Branch *branch(const std::string &name) noexcept;
 	const Branch *branch(const std::string &name) const noexcept;
+
+	std::map<std::string, Branch *> &branches() noexcept;
+	std::map<std::string, const Branch *> &branches() const noexcept;
 };
 
 

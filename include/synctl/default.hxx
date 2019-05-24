@@ -19,5 +19,7 @@
 
 #define SYNCTL_DEFAULT_TRUNK            "master"
 
+#define SYNCTL_DEFAULT_LIST_FORMAT      "human"
+
 
 #endif

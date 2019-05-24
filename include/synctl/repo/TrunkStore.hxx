@@ -2,9 +2,9 @@
 #define _INCLUDE_SYNCTL_TRUNKSTORE_HXX_
 
 
+#include <map>
 #include <memory>
 #include <string>
-#include <vector>
 
 #include "synctl/io/Directory.hxx"
 #include "synctl/repo/Trunk.hxx"
@@ -18,11 +18,11 @@ class Trunk;
 
 class TrunkStore
 {
-	Directory                                     _dir;
-	mutable std::vector<std::unique_ptr<Trunk>>   _trunks;
-	mutable std::vector<Trunk *>                  _rwptrs;
-	mutable std::vector<const Trunk *>            _roptrs;
-	mutable bool                                  _loaded = false;
+	Directory                                              _dir;
+	mutable std::map<std::string, std::unique_ptr<Trunk>>  _trunks;
+	mutable std::map<std::string, Trunk *>                 _rwptrs;
+	mutable std::map<std::string, const Trunk *>           _roptrs;
+	mutable bool                                           _loaded = false;
 
 
 	void _ensureLoaded() const;
@@ -42,8 +42,8 @@ class TrunkStore
 	const Trunk *trunk(const std::string &name) const noexcept;
 
 
-	const std::vector<Trunk *> &trunks() noexcept;
-	const std::vector<const Trunk *> &trunks() const noexcept;
+	const std::map<std::string, Trunk *> &trunks() noexcept;
+	const std::map<std::string, const Trunk *> &trunks() const noexcept;
 };
 
 
