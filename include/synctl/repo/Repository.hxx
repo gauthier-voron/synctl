@@ -3,6 +3,7 @@
 
 
 #include <cstdint>
+#include <map>
 #include <memory>
 #include <string>
 
@@ -63,6 +64,9 @@ class Repository
 
 	Trunk *trunk(const std::string &name);
 	const Trunk *trunk(const std::string &name) const;
+
+	std::map<std::string, Trunk *> trunks();
+	std::map<std::string, const Trunk *> trunks() const;
 };
 
 
