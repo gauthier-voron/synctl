@@ -2,9 +2,9 @@
 #define _INCLUDE_SYNCTL_TRUNK_HXX_
 
 
+#include <map>
 #include <memory>
 #include <string>
-#include <vector>
 
 #include "synctl/io/Directory.hxx"
 #include "synctl/repo/Snapshot.hxx"
@@ -18,22 +18,22 @@ class Reference;
 
 class Trunk
 {
-	Directory                                       _dir;
-	mutable std::vector<std::unique_ptr<Snapshot>>  _snapshots;
-	mutable std::vector<Snapshot *>                 _rwptrs;
-	mutable std::vector<const Snapshot *>           _roptrs;
-	mutable bool                                    _loaded = false;
+	Directory                                                 _dir;
+	mutable std::map<std::string, std::unique_ptr<Snapshot>>  _snapshots;
+	mutable std::map<std::string, Snapshot *>                 _rwptrs;
+	mutable std::map<std::string, const Snapshot *>           _roptrs;
+	mutable bool                                           _loaded = false;
 
 
 	void _ensureLoaded() const;
 
-	Snapshot *_newSnapshot(const std::string &path,
+	Snapshot *_newSnapshot(const std::string &name,
 			       const Snapshot::Content &content) const;
 
 	Snapshot *_newSnapshot(std::string *name,
 			       const Snapshot::Content &content) const;
 
-	Snapshot *_snapshot(const std::string &path) const;
+	Snapshot *_snapshot(const std::string &name) const;
 
 
  public:
@@ -53,8 +53,9 @@ class Trunk
 	Snapshot *lastSnapshot();
 	const Snapshot *lastSnapshot() const;
 
-	const std::vector<Snapshot *> &snapshots() noexcept;
-	const std::vector<const Snapshot *> &snapshots() const noexcept;
+	const std::map<std::string, Snapshot *> &snapshots() noexcept;
+	const std::map<std::string, const Snapshot *> &snapshots()
+		const noexcept;
 
 	const std::string &path() const noexcept;
 };

@@ -159,8 +159,8 @@ void Protocol_1_0_0::pull(const PullSettings &settings) const
 void Protocol_1_0_0::_servePull(Repository *repository) const
 {
 	string trunkName, snapshotName;
+	const Snapshot *snapshot, *sn;
 	unique_ptr<Filter> filter;
-	const Snapshot *snapshot;
 	const Trunk *trunk;
 	FilterCodec codec;
 	Send_1 sender;
@@ -181,7 +181,9 @@ void Protocol_1_0_0::_servePull(Repository *repository) const
 
 	if (snapshotName.empty()) {
 		snapshot = nullptr;
-		for (const Snapshot *sn : trunk->snapshots()) {
+		for (const auto &pair : trunk->snapshots()) {
+			sn = pair.second;
+
 			if (snapshot == nullptr)
 				snapshot = sn;
 			else if (sn->content().date > snapshot->content().date)
