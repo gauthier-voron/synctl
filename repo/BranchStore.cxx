@@ -19,6 +19,8 @@ using synctl::BranchStore;
 
 void BranchStore::_ensureLoaded() const
 {
+	if (_loaded == false)
+		load();
 }
 
 BranchStore::BranchStore(const string &path)
