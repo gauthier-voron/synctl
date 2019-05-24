@@ -30,6 +30,7 @@ using std::make_unique;
 using std::string;
 using std::unique_ptr;
 using std::vector;
+using synctl::ArgumentParser;
 using synctl::Channel;
 using synctl::Command;
 using synctl::ConfigurationBase;
