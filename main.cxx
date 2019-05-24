@@ -1,6 +1,7 @@
 #include "synctl/ui/ArgumentParser.hxx"
 #include "synctl/ui/ConfigurationBase.hxx"
 #include "synctl/ui/ConfigurationInit.hxx"
+#include "synctl/ui/ConfigurationList.hxx"
 #include "synctl/ui/ConfigurationPull.hxx"
 #include "synctl/ui/ConfigurationPush.hxx"
 #include "synctl/ui/ConfigurationServer.hxx"
@@ -17,6 +18,7 @@ using std::vector;
 using synctl::ArgumentParser;
 using synctl::ConfigurationBase;
 using synctl::ConfigurationInit;
+using synctl::ConfigurationList;
 using synctl::ConfigurationPull;
 using synctl::ConfigurationPush;
 using synctl::ConfigurationServer;
@@ -27,6 +29,7 @@ using MainFunction = int (*)(ConfigurationBase *, const vector<string> &);
 
 static map<string, MainFunction> __commands {
 	{ "init"   , ConfigurationInit::main   },
+	{ "list"   , ConfigurationList::main   },
 	{ "pull"   , ConfigurationPull::main   },
 	{ "push"   , ConfigurationPush::main   },
 	{ "server" , ConfigurationServer::main },
