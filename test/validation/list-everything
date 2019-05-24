@@ -1,0 +1,67 @@
+#!/bin/bash
+
+set -e
+set -x
+
+mktree -p 'pushed' <<EOF
+root 010**** * * < foo\n
+EOF
+
+synctl init 'server'
+
+d0=$(date '+%Y-%m-%d-%H-%M-%S-%N')
+
+synctl push --server='file://server' --root='pushed/root' \
+            --trunk='trunk-0' --branch='branch-0'
+
+d1=$(date '+%Y-%m-%d-%H-%M-%S-%N')
+
+synctl push --server='file://server' --root='pushed/root' \
+            --trunk='trunk-1' --branch='branch-0'
+
+d2=$(date '+%Y-%m-%d-%H-%M-%S-%N')
+
+synctl push --server='file://server' --root='pushed/root' \
+            --trunk='trunk-1' --branch='branch-1'
+
+d3=$(date '+%Y-%m-%d-%H-%M-%S-%N')
+
+synctl push --server='file://server' --root='pushed/root' \
+            --trunk='trunk-1' --branch='branch-1'
+
+d4=$(date '+%Y-%m-%d-%H-%M-%S-%N')
+
+synctl list --server='file://server' --format='porcelain' > 'output.log'
+
+test $(cat 'output.log' | wc --lines) -eq 4
+
+function test_date() {
+    local line="$1" ; shift
+    local from="$1" ; shift
+    local to="$1"   ; shift
+    local date=$(echo "$line" | cut -d':' -f3 | tr -d '-')
+
+    from=$(echo "$from" | tr -d '-')
+    to=$(echo "$to" | tr -d '-')
+
+    perl -e "exit !($date >= $from)";
+    perl -e "exit !($date <= $to)";
+}
+
+(
+    read line
+    echo "$line" | grep -P '^trunk-1:[^:]+:\d{4}(-\d\d){5}-\d{9}:branch-1$'
+    test_date "$line" "$d3" "$d4"
+
+    read line
+    echo "$line" | grep -P '^trunk-1:[^:]+:\d{4}(-\d\d){5}-\d{9}:$'
+    test_date "$line" "$d2" "$d3"
+
+    read line
+    echo "$line" | grep -P '^trunk-1:[^:]+:\d{4}(-\d\d){5}-\d{9}:branch-0$'
+    test_date "$line" "$d1" "$d2"
+
+    read line
+    echo "$line" | grep -P '^trunk-0:[^:]+:\d{4}(-\d\d){5}-\d{9}:$'
+    test_date "$line" "$d0" "$d1"
+) < 'output.log'
