@@ -38,6 +38,38 @@ class Protocol
 	virtual void exit() const;
 
 
+	struct ListResult
+	{
+		// Trunk of the snapshot
+		std::string               trunk;
+
+		// Name of the snapshot
+		std::string               name;
+
+		// Creation date of the snapshot
+		struct timespec           date;
+
+		// Possible branches referencing the snapshot
+		std::vector<std::string>  branches;
+	};
+
+	struct ListSettings
+	{
+		// Pcre2 regex for the trunks to list (".*" to list all trunks)
+		std::string               trunkRegex;
+
+		// Pcre2 regex for the branches to list (".*" to list all)
+		// Set to empty string to list every snapshots.'
+		std::string               branchRegex;
+
+		// Filled with the listing of the result.
+		// Must be a valid address.
+		std::vector<ListResult>  *results;
+	};
+
+	virtual void list(const ListSettings &settings) const;
+
+
 	struct PushSettings
 	{
 		// Root of the local tree to push

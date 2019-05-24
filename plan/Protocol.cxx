@@ -61,6 +61,11 @@ void Protocol::exit() const
 	throw ProtocolException();
 }
 
+void Protocol::list(const ListSettings &settings [[gnu::unused]]) const
+{
+	throw ProtocolException();
+}
+
 void Protocol::push(const PushSettings &settings [[gnu::unused]]) const
 {
 	throw ProtocolException();
