@@ -1,13 +1,14 @@
 #include "synctl/repo/BranchStore.hxx"
 
+#include <map>
 #include <memory>
 #include <string>
-#include <vector>
 
 #include "synctl/io/Directory.hxx"
 #include "synctl/repo/Branch.hxx"
 
 
+using std::map;
 using std::make_unique;
 using std::move;
 using std::string;
@@ -42,9 +43,9 @@ void BranchStore::load() const
 		branch = make_unique<Branch>(path);
 
 		ptr = branch.get();
-		_branches.push_back(move(branch));
-		_rwptrs.push_back(ptr);
-		_roptrs.push_back(ptr);
+		_branches[name] = move(branch);
+		_rwptrs[name] = ptr;
+		_roptrs[name] = ptr;
 	}
 
 	_loaded = true;
@@ -52,22 +53,25 @@ void BranchStore::load() const
 
 Branch *BranchStore::setBranch(const string &name, const Branch::Content &cont)
 {
-	string path = _dir.path() + "/" + name;
+	unique_ptr<Branch> branch;
 	Branch *ptr = nullptr;
+	string path;
 
 	_ensureLoaded();
 
-	for (Branch *br : _rwptrs)
-		if (br->path() == path) {
-			ptr = br;
-			break;
-		}
+	auto it = _rwptrs.find(name);
 
-	if (ptr == nullptr) {
-		_branches.push_back(make_unique<Branch>(path));
-		ptr = _branches.back().get();
-		_rwptrs.push_back(ptr);
-		_roptrs.push_back(ptr);
+	if (it == _rwptrs.end()) {
+		path = _dir.path() + "/" + name;
+
+		branch = make_unique<Branch>(path);
+		ptr = branch.get();
+
+		_branches[name] = move(branch);
+		_rwptrs[name] = ptr;
+		_roptrs[name] = ptr;
+	} else {
+		ptr = it->second;
 	}
 
 	ptr->store(cont);
@@ -77,26 +81,34 @@ Branch *BranchStore::setBranch(const string &name, const Branch::Content &cont)
 
 Branch *BranchStore::branch(const string &name) noexcept
 {
-	string path = _dir.path() + "/" + name;
-
 	_ensureLoaded();
 
-	for (Branch *br : _rwptrs)
-		if (br->path() == path)
-			return br;
+	auto it = _rwptrs.find(name);
 
-	return nullptr;
+	if (it == _rwptrs.end())
+		return nullptr;
+	return it->second;
 }
 
 const Branch *BranchStore::branch(const string &name) const noexcept
 {
-	string path = _dir.path() + "/" + name;
-
 	_ensureLoaded();
 
-	for (const Branch *br : _roptrs)
-		if (br->path() == path)
-			return br;
+	auto it = _roptrs.find(name);
 
-	return nullptr;
+	if (it == _roptrs.end())
+		return nullptr;
+	return it->second;
+}
+
+map<string, Branch *> &BranchStore::branches() noexcept
+{
+	_ensureLoaded();
+	return _rwptrs;
+}
+
+map<string, const Branch *> &BranchStore::branches() const noexcept
+{
+	_ensureLoaded();
+	return _roptrs;
 }

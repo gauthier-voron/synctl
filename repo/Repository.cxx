@@ -147,6 +147,16 @@ const Branch *Repository::branch(const string &name) const
 	return _bstore.branch(name);
 }
 
+map<string, Branch *> Repository::branches()
+{
+	return _bstore.branches();
+}
+
+map<string, const Branch *> Repository::branches() const
+{
+	return _bstore.branches();
+}
+
 Trunk *Repository::newTrunk(const string &name)
 {
 	return _tstore.newTrunk(name);

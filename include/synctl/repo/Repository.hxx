@@ -59,6 +59,9 @@ class Repository
 	Branch *branch(const std::string &name);
 	const Branch *branch(const std::string &name) const;
 
+	std::map<std::string, Branch *> branches();
+	std::map<std::string, const Branch *> branches() const;
+
 
 	Trunk *newTrunk(const std::string &name);
 
