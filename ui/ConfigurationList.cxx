@@ -16,6 +16,7 @@
 #include "synctl/ui/ConfigurationBase.hxx"
 #include "synctl/ui/ConfigurationCommand.hxx"
 #include "synctl/ui/FormatList.hxx"
+#include "synctl/ui/FormatListHuman.hxx"
 #include "synctl/ui/FormatListPorcelain.hxx"
 #include "synctl/ui/OperandInvalidException.hxx"
 #include "synctl/ui/OperandMissingException.hxx"
@@ -36,6 +37,7 @@ using synctl::ConfigurationBase;
 using synctl::ConfigurationCommand;
 using synctl::ConfigurationList;
 using synctl::FormatList;
+using synctl::FormatListHuman;
 using synctl::FormatListPorcelain;
 using synctl::OperandInvalidException;
 using synctl::OperandMissingException;
@@ -104,7 +106,9 @@ unique_ptr<FormatList> ConfigurationList::format() const
 	if (_optionFormat.affected())
 		value = _optionFormat.value();
 
-	if (value == "porcelain")
+	if (value == "human")
+		return make_unique<FormatListHuman>();
+	else if (value == "porcelain")
 		return make_unique<FormatListPorcelain>();
 
 	throw OperandInvalidException("format", value);
