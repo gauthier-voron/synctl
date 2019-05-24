@@ -7,6 +7,8 @@
 #include "synctl/io/Channel.hxx"
 #include "synctl/io/InputStream.hxx"
 #include "synctl/io/OutputStream.hxx"
+#include "synctl/plan/Describe_1.hxx"
+#include "synctl/plan/List_1.hxx"
 #include "synctl/plan/Opcode.hxx"
 #include "synctl/plan/Protocol.hxx"
 #include "synctl/plan/ProtocolException.hxx"
@@ -59,6 +61,43 @@ void Protocol_1_0_0::exit() const
 	opcode_t op = OP_ACT_EXIT;
 
 	_channel->outputStream()->writeInt(op);
+}
+
+void Protocol_1_0_0::list(const ListSettings &settings) const
+{
+	opcode_t op = OP_ACT_LIST;
+	List_1 lister;
+	string str;
+
+	_channel->outputStream()->writeInt(op);
+	_channel->outputStream()->writeStr(settings.trunkRegex);
+	_channel->outputStream()->writeStr(settings.branchRegex);
+
+	auto handler = [dest = settings.results]
+		(const std::string &trunk,
+		 const std::string &snapshot,
+		 const struct timespec &date,
+		 const std::vector<std::string> &branches) {
+
+		dest->emplace_back();
+
+		dest->back().trunk = trunk;
+		dest->back().name = snapshot;
+		dest->back().date = date;
+		dest->back().branches = branches;
+	};
+
+	lister.list(_channel->inputStream(), handler);
+}
+
+void Protocol_1_0_0::_serveList(Repository *repository) const
+{
+	Describe_1 describer;
+
+	describer.trunkRegex() = _channel->inputStream()->readStr();
+	describer.branchRegex() = _channel->inputStream()->readStr();
+
+	describer.describe(_channel->outputStream(), repository);
 }
 
 void Protocol_1_0_0::push(const PushSettings &settings) const
@@ -214,6 +253,9 @@ void Protocol_1_0_0::serve(Repository *repository) const
 		op = _channel->inputStream()->readInt<opcode_t>();
 		switch (op) {
 		case OP_ACT_EXIT:
+			break;
+		case OP_ACT_LIST:
+			_serveList(repository);
 			break;
 		case OP_ACT_PUSH:
 			_servePush(repository);

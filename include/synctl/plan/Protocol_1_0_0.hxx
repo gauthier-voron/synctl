@@ -27,6 +27,8 @@ class Protocol_1_0_0 : public Protocol
 
 	Protocol_1_0_0(Channel *channel);
 
+	void _serveList(Repository *repository) const;
+
 	void _servePush(Repository *repository) const;
 
 	void _servePull(Repository *repository) const;
@@ -45,6 +47,8 @@ class Protocol_1_0_0 : public Protocol
 
 	virtual void exit() const override;
 
+
+	virtual void list(const ListSettings &settings) const override;
 
 	virtual void push(const PushSettings &settings) const override;
 

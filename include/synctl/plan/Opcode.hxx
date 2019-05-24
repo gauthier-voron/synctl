@@ -25,8 +25,9 @@ typedef uint8_t opcode_t;
 #define OP_PAT_GLOB           ((opcode_t) 1)
 
 #define OP_ACT_EXIT           ((opcode_t) 0)
-#define OP_ACT_PUSH           ((opcode_t) 1)
-#define OP_ACT_PULL           ((opcode_t) 2)
+#define OP_ACT_LIST           ((opcode_t) 1)
+#define OP_ACT_PUSH           ((opcode_t) 2)
+#define OP_ACT_PULL           ((opcode_t) 3)
 
 #define OP_RET_OK             ((opcode_t) 0)
 #define OP_RET_INVTRUNK       ((opcode_t) 1)
