@@ -56,20 +56,20 @@ void FormatListPorcelain::_format(const string &trunk, const string &snapshot,
 	::snprintf(datebuf + NANO_LEN, sizeof (datebuf) - NANO_LEN,
 		   "%09lu", date.tv_nsec);
 
-	_output->writeStr(trunk);
-	_output->writeStr(":");
-	_output->writeStr(snapshot);
-	_output->writeStr(":");
-	_output->writeStr(datebuf);
-	_output->writeStr(":");
+	_output->write(trunk);
+	_output->write(":");
+	_output->write(snapshot);
+	_output->write(":");
+	_output->write(datebuf);
+	_output->write(":");
 
 	for (const string &b : branches) {
-		_output->writeStr(sep);
-		_output->writeStr(b);
+		_output->write(sep);
+		_output->write(b);
 		sep = ",";
 	}
 
-	_output->writeStr("\n");
+	_output->write("\n");
 }
 
 FormatListPorcelain::FormatListPorcelain()

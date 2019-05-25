@@ -47,7 +47,7 @@ void FormatListHuman::_printDate(const Date &date)
 	else
 		::strftime(datebuf, sizeof (datebuf), "%b %e %Y", &datetm);
 
-	_output->writeStr(datebuf);
+	_output->write(datebuf);
 }
 
 FormatListHuman::FormatListHuman()
@@ -81,28 +81,28 @@ void FormatListHuman::flush()
 		if (firstTrunk)
 			firstTrunk = false;
 		else
-			_output->writeStr("\n");
+			_output->write("\n");
 
-		_output->writeStr(tpair.first);
-		_output->writeStr(":\n");
+		_output->write(tpair.first);
+		_output->write(":\n");
 
 		for (auto it = tpair.second.rbegin();
 		     it != tpair.second.rend(); ++it) {
 
 			for (const auto &spair : it->second) {
-				_output->writeStr(spair.first);
-				_output->writeStr("  ");
+				_output->write(spair.first);
+				_output->write("  ");
 
 				_printDate(it->first);
 				sep = "  ";
 
 				for (const string &branch : spair.second) {
-					_output->writeStr(sep);
-					_output->writeStr(branch);
+					_output->write(sep);
+					_output->write(branch);
 					sep = ", ";
 				}
 
-				_output->writeStr("\n");
+				_output->write("\n");
 			}
 		}
 	}

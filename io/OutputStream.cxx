@@ -21,6 +21,11 @@ void OutputStream::write(const uint8_t *src, size_t len)
 		write(src[i]);
 }
 
+void OutputStream::write(const string &str)
+{
+	write(str.c_str(), str.length());
+}
+
 void OutputStream::writeStr(const string &str)
 {
 	write(str.c_str(), str.length() + 1);
