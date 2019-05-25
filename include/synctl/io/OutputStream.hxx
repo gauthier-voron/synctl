@@ -19,6 +19,7 @@ class OutputStream
 
 	virtual void write(uint8_t c) = 0;
 	virtual void write(const uint8_t *src, size_t len);
+	virtual void write(const std::string &str);
 
 	template<typename T> void write(const T *src, size_t len);
 
