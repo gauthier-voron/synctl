@@ -25,6 +25,7 @@ class ConfigurationPull : public ConfigurationCommand
 	OptionLambda  _optionInclude;
 	OptionString  _optionRoot = OptionString("root", 'r');
 	OptionString  _optionServer = OptionString("server", 's');
+	OptionString  _optionSnapshot = OptionString("snapshot", 'S');
 	OptionString  _optionTrunk = OptionString("trunk", 't');
 
 	bool          _hasProfile = false;
@@ -44,6 +45,7 @@ class ConfigurationPull : public ConfigurationCommand
 	const OptionString &optionCommand() const;
 	const OptionString &optionRoot() const;
 	const OptionString &optionServer() const;
+	const OptionString &optionSnapshot() const;
 	const OptionString &optionTrunk() const;
 	bool hasProfile() const;
 
@@ -51,6 +53,7 @@ class ConfigurationPull : public ConfigurationCommand
 	Filter *filter();
 	const std::string &root() const;
 	const std::string &server() const;
+	const std::string &snapshot() const;
 	const std::string &trunk() const;
 	std::string profile() const;
 
