@@ -54,6 +54,11 @@ ConfigurationPull::ConfigurationPull(ConfigurationBase *inner)
 {
 }
 
+const OptionString &ConfigurationPull::optionBranch() const
+{
+	return _optionBranch;
+}
+
 const OptionString &ConfigurationPull::optionCommand() const
 {
 	return _optionCommand;
@@ -82,6 +87,11 @@ const OptionString &ConfigurationPull::optionTrunk() const
 bool ConfigurationPull::hasProfile() const
 {
 	return _hasProfile;
+}
+
+const string &ConfigurationPull::branch() const
+{
+	return _optionBranch.value();
 }
 
 const string &ConfigurationPull::command() const
@@ -142,6 +152,7 @@ void ConfigurationPull::getOptions(vector<Option *> *dest)
 {
 	ConfigurationCommand::getOptions(dest);
 
+	dest->push_back(&_optionBranch);
 	dest->push_back(&_optionCommand);
 	dest->push_back(&_optionExclude);
 	dest->push_back(&_optionInclude);

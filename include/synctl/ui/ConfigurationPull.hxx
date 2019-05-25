@@ -20,6 +20,7 @@ class Filter;
 
 class ConfigurationPull : public ConfigurationCommand
 {
+	OptionString  _optionBranch = OptionString("branch", 'b');
 	OptionString  _optionCommand = OptionString("command", 'c');
 	OptionLambda  _optionExclude;
 	OptionLambda  _optionInclude;
@@ -42,6 +43,7 @@ class ConfigurationPull : public ConfigurationCommand
 	ConfigurationPull &operator=(const ConfigurationPull &other) = default;
 
 
+	const OptionString &optionBranch() const;
 	const OptionString &optionCommand() const;
 	const OptionString &optionRoot() const;
 	const OptionString &optionServer() const;
@@ -49,6 +51,7 @@ class ConfigurationPull : public ConfigurationCommand
 	const OptionString &optionTrunk() const;
 	bool hasProfile() const;
 
+	const std::string &branch() const;
 	const std::string &command() const;
 	Filter *filter();
 	const std::string &root() const;
