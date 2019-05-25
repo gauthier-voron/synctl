@@ -195,6 +195,11 @@ static int __main(ConfigurationPull *config)
 	if (protocol == nullptr)
 		return 1;
 
+	if (config->optionBranch().affected())
+		psettings.branchName = config->branch();
+	else
+		psettings.branchName.clear();
+
 	psettings.localRoot = config->root();
 	psettings.trunkName = config->trunk();
 
