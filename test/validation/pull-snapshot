@@ -1,0 +1,30 @@
+#!/bin/bash
+
+set -e
+set -x
+
+mkdir 'pushed-v0' 'pushed-v1' 'pulled'
+
+mktree -p 'pushed-v0' <<EOF
+root 010**** * * < v0\n
+EOF
+
+mktree -p 'pushed-v1' <<EOF
+root 010**** * * < v1\n
+EOF
+
+synctl init 'server'
+synctl push --server='file://server' --root='pushed-v0/root'
+synctl push --server='file://server' --root='pushed-v1/root'
+
+synctl list --server='file://server' --format='porcelain' | \
+    tail -n1
+
+v0=$(synctl list --server='file://server' --format='porcelain' | \
+	 tail -n 1 | cut -d':' -f2)
+
+synctl pull --server='file://server' --root='pulled/root' --snapshot="$v0"
+
+chktree -p 'pulled' <<EOF
+root 010**** * * < v0\n
+EOF
