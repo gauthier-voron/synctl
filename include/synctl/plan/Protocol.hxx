@@ -97,6 +97,9 @@ class Protocol
 		// Root of the local tree to pull to
 		std::string   localRoot;
 
+		// Name of the remote branch to update (no update if empty)
+		std::string   branchName;
+
 		// Name of the remote trunk to pull from
 		std::string   trunkName;
 

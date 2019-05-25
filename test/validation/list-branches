@@ -1,0 +1,29 @@
+#!/bin/bash
+
+set -e
+set -x
+
+mktree -p 'pushed' <<EOF
+root 010**** * * < foo\n
+EOF
+
+synctl init 'server'
+
+synctl push --server='file://server' --root='pushed/root' \
+            --trunk='trunk-0' --branch='b0'
+
+synctl push --server='file://server' --root='pushed/root' \
+            --trunk='trunk-0' --branch='b1'
+
+synctl pull --server='file://server' --root='pushed/root' \
+            --trunk='trunk-0' --branch='b0'
+
+synctl list --server='file://server' --format='porcelain' | (
+    read line
+    echo "$line" | grep -P '^trunk-0:[^:]+:\d{4}(-\d\d){5}-\d{9}:b0,b1$'
+
+    read line
+    echo "$line" | grep -P '^trunk-0:[^:]+:\d{4}(-\d\d){5}-\d{9}:$'
+
+    ! read line
+)

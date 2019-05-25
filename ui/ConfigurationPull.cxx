@@ -54,6 +54,11 @@ ConfigurationPull::ConfigurationPull(ConfigurationBase *inner)
 {
 }
 
+const OptionString &ConfigurationPull::optionBranch() const
+{
+	return _optionBranch;
+}
+
 const OptionString &ConfigurationPull::optionCommand() const
 {
 	return _optionCommand;
@@ -69,6 +74,11 @@ const OptionString &ConfigurationPull::optionServer() const
 	return _optionServer;
 }
 
+const OptionString &ConfigurationPull::optionSnapshot() const
+{
+	return _optionSnapshot;
+}
+
 const OptionString &ConfigurationPull::optionTrunk() const
 {
 	return _optionTrunk;
@@ -77,6 +87,11 @@ const OptionString &ConfigurationPull::optionTrunk() const
 bool ConfigurationPull::hasProfile() const
 {
 	return _hasProfile;
+}
+
+const string &ConfigurationPull::branch() const
+{
+	return _optionBranch.value();
 }
 
 const string &ConfigurationPull::command() const
@@ -97,6 +112,11 @@ const string &ConfigurationPull::root() const
 const string &ConfigurationPull::server() const
 {
 	return _optionServer.value();
+}
+
+const string &ConfigurationPull::snapshot() const
+{
+	return _optionSnapshot.value();
 }
 
 const string &ConfigurationPull::trunk() const
@@ -132,11 +152,13 @@ void ConfigurationPull::getOptions(vector<Option *> *dest)
 {
 	ConfigurationCommand::getOptions(dest);
 
+	dest->push_back(&_optionBranch);
 	dest->push_back(&_optionCommand);
 	dest->push_back(&_optionExclude);
 	dest->push_back(&_optionInclude);
 	dest->push_back(&_optionRoot);
 	dest->push_back(&_optionServer);
+	dest->push_back(&_optionSnapshot);
 	dest->push_back(&_optionTrunk);
 }
 
@@ -173,9 +195,19 @@ static int __main(ConfigurationPull *config)
 	if (protocol == nullptr)
 		return 1;
 
+	if (config->optionBranch().affected())
+		psettings.branchName = config->branch();
+	else
+		psettings.branchName.clear();
+
 	psettings.localRoot = config->root();
 	psettings.trunkName = config->trunk();
-	psettings.snapshotName.clear();
+
+	if (config->optionSnapshot().affected())
+		psettings.snapshotName = config->snapshot();
+	else
+		psettings.snapshotName.clear();
+
 	psettings.filter = config->filter();
 
 	protocol->pull(psettings);

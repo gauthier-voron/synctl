@@ -178,6 +178,7 @@ void Protocol_1_0_0::pull(const PullSettings &settings) const
 	Pull_1 puller;
 
 	_channel->outputStream()->writeInt(op);
+	_channel->outputStream()->writeStr(settings.branchName);
 	_channel->outputStream()->writeStr(settings.trunkName);
 	_channel->outputStream()->writeStr(settings.snapshotName);
 
@@ -197,20 +198,22 @@ void Protocol_1_0_0::pull(const PullSettings &settings) const
 
 void Protocol_1_0_0::_servePull(Repository *repository) const
 {
-	string trunkName, snapshotName;
 	const Snapshot *snapshot, *sn;
 	unique_ptr<Filter> filter;
+	Branch::Content branch;
 	const Trunk *trunk;
+	string branchName;
 	FilterCodec codec;
 	Send_1 sender;
 	opcode_t op;
 
-	_channel->inputStream()->readStr(&trunkName);
-	_channel->inputStream()->readStr(&snapshotName);
+	branchName = _channel->inputStream()->readStr();
+	branch.trunk = _channel->inputStream()->readStr();
+	branch.snapshot = _channel->inputStream()->readStr();
 
 	filter = codec.decode(_channel->inputStream());
 
-	trunk = repository->trunk(trunkName);
+	trunk = repository->trunk(branch.trunk);
 
 	if (trunk == nullptr) {
 		op = OP_RET_INVTRUNK;
@@ -218,18 +221,21 @@ void Protocol_1_0_0::_servePull(Repository *repository) const
 		return;
 	}
 
-	if (snapshotName.empty()) {
+	if (branch.snapshot.empty()) {
 		snapshot = nullptr;
 		for (const auto &pair : trunk->snapshots()) {
 			sn = pair.second;
 
-			if (snapshot == nullptr)
+			if ((snapshot == nullptr) ||
+			    (sn->content().date > snapshot->content().date)) {
+
 				snapshot = sn;
-			else if (sn->content().date > snapshot->content().date)
-				snapshot = sn;
+				branch.snapshot = pair.first;
+
+			}
 		}
 	} else {
-		snapshot = trunk->snapshot(snapshotName);
+		snapshot = trunk->snapshot(branch.snapshot);
 	}
 
 	if (snapshot == nullptr) {
@@ -243,6 +249,9 @@ void Protocol_1_0_0::_servePull(Repository *repository) const
 
 	sender.setFilter(filter.get());
 	sender.send(_channel->outputStream(), repository, snapshot->content());
+
+	if (branchName.empty() == false)
+		repository->setBranch(branchName, branch);
 }
 
 void Protocol_1_0_0::serve(Repository *repository) const
