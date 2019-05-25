@@ -255,7 +255,6 @@ static string __globToRegex(const string &glob) {
 
 	ret.push_back('$');
 
-	std::cerr << glob << " -> " << ret << std::endl;
 	return ret;
 }
 
