@@ -7,6 +7,7 @@
 
 #include "synctl/tree/FirstMatchFilter.hxx"
 #include "synctl/ui/ConfigurationCommand.hxx"
+#include "synctl/ui/OptionBoolean.hxx"
 #include "synctl/ui/OptionLambda.hxx"
 #include "synctl/ui/OptionString.hxx"
 
@@ -20,16 +21,17 @@ class Filter;
 
 class ConfigurationPush : public ConfigurationCommand
 {
-	OptionString  _optionBranch = OptionString("branch", 'b');
-	OptionString  _optionCommand = OptionString("command", 'c');
-	OptionLambda  _optionExclude;
-	OptionLambda  _optionInclude;
-	OptionString  _optionRoot = OptionString("root", 'r');
-	OptionString  _optionServer = OptionString("server", 's');
-	OptionString  _optionTrunk = OptionString("trunk", 't');
+	OptionString   _optionBranch = OptionString("branch", 'b');
+	OptionString   _optionCommand = OptionString("command", 'c');
+	OptionLambda   _optionExclude;
+	OptionLambda   _optionInclude;
+	OptionString   _optionRoot = OptionString("root", 'r');
+	OptionString   _optionServer = OptionString("server", 's');
+	OptionString   _optionTrunk = OptionString("trunk", 't');
+	OptionBoolean  _optionVerbose = OptionBoolean("verbose", 'v');
 
-	bool          _hasProfile = false;
-	std::string   _operandProfile;
+	bool           _hasProfile = false;
+	std::string    _operandProfile;
 
 	FirstMatchFilter  _filter;
 
@@ -47,6 +49,7 @@ class ConfigurationPush : public ConfigurationCommand
 	const OptionString &optionRoot() const;
 	const OptionString &optionServer() const;
 	const OptionString &optionTrunk() const;
+	const OptionBoolean &optionVerbose() const;
 	bool hasProfile() const;
 
 	const std::string &branch() const;
@@ -55,6 +58,7 @@ class ConfigurationPush : public ConfigurationCommand
 	const std::string &root() const;
 	const std::string &server() const;
 	const std::string &trunk() const;
+	bool verbose() const;
 	std::string profile() const;
 
 

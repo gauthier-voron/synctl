@@ -21,6 +21,7 @@
 #include "synctl/ui/ConfigurationBase.hxx"
 #include "synctl/ui/OperandMissingException.hxx"
 #include "synctl/ui/OperandUnexpectedException.hxx"
+#include "synctl/ui/OptionBoolean.hxx"
 #include "synctl/ui/OptionLambda.hxx"
 #include "synctl/ui/OptionString.hxx"
 #include "synctl/ui/ProfileParser.hxx"
@@ -40,6 +41,7 @@ using synctl::FirstMatchFilter;
 using synctl::GlobPattern;
 using synctl::OperandMissingException;
 using synctl::OperandUnexpectedException;
+using synctl::OptionBoolean;
 using synctl::OptionLambda;
 using synctl::OptionString;
 using synctl::ProfileParser;
@@ -81,6 +83,11 @@ const OptionString &ConfigurationPush::optionServer() const
 const OptionString &ConfigurationPush::optionTrunk() const
 {
 	return _optionTrunk;
+}
+
+const OptionBoolean &ConfigurationPush::optionVerbose() const
+{
+	return _optionVerbose;
 }
 
 bool ConfigurationPush::hasProfile() const
@@ -136,6 +143,11 @@ const string &ConfigurationPush::trunk() const
 	return defaultValue;
 }
 
+bool ConfigurationPush::verbose() const
+{
+	return (_optionVerbose.affected() > 0);
+}
+
 string ConfigurationPush::profile() const
 {
 	if (_operandProfile.find('/') != string::npos)
@@ -166,6 +178,7 @@ void ConfigurationPush::getOptions(vector<Option *> *dest)
 	dest->push_back(&_optionRoot);
 	dest->push_back(&_optionServer);
 	dest->push_back(&_optionTrunk);
+	dest->push_back(&_optionVerbose);
 }
 
 static unique_ptr<Channel> __openSshChannel(ConfigurationPush *config)
@@ -206,6 +219,7 @@ static int __main(ConfigurationPush *config)
 	psettings.trunkName = config->trunk();
 	psettings.snapshotName = nullptr;
 	psettings.filter = config->filter();
+	psettings.verbosity = config->verbose() ? 1 : 0;
 
 	protocol->push(psettings);
 
