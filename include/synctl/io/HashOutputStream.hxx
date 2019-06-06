@@ -45,6 +45,8 @@ class HashOutputStream : public OutputStream
 	virtual void write(const uint8_t *src, size_t len);
 	using OutputStream::write;
 
+	virtual void flush() override;
+
 	virtual void close();
 };
 
