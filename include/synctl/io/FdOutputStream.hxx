@@ -31,6 +31,8 @@ class FdOutputStream : public OutputStream
 	virtual void write(const uint8_t *src, size_t len);
 	using OutputStream::write;
 
+	using OutputStream::flush;
+
 	virtual void close();
 };
 
