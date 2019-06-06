@@ -41,6 +41,8 @@ class TransientOutputStream : public OutputStream
 	using OutputStream::write;
 
 	void commit(const Reference &reference);
+	virtual void flush() override;
+
 	virtual void close();
 };
 
