@@ -12,8 +12,10 @@
 
 #include "synctl/io/Directory.hxx"
 #include "synctl/io/LinkTracker.hxx"
+#include "synctl/io/LogOutputStream.hxx"
 #include "synctl/io/NullOutputStream.hxx"
 #include "synctl/io/Xattribute.hxx"
+#include "synctl/plan/LoggerPush_1.hxx"
 #include "synctl/plan/Opcode.hxx"
 #include "synctl/tree/Filter.hxx"
 #include "synctl/tree/Directory_1.hxx"
@@ -34,6 +36,8 @@ using synctl::Filter;
 using synctl::Link_1;
 using synctl::Linktable_1;
 using synctl::LinkTracker;
+using synctl::LoggerPush_1;
+using synctl::LogOutputStream;
 using synctl::NullOutputStream;
 using synctl::Reference;
 using synctl::Regular_1;
@@ -112,8 +116,9 @@ bool Push_1::_pushDirectory(const Context *context, Reference *reference,
 	Directory fsdir = Directory(context->apath);
 	map<string, string> xattrs;
 	map<string, string> hlinks;
+	size_t pushedCount, dsize;
 	NullOutputStream null;
-	size_t pushedCount;
+	LogOutputStream log;
 	Directory_1 dir;
 	Reference ref;
 	uint64_t dlen;
@@ -177,7 +182,16 @@ bool Push_1::_pushDirectory(const Context *context, Reference *reference,
 
  write:
 	*opcode = OP_TREE_DIRECTORY_1;
-	dir.write(&null, reference);
+
+	_logger->seekEntry(context->rpath, 0, 0);
+
+	log = LogOutputStream(&null);
+	log.setLogger([&](size_t did) {
+		_logger->seekEntry(context->rpath, did, 0);
+	});
+
+	dir.write(&log, reference);
+	dsize = log.count();
 
 	if (hlinks.empty() == false) {
 		context->output->writeInt<opcode_t>(OP_PUSH_1_LINKTRACK);
@@ -195,7 +209,15 @@ bool Push_1::_pushDirectory(const Context *context, Reference *reference,
 	context->output->writeInt(*opcode);
 	context->output->writeStr(context->rpath);
 	context->output->writeInt(dlen);
-	dir.write(context->output, nullptr);
+
+	_logger->sendEntry(context->rpath, 0, dsize);
+
+	log = LogOutputStream(context->output);
+	log.setLogger([&](size_t did) {
+		_logger->sendEntry(context->rpath, did, dsize);
+	});
+
+	dir.write(&log, nullptr);
 
 	return true;
 }
@@ -204,6 +226,7 @@ bool Push_1::_pushRegular(const Context *context, Reference *reference,
 			  opcode_t *opcode)
 {
 	NullOutputStream null;
+	LogOutputStream log;
 	Regular_1 reg;
 	Reference ref;
 	uint64_t flen;
@@ -213,9 +236,16 @@ bool Push_1::_pushRegular(const Context *context, Reference *reference,
 
 	*opcode = OP_TREE_REGULAR_1;
 
+	_logger->seekEntry(context->rpath, 0, context->stat.st_size);
+
+	log = LogOutputStream(&null);
+	log.setLogger([&](size_t did) {
+		_logger->seekEntry(context->rpath, did, context->stat.st_size);
+	});
+
 	try {
 		reg = Regular_1::makeFrom(context->apath);
-		reg.write(&null, reference);
+		reg.write(&log, reference);
 		if (_isReferenceKnown(*reference)) {
 			_fixAccessTime(context);
 			return true;
@@ -230,7 +260,16 @@ bool Push_1::_pushRegular(const Context *context, Reference *reference,
 	context->output->writeInt(*opcode);
 	context->output->writeInt(flen);
 	reg = Regular_1::makeFrom(context->apath);
-	reg.write(context->output, nullptr);
+
+	_logger->sendEntry(context->rpath, 0, context->stat.st_size);
+
+	log = LogOutputStream(context->output);
+	log.setLogger([&](size_t did) {
+		_logger->sendEntry(context->rpath, did, context->stat.st_size);
+	});
+
+	reg.write(&log, nullptr);
+
 	_fixAccessTime(context);
 
 	return true;
@@ -242,6 +281,7 @@ bool Push_1::_pushSymlink(const Context *context, Reference *reference,
 	NullOutputStream null;
 	Symlink_1 link;
 	Reference ref;
+	size_t len;
 
 	if (_filterPath(context) != Filter::Accept)
 		return false;
@@ -251,12 +291,19 @@ bool Push_1::_pushSymlink(const Context *context, Reference *reference,
 	link = Symlink_1::make(context->apath);
 	_fixAccessTime(context);
 
+	len = link.getTarget().length();
+	_logger->seekEntry(context->rpath, 0, len);
 	link.write(&null, reference);
+	_logger->seekEntry(context->rpath, len, len);
+
 	if (_isReferenceKnown(*reference))
 		return true;
 
 	context->output->writeInt(*opcode);
+
+	_logger->sendEntry(context->rpath, 0, len);
 	link.write(context->output, nullptr);
+	_logger->sendEntry(context->rpath, len, len);
 
 	return true;
 }
@@ -269,6 +316,14 @@ void Push_1::addKnownReference(const Reference &reference)
 void Push_1::setFilter(Filter *filter)
 {
 	_filter = filter;
+}
+
+void Push_1::setLogger(LoggerPush_1 *logger)
+{
+	if (logger == nullptr)
+		_logger = &_deflogger;
+	else
+		_logger = logger;
 }
 
 void Push_1::push(OutputStream *output, const string &root)
