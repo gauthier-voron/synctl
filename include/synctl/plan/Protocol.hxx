@@ -87,6 +87,10 @@ class Protocol
 		// Filled with the name of the newly created snapshot if not
 		// set to nullptr
 		std::string  *snapshotName;
+
+		// Verbosity level, 0 or less is silent, other levels are
+		// implementation specific
+		int           verbosity;
 	};
 
 	virtual void push(const PushSettings &settings) const;
