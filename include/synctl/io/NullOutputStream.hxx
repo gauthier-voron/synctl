@@ -27,6 +27,7 @@ public:
 	size_t written() const;
 	void reset();
 
+	using OutputStream::flush;
 	virtual void close();
 };
 
