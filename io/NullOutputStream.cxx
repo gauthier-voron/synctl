@@ -25,7 +25,3 @@ void NullOutputStream::reset()
 {
 	_size = 0;
 }
-
-void NullOutputStream::close()
-{
-}

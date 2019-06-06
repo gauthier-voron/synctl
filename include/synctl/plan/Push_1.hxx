@@ -10,6 +10,7 @@
 #include <string>
 
 #include "synctl/io/LinkTracker.hxx"
+#include "synctl/plan/LoggerPush0_1.hxx"
 #include "synctl/plan/Opcode.hxx"
 #include "synctl/tree/Filter.hxx"
 
@@ -17,6 +18,7 @@
 namespace synctl {
 
 
+class LoggerPush_1;
 class OutputStream;
 class Reference;
 
@@ -49,6 +51,9 @@ class Push_1
 
 	Filter               *_filter = nullptr;
 
+	LoggerPush0_1         _deflogger;
+	LoggerPush_1         *_logger = &_deflogger;
+
 
 	bool _isReferenceKnown(const Reference &reference) const;
 
@@ -73,6 +78,8 @@ class Push_1
 	void addKnownReference(const Reference &reference);
 
 	void setFilter(Filter *filter);
+
+	void setLogger(LoggerPush_1 *logger);
 
 	void push(OutputStream *output, const std::string &root);
 };

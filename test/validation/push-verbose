@@ -1,0 +1,64 @@
+#!/bin/bash
+
+set -e
+set -x
+
+synctl init 'server'
+
+mktree <<EOF
+root 04**** * *
+root/foo 0100644 19990101 19990101
+EOF
+
+synctl push --server='file://server' --root='root' --verbose > 'log-0.txt'
+synctl push --server='file://server' --root='root' --verbose > 'log-1.txt'
+
+rm -rf 'root'
+mktree <<EOF
+root 04**** * *
+root/foo 0100644 19990101 19990101
+root/bar 0100644 19990102 19990102
+EOF
+
+synctl push --server='file://server' --root='root' --verbose > 'log-2.txt'
+
+cat 'log-0.txt' | perl -wple 's/^.*\r//g' | {
+    read line
+    echo "$line" | \
+	grep -qP '^Sent files: 2/2, \d+ ([GMK]i)?B | \d+ ([GMK]i)?B/s$'
+
+    read line
+    echo "$line" | \
+	grep -qP '^Created snapshot: master/\S+ <- '
+
+    echo ok
+    ! read line
+}
+
+cat 'log-1.txt' | perl -wple 's/^.*\r//g' | {
+    read line
+    echo "$line" | \
+	grep -P '^Received references: 2, \d+ ([GMK]i)?B | \d+ ([GMK]i)?B/s$'
+
+    read line
+    echo "$line" | \
+	grep -P '^Created snapshot: master/\S+ <- '
+
+    ! read line
+}
+
+cat 'log-2.txt' | perl -wple 's/^.*\r//g' | {
+    read line
+    echo "$line" | \
+	grep -P '^Received references: 2, \d+ ([GMK]i)?B | \d+ ([GMK]i)?B/s$'
+
+    read line
+    echo "$line" | \
+	grep -P '^Sent files: 1/3, \d+ ([GMK]i)?B | \d+ ([GMK]i)?B/s$'
+
+    read line
+    echo "$line" | \
+	grep -P '^Created snapshot: master/\S+ <- '
+
+    ! read line
+}

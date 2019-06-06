@@ -31,6 +31,10 @@ void OutputStream::writeStr(const string &str)
 	write(str.c_str(), str.length() + 1);
 }
 
+void OutputStream::flush()
+{
+}
+
 void OutputStream::close()
 {
 }

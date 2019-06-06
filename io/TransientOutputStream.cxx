@@ -72,6 +72,11 @@ void TransientOutputStream::commit(const Reference &reference)
 	_path.clear();
 }
 
+void TransientOutputStream::flush()
+{
+	_output.flush();
+}
+
 void TransientOutputStream::close()
 {
 	if (_path.empty())

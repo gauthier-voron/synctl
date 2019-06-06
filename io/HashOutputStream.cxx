@@ -114,6 +114,11 @@ void HashOutputStream::write(const uint8_t *src, size_t len)
 		_inner->write(src, len);
 }
 
+void HashOutputStream::flush()
+{
+	_inner->flush();
+}
+
 void HashOutputStream::close()
 {
 	if (_attached)

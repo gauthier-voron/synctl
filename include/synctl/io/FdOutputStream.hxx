@@ -27,11 +27,13 @@ class FdOutputStream : public OutputStream
 	FdOutputStream &operator=(const FdOutputStream &other) = delete;
 	FdOutputStream &operator=(FdOutputStream &&other);
 
-	virtual void write(uint8_t c);
-	virtual void write(const uint8_t *src, size_t len);
+	virtual void write(uint8_t c) override;
+	virtual void write(const uint8_t *src, size_t len) override;
 	using OutputStream::write;
 
-	virtual void close();
+	using OutputStream::flush;
+
+	virtual void close() override;
 };
 
 

@@ -36,12 +36,15 @@ class TransientOutputStream : public OutputStream
 	        = delete;
 	TransientOutputStream &operator=(TransientOutputStream &&other);
 
-	virtual void write(uint8_t c);
-	virtual void write(const uint8_t *src, size_t len);
+	virtual void write(uint8_t c) override;
+	virtual void write(const uint8_t *src, size_t len) override;
 	using OutputStream::write;
 
 	void commit(const Reference &reference);
-	virtual void close();
+
+	virtual void flush() override;
+
+	virtual void close() override;
 };
 
 
