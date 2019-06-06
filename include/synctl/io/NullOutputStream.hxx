@@ -20,8 +20,8 @@ public:
 	NullOutputStream() = default;
 	virtual ~NullOutputStream() = default;
 
-	virtual void write(uint8_t c);
-	virtual void write(const uint8_t *src, size_t len);
+	virtual void write(uint8_t c) override;
+	virtual void write(const uint8_t *src, size_t len) override;
 	using OutputStream::write;
 
 	size_t written() const;

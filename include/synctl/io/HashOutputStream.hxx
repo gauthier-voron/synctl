@@ -41,13 +41,13 @@ class HashOutputStream : public OutputStream
 	void digest(Reference *dest);
 	Reference digest();
 
-	virtual void write(uint8_t c);
-	virtual void write(const uint8_t *src, size_t len);
+	virtual void write(uint8_t c) override;
+	virtual void write(const uint8_t *src, size_t len) override;
 	using OutputStream::write;
 
 	virtual void flush() override;
 
-	virtual void close();
+	virtual void close() override;
 };
 
 
