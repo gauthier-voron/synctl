@@ -27,6 +27,8 @@ class OutputStream
 
 	template<typename T> void writeInt(T num);
 
+	virtual void flush();
+
 	virtual void close();
 };
 
