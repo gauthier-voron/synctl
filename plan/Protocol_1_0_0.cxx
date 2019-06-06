@@ -9,6 +9,7 @@
 #include "synctl/io/OutputStream.hxx"
 #include "synctl/plan/Describe_1.hxx"
 #include "synctl/plan/List_1.hxx"
+#include "synctl/plan/LoggerPush1_1.hxx"
 #include "synctl/plan/Opcode.hxx"
 #include "synctl/plan/Protocol.hxx"
 #include "synctl/plan/ProtocolException.hxx"
@@ -30,6 +31,7 @@ using std::unique_ptr;
 using std::vector;
 using synctl::Channel;
 using synctl::InputStream;
+using synctl::LoggerPush1_1;
 using synctl::OutputStream;
 using synctl::Protocol;
 using synctl::Protocol_1_0_0;
@@ -105,6 +107,7 @@ void Protocol_1_0_0::push(const PushSettings &settings) const
 	Reference zeroref = Reference::zero();
 	string snapshotName, *nameptr;
 	opcode_t op = OP_ACT_PUSH;
+	LoggerPush1_1 logger;
 	FilterCodec codec;
 	Reference ref;
 	Push_1 pusher;
@@ -117,12 +120,16 @@ void Protocol_1_0_0::push(const PushSettings &settings) const
 		_channel->inputStream()->readall(ref.data(), ref.size());
 		if (ref == zeroref)
 			break;
+		if (settings.verbosity > 0)
+			logger.receiveReference();
 		pusher.addKnownReference(ref);
 	}
 
 	codec.encode(settings.filter, _channel->outputStream());
 
 	pusher.setFilter(settings.filter);
+	if (settings.verbosity > 0)
+		pusher.setLogger(&logger);
 	pusher.push(_channel->outputStream(), settings.localRoot);
 
 	if (settings.snapshotName == nullptr)
@@ -131,6 +138,10 @@ void Protocol_1_0_0::push(const PushSettings &settings) const
 		nameptr = settings.snapshotName;
 
 	*nameptr = _channel->inputStream()->readStr();
+
+	if (settings.verbosity > 0)
+		logger.createSnapshot(settings.trunkName, *nameptr,
+				      settings.branchName);
 }
 
 void Protocol_1_0_0::_servePush(Repository *repository) const
