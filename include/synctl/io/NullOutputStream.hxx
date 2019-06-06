@@ -28,7 +28,7 @@ public:
 	void reset();
 
 	using OutputStream::flush;
-	virtual void close();
+	using OutputStream::close;
 };
 
 
