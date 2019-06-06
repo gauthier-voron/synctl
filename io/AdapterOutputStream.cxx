@@ -87,6 +87,11 @@ void AdapterOutputStream::write(const uint8_t *src, size_t len)
 		throw IOException();
 }
 
+void AdapterOutputStream::flush()
+{
+	(*_inner) << std::flush;
+}
+
 void AdapterOutputStream::close()
 {
 	// if (_attached)
