@@ -38,6 +38,9 @@ class ConfigurationCommand : public Configuration
 	virtual void getOptions(std::vector<Option *> *dest);
 
 	using Configuration::getOptions;
+
+
+	std::string seekProfile(const std::string &name) const;
 };
 
 

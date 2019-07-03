@@ -35,3 +35,8 @@ void ConfigurationCommand::getOptions(std::vector<Option *> *dest)
 {
 	_inner->getOptions(dest);
 }
+
+string ConfigurationCommand::seekProfile(const string &name) const
+{
+	return _inner->seekProfile(name);
+}
