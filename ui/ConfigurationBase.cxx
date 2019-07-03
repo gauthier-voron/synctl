@@ -97,3 +97,12 @@ void ConfigurationBase::getOptions(vector<Option *> *dest)
 	dest->push_back(&_optionHelp);
 	dest->push_back(&_optionVersion);
 }
+
+string ConfigurationBase::seekProfile(const string &name) const
+{
+	ProfileSeeker seeker;
+
+	seeker.push(config());
+
+	return seeker.seek(name);
+}
