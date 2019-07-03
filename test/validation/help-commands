@@ -1,0 +1,36 @@
+#!/bin/bash
+
+set -e
+set -x
+
+eval $(cmdalias 'man' <<'EOF'
+#!/bin/bash
+echo "$@" >> args.txt
+EOF
+)
+
+for cmd in 'help' 'init' 'list' 'pull' 'push' 'server' ; do
+    cat > 'expected.txt' <<EOF
+1 synctl-$cmd
+EOF
+
+    synctl -h $cmd
+    diff 'args.txt' 'expected.txt'
+    rm 'args.txt'
+
+    synctl --help $cmd
+    diff 'args.txt' 'expected.txt'
+    rm 'args.txt'
+
+    synctl $cmd -h
+    diff 'args.txt' 'expected.txt'
+    rm 'args.txt'
+
+    synctl $cmd --help
+    diff 'args.txt' 'expected.txt'
+    rm 'args.txt'
+
+    synctl help $cmd
+    diff 'args.txt' 'expected.txt'
+    rm 'args.txt'
+done
