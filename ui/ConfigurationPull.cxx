@@ -16,6 +16,7 @@
 #include "synctl/ui/ArgumentParser.hxx"
 #include "synctl/ui/Command.hxx"
 #include "synctl/ui/ConfigurationBase.hxx"
+#include "synctl/ui/OperandInvalidException.hxx"
 #include "synctl/ui/OperandMissingException.hxx"
 #include "synctl/ui/OperandUnexpectedException.hxx"
 #include "synctl/ui/OptionLambda.hxx"
@@ -34,6 +35,7 @@ using synctl::ConfigurationPull;
 using synctl::Filter;
 using synctl::FirstMatchFilter;
 using synctl::GlobPattern;
+using synctl::OperandInvalidException;
 using synctl::OperandMissingException;
 using synctl::OperandUnexpectedException;
 using synctl::OptionLambda;
@@ -131,10 +133,7 @@ const string &ConfigurationPull::trunk() const
 
 string ConfigurationPull::profile() const
 {
-	if (_operandProfile.find('/') != string::npos)
-		return _operandProfile;
-
-	return getConfig() + "/" + _operandProfile;
+	return _operandProfile;
 }
 
 size_t ConfigurationPull::getOperands(const vector<string> &args)
@@ -224,6 +223,7 @@ int ConfigurationPull::main(ConfigurationBase *c, const vector<string> &args)
 	ArgumentParser aparser = ArgumentParser(&conf);
 	ProfileParser pparser;
 	vector<string> rem;
+	string ppath;
 
 	aparser.requireOrder() = false;
 	rem = aparser.parse(args);
@@ -233,7 +233,11 @@ int ConfigurationPull::main(ConfigurationBase *c, const vector<string> &args)
 
 	if (conf.hasProfile()) {
 		pparser = ProfileParser(&conf);
-		pparser.parse(conf.profile());
+		ppath = conf.seekProfile(conf.profile());
+		if (ppath.empty())
+			throw OperandInvalidException
+				("profile", conf.profile());
+		pparser.parse(ppath);
 	}
 
 	if (conf.optionRoot().affected() == false)
