@@ -1,0 +1,28 @@
+#!/bin/bash
+
+set -e
+set -x
+
+eval $(cmdalias 'man' <<'EOF'
+#!/bin/bash
+echo "$@" >> args.txt
+EOF
+)
+
+cat > 'expected.txt' <<EOF
+5 synctl-profile
+EOF
+
+synctl help --profile
+diff 'args.txt' 'expected.txt'
+rm 'args.txt'
+
+for topic in 'tutorial' 'regex' ; do
+    cat > 'expected.txt' <<EOF
+7 synctl-$topic
+EOF
+
+    synctl help --$topic
+    diff 'args.txt' 'expected.txt'
+    rm 'args.txt'
+done
