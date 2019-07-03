@@ -21,9 +21,9 @@ const OptionString &ConfigurationCommand::getOptionConfig() const
 	return _inner->getOptionConfig();
 }
 
-const string &ConfigurationCommand::getConfig() const
+string ConfigurationCommand::getConfig() const
 {
-	return _inner->getConfig();
+	return _inner->config();
 }
 
 const string &ConfigurationCommand::getCommand() const
@@ -34,4 +34,9 @@ const string &ConfigurationCommand::getCommand() const
 void ConfigurationCommand::getOptions(std::vector<Option *> *dest)
 {
 	_inner->getOptions(dest);
+}
+
+string ConfigurationCommand::seekProfile(const string &name) const
+{
+	return _inner->seekProfile(name);
 }

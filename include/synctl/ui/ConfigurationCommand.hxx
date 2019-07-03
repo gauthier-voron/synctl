@@ -29,7 +29,7 @@ class ConfigurationCommand : public Configuration
 
 	const OptionString &getOptionConfig() const;
 
-	const std::string &getConfig() const;
+	std::string getConfig() const;
 
 
 	const std::string &getCommand() const;
@@ -38,6 +38,9 @@ class ConfigurationCommand : public Configuration
 	virtual void getOptions(std::vector<Option *> *dest);
 
 	using Configuration::getOptions;
+
+
+	std::string seekProfile(const std::string &name) const;
 };
 
 

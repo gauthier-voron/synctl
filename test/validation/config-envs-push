@@ -1,0 +1,44 @@
+#!/bin/bash
+
+set -e
+set -x
+
+mkdir 'pushed' 'pulled' 'profiles' 'other-profiles'
+
+mktree -p 'pushed' <<EOF
+root 04**** * *
+root/a 040755 19990101 19990102
+root/a/b 0100644 19990103 19990104 < b\n
+root/a/c 0100644 19990105 19990106 < c\n
+EOF
+
+cat > 'profiles/conf' <<EOF
+trunk = t0
+branch = b0
+root = pushed/root
+server = file://server
+include = /a/b
+exclude = /a/*
+EOF
+
+cat > 'other-profiles/conf' <<EOF
+trunk = t1
+branch = b1
+root = pushed/root
+server = file://server
+exclude = /*
+EOF
+
+chmod 000 'other-profiles/conf'
+
+synctl init 'server'
+
+SYNCTL_PROFILE_PATH='not-here:other-profiles:profiles' synctl push 'conf'
+
+synctl pull --server='file://server' --root='pulled/root' --trunk='t0'
+
+chktree -p 'pulled' <<EOF
+root 04**** * *
+root/a 040755 19990101 19990102
+root/a/b 0100644 19990103 19990104 < b\n
+EOF

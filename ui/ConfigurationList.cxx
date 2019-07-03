@@ -131,10 +131,7 @@ const string &ConfigurationList::trunk() const
 
 string ConfigurationList::profile() const
 {
-	if (_operandProfile.find('/') != string::npos)
-		return _operandProfile;
-
-	return getConfig() + "/" + _operandProfile;
+	return _operandProfile;
 }
 
 size_t ConfigurationList::getOperands(const vector<string> &args)
@@ -298,6 +295,7 @@ int ConfigurationList::main(ConfigurationBase *c, const vector<string> &args)
 	ArgumentParser aparser = ArgumentParser(&conf);
 	ProfileParser pparser;
 	vector<string> rem;
+	string ppath;
 
 	aparser.requireOrder() = false;
 	rem = aparser.parse(args);
@@ -307,7 +305,11 @@ int ConfigurationList::main(ConfigurationBase *c, const vector<string> &args)
 
 	if (conf.hasProfile()) {
 		pparser = ProfileParser(&conf);
-		pparser.parse(conf.profile());
+		ppath = conf.seekProfile(conf.profile());
+		if (ppath.empty())
+			throw OperandInvalidException
+				("profile", conf.profile());
+		pparser.parse(ppath);
 	}
 
 	if (conf.optionServer().affected() == false)
