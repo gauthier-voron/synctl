@@ -31,7 +31,7 @@ class ConfigurationBase : public Configuration
 
 	const OptionString &getOptionConfig() const;
 
-	const std::string &getConfig() const;
+	std::string config() const;
 
 
 	const std::string &getCommand() const;
@@ -42,7 +42,6 @@ class ConfigurationBase : public Configuration
 	virtual void getOptions(std::vector<Option *> *dest);
 
 	using Configuration::getOptions;
-
 };
 
 

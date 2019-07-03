@@ -9,6 +9,7 @@
 #include "synctl/ui/OperandMissingException.hxx"
 #include "synctl/ui/OptionLambda.hxx"
 #include "synctl/ui/OptionString.hxx"
+#include "synctl/ui/ProfileSeeker.hxx"
 
 
 using std::cout;
@@ -18,6 +19,7 @@ using std::vector;
 using synctl::ConfigurationBase;
 using synctl::OptionLambda;
 using synctl::OptionString;
+using synctl::ProfileSeeker;
 
 
 void ConfigurationBase::_displayHelp() const
@@ -61,14 +63,17 @@ const OptionString &ConfigurationBase::getOptionConfig() const
 	return _optionConfig;
 }
 
-const string &ConfigurationBase::getConfig() const
+string ConfigurationBase::config() const
 {
-	static string defaultConfig = SYNCTL_DEFAULT_CONFIG;
+	char *env;
 
 	if (_optionConfig.affected())
 		return _optionConfig.value();
 
-	return defaultConfig;
+	if ((env = getenv("SYNCTL_PROFILE_PATH")) != NULL)
+		return env;
+
+	return SYNCTL_DEFAULT_CONFIG;
 }
 
 const string &ConfigurationBase::getCommand() const

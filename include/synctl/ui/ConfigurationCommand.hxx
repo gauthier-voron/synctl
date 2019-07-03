@@ -29,7 +29,7 @@ class ConfigurationCommand : public Configuration
 
 	const OptionString &getOptionConfig() const;
 
-	const std::string &getConfig() const;
+	std::string getConfig() const;
 
 
 	const std::string &getCommand() const;

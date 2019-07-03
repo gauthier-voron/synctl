@@ -21,9 +21,9 @@ const OptionString &ConfigurationCommand::getOptionConfig() const
 	return _inner->getOptionConfig();
 }
 
-const string &ConfigurationCommand::getConfig() const
+string ConfigurationCommand::getConfig() const
 {
-	return _inner->getConfig();
+	return _inner->config();
 }
 
 const string &ConfigurationCommand::getCommand() const
