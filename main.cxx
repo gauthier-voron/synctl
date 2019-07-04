@@ -53,7 +53,7 @@ int main(int argc, const char **argv)
 	if (base.hasCommand() == false)
 		throw OperandMissingException("command");
 
-	command = base.getCommand();
+	command = base.command();
 
 	auto it = __commands.find(command);
 

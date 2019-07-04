@@ -54,7 +54,7 @@ ConfigurationBase::ConfigurationBase()
 {
 }
 
-const OptionString &ConfigurationBase::getOptionConfig() const
+const OptionString &ConfigurationBase::optionConfig() const
 {
 	return _optionConfig;
 }
@@ -87,7 +87,7 @@ bool ConfigurationBase::help() const
 	return (_optionHelp.affected() > 0);
 }
 
-const string &ConfigurationBase::getCommand() const
+const string &ConfigurationBase::command() const
 {
 	return _operandCommand;
 }

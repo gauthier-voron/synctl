@@ -31,15 +31,13 @@ class ConfigurationBase : public Configuration
 	ConfigurationBase();
 
 
-	const OptionString &getOptionConfig() const;
+	const OptionString &optionConfig() const;
 	const OptionBoolean &optionHelp() const;
 	bool hasCommand() const;
 
 	std::string config() const;
-
-
-	const std::string &getCommand() const;
 	bool help() const;
+	const std::string &command() const;
 
 
 	virtual size_t getOperands(const std::vector<std::string> &arguments);

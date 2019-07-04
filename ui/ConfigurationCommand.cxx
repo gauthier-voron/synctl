@@ -18,7 +18,7 @@ ConfigurationCommand::ConfigurationCommand(ConfigurationBase *inner)
 
 const OptionString &ConfigurationCommand::getOptionConfig() const
 {
-	return _inner->getOptionConfig();
+	return _inner->optionConfig();
 }
 
 string ConfigurationCommand::getConfig() const
@@ -28,7 +28,7 @@ string ConfigurationCommand::getConfig() const
 
 const string &ConfigurationCommand::getCommand() const
 {
-	return _inner->getCommand();
+	return _inner->command();
 }
 
 void ConfigurationCommand::getOptions(std::vector<Option *> *dest)
