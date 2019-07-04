@@ -1,0 +1,141 @@
+.TH "SYNCTL-LIST" "1" "30/06/2019" "Synctl 1\&.0\&.0" "Synctl Manual"
+.
+.nh
+.ad l
+.
+.SH "NAME"
+synctl-list \- List the snapshots stored in a Synctl repository
+one
+.SH "SYNOPSIS"
+.sp
+.nf
+\fIsynctl list\fR [--branch=<glob>] [\-\-trunk=<glob>] [\-\-format=<fmt>]
+            [\-\-server=<location>] [\-\-command=<cmd>] [<profile>]
+.fi
+.sp
+.SH "DESCRIPTION"
+.sp
+List the snapshots in the Synctl repository at the given \fI<location>\fR
+specified either in the given \fI<profile>\fR (see \fBsynctl-profile\fR(5)) or
+with the \fI\-\-server\fR option\&.
+.sp
+By default, list all the snapshots on the repository, grouped by trunk\&. By
+default, also print all the registered branches and on which snapshot they are
+pointing to\&.
+.sp
+.SH "OPTIONS"
+.PP
+\-b <glob>, \-\-branch=<glob>
+.RS 4
+Only list the snapshots having a branch pointing on them that matches the
+spcified \fI<glob>\fR expression\&. See \fBsynctl-regex\fR(7) for more
+information about glob expressions\&.
+.RE
+.PP
+\-c <cmd>, \-\-command=<cmd>
+.RS 4
+If the repository is accessed over ssh, give the specified \fI<cmd>\fR to ssh
+to execute on the remote host instead of "synctl server"\&.
+This command has no effect if the repository is not accessed over ssh\&.
+.RE
+.PP
+\-f <fmt>, \-\-format=<fmt>
+.RS 4
+Specify the output format which can be one of the following:
+.sp
+.RS 4
+.it 1 an-trap
+.nr an-break-flag 1
+\fBhuman\fR
+List the snapshots in the most convenient form to be read by a human\&. This
+form may change between different versions on Synctl (even different variant
+of the same minor version)\&. For this reason, this format should not be used
+for scripts\&. This is the default format\&.
+.RE
+.sp
+.RS 4
+.it 1 an-trap
+.nr an-break-flag 1
+\fBporcelain\fR
+List the snapshots in a format easy to parse by a script\&. This format is
+guaranteed to never change within the same major version of Synctl\&.
+The format list one snapshot per line with the given syntax:
+.sp
+.RS 4
+\fI<trunk>\fR:\fI<snapshot>\fR:\fI<date>\fR:\fI<branches...>\fR
+.RE
+.sp
+\fI<trunk>\fR is the name of the trunk the snapshot belongs to\&.
+\fI<snapshot>\fR is the name of the snapshot i.e. an hexadecimal string\&.
+\fI<date>\fR is the creation date of the snapshot in the form
+YYYY-MM-DD-hh-mm-ss-nnnnnnnnn\&.
+\fI<branches>\fR is the list (maybe empty) of the branches pointing to the
+snapshot, separated by comas\&.
+.RE
+.RE
+.PP
+\-s <location>, \-\-server=<location>
+.RS 4
+Indicate the \fI<location>\fR of the server to list the content\&.
+This option is mandatory unless a server location is specified in the
+\fI<profile>\fR\&.
+See \fBsynctl-profile\fR(5) for information about profile files and how to
+specify a location\&.
+.RE
+.PP
+\-t <glob>, \-\-trunk=<glob>
+.RS 4
+Only list the snapshots which belong to a trunk that matches the given
+\fIglob\fR expression\&. See \fBsynctl-regex\fR(7) for more information about
+glob expressions\&.
+.RE
+.SH "EXIT STATUS"
+.sp
+On success 0 is returned, a non-zero failure code otherwise\&.
+.sp
+.SH "EXAMPLES"
+.PP
+List all the snapshots which belong to a trunk with a name starting by
+"system"\&.
+.RS 4
+.sp
+.if n \{\
+.RS 4
+.\}
+.nf
+$ synctl list --server=file://my-server --trunk='system*'
+.fi
+.if n \{\
+.RE
+.\}
+.sp
+.RE
+.PP
+List all the snapshots with two branches pointing on them and print their name
+followed by the trunk they belong to\&.
+.RS 4
+.sp
+.if n \{\
+.RS 4
+.\}
+.nf
+$ synctl list -s file://my-server --format=porcelain | while read line
+  do
+      TRUNK=$(echo $line | cut -d: -f1)
+      NAME=$(echo $line | cut -d: -f2)
+      BRANCHES=$(echo $line | cut -d: -f4)
+
+      if echo $BRANCHES | grep -q ','
+      then
+          echo $NAME $TRUNK
+      fi
+  done
+.fi
+.if n \{\
+.RE
+.\}
+.sp
+.RE
+.SH "SEE ALSO"
+.sp
+Part of \fBsynctl\fR(1)
