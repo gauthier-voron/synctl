@@ -1,0 +1,167 @@
+.TH "SYNCTL-PROFILE" "5" "01/07/2019" "Synctl 1\&.0\&.0" "Synctl Manual"
+.
+.nh
+.ad l
+.
+.SH "NAME"
+synctl-profile \- saving Synctl option sets in files
+.SH "DESCRIPTION"
+.sp
+This document explain how to define a Synctl profile file\&.
+A profile is a set of reusable option set convenient to use across Synctl
+invocations\&.
+.sp
+.SH "PRINCIPLE AND SYNTAX"
+.sp
+Suppose you have a local file hierarchy "/home" that you want to backup
+periodically on the server "ssh://backup-user@www.example.net/repository"\&.
+Additionally, you want to avoid saving the directory "/home/.cache"\&.
+The command to do that is:
+.sp
+.RS 4
+.nf
+$ synctl push --server=ssh://backup-user@www.example.net/repository \\
+              --root=/home --exclude=/.cache
+.fi
+.RE
+.sp
+You could put directly this command as a cron task\&.
+However, suppose that you want to list the snapshots you have made until
+there\&.
+You would have to type:
+.sp
+.RS 4
+.nf
+$ synctl list --server=ssh://backup-user@www.example.net/repository
+.fi
+.RE
+.sp
+Here, you have to use the exact same option \fI\-\-server\fR in the
+\fBsynctl-push\fR(1) and the \fBsynctl-list\fR(1) commands\&.
+.sp
+Instead of typing the same options over and over for each command, you can save
+a set of options in a file like the following:
+.sp
+.RS 4
+.nf
+$ cat ~/.config/synctl/my-profile
+server  = ssh://backup-user@www.example.net/repository
+root    = /home
+exclude = /.cache
+.fi
+.RE
+.sp
+Notice that each field correspond to the long form of an option of the command
+line\&.
+Now that these options are saved in the file named \fImy-profile\fR, you can
+type the commands:
+.sp
+.RS 4
+.nf
+$ synctl push my-profile
+$ synctl list my-profile
+.fi
+.RE
+.sp
+For each command, Synctl check all the fields in the supplied profile file\&.
+If a field has the same name than an option of the command, then it is used
+as the default value\&.
+.sp
+If the command line provides an option with the same name than a field of the
+profile file, the command line option overrides the profile field\&.
+For instance:
+.sp
+.RS 4
+.nf
+$ synctl pull my-profile --root=/tmp/home
+.fi
+.RE
+.sp
+The Synctl pull command overrides the \fIroot = /home\fR field of the profile
+with the \fI\-\-root=/tmp/home\fR command line option and effectively restores
+the snapshot in "/tmp/home"\&.
+.sp
+An exception to this rule are the \fI\-\-include\fR and \fI\-\-exclude\fR
+options which precede the profile fields \fIinclude\fR and \fIexclude\fR fields
+if any\&.
+For instance:
+.sp
+.RS 4
+.nf
+$ synctl push my-profile --exclude=/download
+.fi
+.RE
+.sp
+Is equivalent to:
+.sp
+.RS 4
+.nf
+$ synctl push --server=ssh://backup-user@www.example.net/repository \\
+              --root=/tmp/home --exclude=/download --exclude=/.cache
+.fi
+.RE
+.sp
+Notice that the \fI\-\-exclude=/download\fR from the command line comes before
+the \fI\-\-exclude=/.cache\fR from the profile but does not replace it\&.
+.sp
+.SH "PROFILE SEARCH PATH"
+.sp
+When a Synctl command receives a profile name that contains a "/" character,
+then it is interpreted as the path of the profile file\&.
+This path is absolute if it starts with a "/" character, relative otherwise\&.
+.sp
+If supplied a profile name that does not contain a "/" character, then Synctl
+looks in several directories for a readable regular file with this profile
+name\&.
+Synctl stops to search at the first match it finds\&.
+.sp
+If the option \fI\-C <paths>\fR is specified, then \fI<paths>\fR is a list of
+directories separated by ":" characters\&.
+Synctl looks in each of these directories in the order they are specified\&.
+.sp
+If the environment variable \fBSYNCTL_PROFILE_PATH\fR is non empty, then it
+also indicates a list of directories separated by ":" characters\&.
+Synctl looks in each of these directories in the order they are specified\&.
+.sp
+Otherwise, Synctl looks for a profile file in the following directories in this
+specific order:
+.sp
+.RS 4
+.ie n \{\
+\h'-04' 1.\h'+01'\c
+.\}
+.el \{\
+.sp -1
+.IP "  1." 4.2
+.\}
+$HOME/.synctl
+.RE
+.sp
+.RS 4
+.ie n \{\
+\h'-04' 2.\h'+01'\c
+.\}
+.el \{\
+.sp -1
+.IP "  1." 4.2
+.\}
+$HOME/.config/synctl
+.RE
+.sp
+.RS 4
+.ie n \{\
+\h'-04' 3.\h'+01'\c
+.\}
+.el \{\
+.sp -1
+.IP "  1." 4.2
+.\}
+/etc/synctl
+.RE
+.sp
+Note that if one directory exists but does not contain any suitable profile
+file, Synctl does not stop to search and go for the next directory\&.
+.sp
+.SH "SEE ALSO"
+.sp
+Part of \fBsynctl\fR(1)
