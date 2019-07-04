@@ -17,6 +17,7 @@ using std::endl;
 using std::string;
 using std::vector;
 using synctl::ConfigurationBase;
+using synctl::OptionBoolean;
 using synctl::OptionLambda;
 using synctl::OptionString;
 using synctl::ProfileSeeker;
@@ -47,11 +48,7 @@ void ConfigurationBase::_displayVersion() const
 }
 
 ConfigurationBase::ConfigurationBase()
-	: _optionHelp("help", 'h', [&]() {
-		_displayHelp();
-		::exit(0);
-	})
-	, _optionVersion("version", 'V', [&]() {
+	: _optionVersion("version", 'V', [&]() {
 		_displayVersion();
 		::exit(0);
 	})
@@ -61,6 +58,11 @@ ConfigurationBase::ConfigurationBase()
 const OptionString &ConfigurationBase::getOptionConfig() const
 {
 	return _optionConfig;
+}
+
+const OptionBoolean &ConfigurationBase::optionHelp() const
+{
+	return _optionHelp;
 }
 
 string ConfigurationBase::config() const
@@ -74,6 +76,11 @@ string ConfigurationBase::config() const
 		return env;
 
 	return SYNCTL_DEFAULT_CONFIG;
+}
+
+bool ConfigurationBase::help() const
+{
+	return (_optionHelp.affected() > 0);
 }
 
 const string &ConfigurationBase::getCommand() const
