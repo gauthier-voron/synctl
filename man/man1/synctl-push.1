@@ -1,0 +1,161 @@
+.TH "SYNCTL-PUSH" "1" "30/06/2019" "Synctl 1\&.0\&.0" "Synctl Manual"
+.
+.nh
+.ad l
+.
+.SH "NAME"
+synctl-push \- Create a snapshot from a local file hierarchy
+.SH "SYNOPSIS"
+.sp
+.nf
+\fIsynctl push\fR [\-\-branch=<branch>] [\-\-trunk=<trunk>] [\-\-root=<path>]
+            [\-\-server=<location>] [\-\-command=<cmd>] [\-\-include=<glob>]
+            [\-\-exclude=<glob>] [\-\-verbose] [<profile>]
+.fi
+.sp
+.SH "DESCRIPTION"
+.sp
+Create a snapshot from local files and store this snapshot in a Synctl
+repository\&.
+The files to save are specified by \fI<path>\fR, the repository where to save
+the snapshot is specified by \fI<location>\fR\&.
+These two parameters must be specified either in the given \fI<profile>\fR
+(see \fBsynctl-profile\fR(5)) or with the \fI\-\-path\fR and \fI\-\-server\fR
+options\&.
+.sp
+The file to save can be a regular file, a symbolic link or a directory\&.
+If the file to save is a directory, save all its children recursively\&.
+Do not follow symbolic links during the save\&.
+When saving a directory, tt is possible to control finely which files to save
+with the \fI\-\-include\fR and \fI\-\-exclude\fR options\&.
+.sp
+.SH "OPTIONS"
+.PP
+\-b <branch>, \-\-branch=<branch>
+.RS 4
+After the push, set the specified \fI<branch>\fR to point to the newly created
+snapshot\&.
+If this branch does not exist, create it\&.
+If this option is not specified, use the \fBhostname\fR(1) by default\&.
+.RE
+.PP
+\-c <cmd>, \-\-command=<cmd>
+.RS 4
+If the repository is accessed over ssh, give the specified \fI<cmd>\fR to ssh
+to execute on the remote host instead of "synctl server"\&.
+This command has no effect if the repository is not accessed over ssh\&.
+.RE
+.PP
+\-e <glob>, \-\-exclude=<glob>
+.RS 4
+Do not save the files corresponding to the specified \fI<glob>\fR expression\&.
+See \fBsynctl-regex\fR(7) for information about glob expressions\&.
+Do not exclude a file if it matches a previously specified \fI\-\-include\fR
+option\&.
+If a directory is excluded, its descendants are always excluded\&.
+If there is a specified \fI<profile>\fR containing include or exclude fields,
+they are appended after the command line \fI\-\-include\fR and
+\fI\-\-exclude\fR options\&.
+.RE
+.PP
+\-i <glob>, \-\-include=<glob>
+.RS 4
+Do save the files corresponding to the specified \fI<glob>\fR expression\&.
+See \fBsynctl-regex\fR(7) for information about glob expressions\&.
+Do not include a file if it matches a previously specified \fI\-\-exclude\fR
+option\&.
+If there is a specified \fI<profile>\fR containing include or exclude fields,
+they are appended after the command line \fI\-\-include\fR and
+\fI\-\-exclude\fR options\&.
+.RE
+.PP
+\-r <path>, \-\-root=<path>
+.RS 4
+Save the files at the specified \fI<path>\fR\&.
+If \fI<path>\fR is a directory then also save its descendants recursively\&.
+This option is mandatory unless a path is specified in the \fI<profile>\fR\&.
+See \fBsynctl-profile\fR(5) for information about profile files\&.
+.RE
+.PP
+\-s <location>, \-\-server=<locatiom>
+.RS 4
+Indicate the \fI<location>\fR of the server where to push the created
+snapshot\&.
+This option is mandatory unless a server location is specified in the
+\fI<profile>\fR\&.
+See \fBsynctl-profile\fR(5) for information about profile files and how to
+specify a location\&.
+.RE
+.PP
+\-t <trunk>, \-\-trunk=<trunk>
+.RS 4
+Append the created snapshot to the history of the specified \fI<trunk>\fR\&.
+If this option is not specified then use the default "master" trunk instead\&.
+.RE
+.PP
+\-v, \-\-verbose
+.RS 4
+Print details about what is being done during the push\&.
+.RE
+.SH "EXIT STATUS"
+.sp
+On success 0 is returned, a non-zero failure code otherwise\&.
+.sp
+.SH "EXAMPLES"
+.PP
+Save the "/home" directory under the Synctl repository "/mnt/backup" under the
+"homes" trunk\&. Also print what is happening during the push\&.
+.RS 4
+.sp
+.if n \{\
+.RS 4
+.\}
+.nf
+$ synctl push --server=file:///mnt/backup --root=/home --trunk=home -v
+
+OR
+
+$ cat /etc/synctl/my-profile
+server = file:///mnt/backup
+root   = /home
+trunk  = home
+
+$ synctl push my-profile
+.fi
+.if n \{\
+.RE
+.\}
+.sp
+.RE
+.PP
+Save the whole system under a remote Synctl repository, excluding special
+filesystems and cache directories\&.
+.RS 4
+.sp
+.if n \{\
+.RS 4
+.\}
+.nf
+$ cat /etc/synctl/system
+server  = ssh://user@ssh.backup.net/synctl-repository
+root    = /
+exclude = /dev
+exclude = /mnt
+exclude = /proc
+exclude = /run
+exclude = /sys
+exclude = /tmp
+exclude = /var/tmp
+exclude = **/cache
+exclude = **/.cache
+
+$ synctl push system
+.fi
+.if n \{\
+.RE
+.\}
+.sp
+.RE
+.SH "SEE ALSO"
+.sp
+Part of \fBsynctl\fR(1)
