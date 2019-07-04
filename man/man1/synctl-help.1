@@ -1,0 +1,48 @@
+.TH "SYNCTL-HELP" "1" "28/06/2019" "Synctl 1\&.0\&.0" "Synctl Manual"
+.
+.nh
+.ad l
+.
+.SH "NAME"
+synctl-help \- Print help about a given Synctl command or topic
+.SH "SYNOPSIS"
+.sp
+.nf
+\fIsynctl help\fR [--profile | --regex | --tutorial | <command>]
+.fi
+.sp
+.SH "DESCRIPTION"
+.sp
+Display the help about the specified \fI<command>\fR if any\&. This has the
+same effect than invoking "synctl <command> --help"\&. See \fBsynctl\fR(1)
+for a list of possible commands\&.
+.sp
+If one of the options is specified then display the help about the related
+topic\&. Only one option or one command can be specified\&.
+.sp
+If neither a command nor an option is provided then display the help about
+Synctl itself\&. This has the same effect than invoking "synctl --help"\&.
+.sp
+.SH "OPTIONS"
+.PP
+\-\-profile
+.RS 4
+Display the help about the profile files used by Synctl\&.
+.RE
+.PP
+\-\-regex
+.RS 4
+Display the help about the regular expression used by Synctl\&.
+.RE
+.PP
+\-\-tutorial
+.RS 4
+Display a tutorial on everyday usage of Synctl for various setups\&.
+.RE
+.SH "EXIT STATUS"
+.sp
+On success 0 is returned, a non-zero failure code otherwise\&.
+.sp
+.SH "SEE ALSO"
+.sp
+Part of \fBsynctl\fR(1)
