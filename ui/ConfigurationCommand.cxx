@@ -16,17 +16,17 @@ ConfigurationCommand::ConfigurationCommand(ConfigurationBase *inner)
 {
 }
 
-const OptionString &ConfigurationCommand::getOptionConfig() const
+const OptionString &ConfigurationCommand::optionConfig() const
 {
 	return _inner->optionConfig();
 }
 
-string ConfigurationCommand::getConfig() const
+string ConfigurationCommand::config() const
 {
 	return _inner->config();
 }
 
-const string &ConfigurationCommand::getCommand() const
+const string &ConfigurationCommand::command() const
 {
 	return _inner->command();
 }

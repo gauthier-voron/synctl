@@ -27,12 +27,12 @@ class ConfigurationCommand : public Configuration
 		default;
 
 
-	const OptionString &getOptionConfig() const;
+	const OptionString &optionConfig() const;
 
-	std::string getConfig() const;
+	std::string config() const;
 
 
-	const std::string &getCommand() const;
+	const std::string &command() const;
 
 
 	virtual void getOptions(std::vector<Option *> *dest);
