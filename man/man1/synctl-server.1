@@ -1,0 +1,29 @@
+.TH "SYNCTL-SERVER" "1" "30/06/2019" "Synctl 1\&.0\&.0" "Synctl Manual"
+.
+.nh
+.ad l
+.
+.SH "NAME"
+synctl-server \- Run in server mode
+.SH "SYNOPSIS"
+.sp
+.nf
+\fIsynctl server\fR <server-path>
+.fi
+.sp
+.SH "DESCRIPTION"
+.sp
+Execute the Synctl server to handle requests on the Synctl repository at the
+given \fI<server-path>\fR\&.
+.sp
+This command is not intended to be used directly by humans\&.
+Instead, other Synctl commands like \fBsynctl-push\fR(1) or
+\fBsynctl-pull\fR(1) call it automatically\&.
+.sp
+.SH "EXIT STATUS"
+.sp
+On success 0 is returned, a non-zero failure code otherwise\&.
+.sp
+.SH "SEE ALSO"
+.sp
+Part of \fBsynctl\fR(1)
