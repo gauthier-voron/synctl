@@ -1,0 +1,74 @@
+.TH "SYNCTL-INIT" "1" "28/06/2019" "Synctl 1\&.0\&.0" "Synctl Manual"
+.
+.nh
+.ad l
+.
+.SH "NAME"
+synctl-init \- Create an empty Synctl repository or reinitialize an existing
+one
+.SH "SYNOPSIS"
+.sp
+.nf
+\fIsynctl init\fR [-f | --force] <directory>
+.fi
+.sp
+.SH "DESCRIPTION"
+.sp
+Create an empty Synctl repository \- basically a directory where Synctl can
+store created snapshots\&.
+.sp
+Synctl can only create repositories locally (i.e. on the local computer)\&.
+However, a repository is accessible either locally or remotely through ssh,
+assumed that there is an ssh daemon up and running\&.
+.sp
+Running \fIsynctl init\fR giving it an existing directory will fail without
+overwriting anything. This behavior can be overriden with the \-\-force
+option\&.
+.sp
+.SH "OPTIONS"
+.PP
+\-f, \-\-force
+.RS 4
+If the specified target directory already exists, overwrite its content, even
+if it is not a Synctl repository\&.
+.RE
+.SH "EXIT STATUS"
+.sp
+On success 0 is returned, a non-zero failure code otherwise\&.
+.sp
+.SH "EXAMPLES"
+.PP
+Create an new Synctl repository
+.RS 4
+.sp
+.if n \{\
+.RS 4
+.\}
+.nf
+$ cd /home/synctl-user
+$ synctl init my-repository/
+.fi
+.if n \{\
+.RE
+.\}
+.sp
+.RE
+.PP
+Reinitialize an existing Synctl repository (all backups will be lost)
+.RS 4
+.sp
+.if n \{\
+.RS 4
+.\}
+.nf
+$ cd /home/synctl-user
+$ synctl init --force my-repository/
+.fi
+.if n \{\
+.RE
+.\}
+.sp
+.RE
+.SH "SEE ALSO"
+.sp
+Part of \fBsynctl\fR(1)
