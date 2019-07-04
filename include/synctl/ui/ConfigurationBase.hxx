@@ -18,6 +18,7 @@ class ConfigurationBase : public Configuration
 	OptionString   _optionConfig = OptionString('C');
 	OptionBoolean  _optionHelp = OptionBoolean("help", 'h');
 	OptionLambda   _optionVersion;
+	bool           _hasCommand;
 	std::string    _operandCommand;
 
 
@@ -32,6 +33,7 @@ class ConfigurationBase : public Configuration
 
 	const OptionString &getOptionConfig() const;
 	const OptionBoolean &optionHelp() const;
+	bool hasCommand() const;
 
 	std::string config() const;
 

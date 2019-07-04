@@ -6,7 +6,6 @@
 #include <vector>
 
 #include "synctl/default.hxx"
-#include "synctl/ui/OperandMissingException.hxx"
 #include "synctl/ui/OptionLambda.hxx"
 #include "synctl/ui/OptionString.hxx"
 #include "synctl/ui/ProfileSeeker.hxx"
@@ -65,6 +64,11 @@ const OptionBoolean &ConfigurationBase::optionHelp() const
 	return _optionHelp;
 }
 
+bool ConfigurationBase::hasCommand() const
+{
+	return _hasCommand;
+}
+
 string ConfigurationBase::config() const
 {
 	char *env;
@@ -90,9 +94,12 @@ const string &ConfigurationBase::getCommand() const
 
 size_t ConfigurationBase::getOperands(const vector<string> &arguments)
 {
-	if (arguments.size() < 1)
-		throw OperandMissingException("command");
+	if (arguments.size() < 1) {
+		_hasCommand = false;
+		return 0;
+	}
 
+	_hasCommand = true;
 	_operandCommand = arguments[0];
 
 	return 1;
