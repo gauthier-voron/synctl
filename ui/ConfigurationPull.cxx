@@ -16,6 +16,7 @@
 #include "synctl/ui/ArgumentParser.hxx"
 #include "synctl/ui/Command.hxx"
 #include "synctl/ui/ConfigurationBase.hxx"
+#include "synctl/ui/ConfigurationHelp.hxx"
 #include "synctl/ui/OperandInvalidException.hxx"
 #include "synctl/ui/OperandMissingException.hxx"
 #include "synctl/ui/OperandUnexpectedException.hxx"
@@ -31,6 +32,7 @@ using std::vector;
 using synctl::Channel;
 using synctl::Command;
 using synctl::ConfigurationBase;
+using synctl::ConfigurationHelp;
 using synctl::ConfigurationPull;
 using synctl::Filter;
 using synctl::FirstMatchFilter;
@@ -227,6 +229,9 @@ int ConfigurationPull::main(ConfigurationBase *c, const vector<string> &args)
 
 	aparser.requireOrder() = false;
 	rem = aparser.parse(args);
+
+	if (conf.help())
+		ConfigurationHelp::displayCommandHelp(c->command());
 
 	if (rem.empty() == false)
 		throw OperandUnexpectedException(rem[0]);

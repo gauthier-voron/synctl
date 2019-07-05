@@ -1,0 +1,26 @@
+#!/bin/bash
+
+set -e
+set -x
+
+eval $(cmdalias 'man' <<'EOF'
+#!/bin/bash
+echo "$@" >> args.txt
+EOF
+)
+
+cat > 'expected.txt' <<EOF
+1 synctl
+EOF
+
+synctl -h
+diff 'args.txt' 'expected.txt'
+rm 'args.txt'
+
+synctl --help
+diff 'args.txt' 'expected.txt'
+rm 'args.txt'
+
+synctl help
+diff 'args.txt' 'expected.txt'
+rm 'args.txt'

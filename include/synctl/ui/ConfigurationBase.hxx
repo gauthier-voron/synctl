@@ -5,6 +5,7 @@
 #include <string>
 
 #include "synctl/ui/Configuration.hxx"
+#include "synctl/ui/OptionBoolean.hxx"
 #include "synctl/ui/OptionLambda.hxx"
 #include "synctl/ui/OptionString.hxx"
 
@@ -14,10 +15,11 @@ namespace synctl {
 
 class ConfigurationBase : public Configuration
 {
-	OptionString  _optionConfig = OptionString('C');
-	OptionLambda  _optionHelp;
-	OptionLambda  _optionVersion;
-	std::string   _operandCommand;
+	OptionString   _optionConfig = OptionString('C');
+	OptionBoolean  _optionHelp = OptionBoolean("help", 'h');
+	OptionLambda   _optionVersion;
+	bool           _hasCommand;
+	std::string    _operandCommand;
 
 
 	void _displayHelp() const;
@@ -29,12 +31,13 @@ class ConfigurationBase : public Configuration
 	ConfigurationBase();
 
 
-	const OptionString &getOptionConfig() const;
+	const OptionString &optionConfig() const;
+	const OptionBoolean &optionHelp() const;
+	bool hasCommand() const;
 
 	std::string config() const;
-
-
-	const std::string &getCommand() const;
+	bool help() const;
+	const std::string &command() const;
 
 
 	virtual size_t getOperands(const std::vector<std::string> &arguments);

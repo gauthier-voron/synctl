@@ -6,7 +6,6 @@
 #include <vector>
 
 #include "synctl/default.hxx"
-#include "synctl/ui/OperandMissingException.hxx"
 #include "synctl/ui/OptionLambda.hxx"
 #include "synctl/ui/OptionString.hxx"
 #include "synctl/ui/ProfileSeeker.hxx"
@@ -17,15 +16,11 @@ using std::endl;
 using std::string;
 using std::vector;
 using synctl::ConfigurationBase;
+using synctl::OptionBoolean;
 using synctl::OptionLambda;
 using synctl::OptionString;
 using synctl::ProfileSeeker;
 
-
-void ConfigurationBase::_displayHelp() const
-{
-	cout << "rtfm" << endl;
-}
 
 void ConfigurationBase::_displayVersion() const
 {
@@ -47,20 +42,26 @@ void ConfigurationBase::_displayVersion() const
 }
 
 ConfigurationBase::ConfigurationBase()
-	: _optionHelp("help", 'h', [&]() {
-		_displayHelp();
-		::exit(0);
-	})
-	, _optionVersion("version", 'V', [&]() {
+	: _optionVersion("version", 'V', [&]() {
 		_displayVersion();
 		::exit(0);
 	})
 {
 }
 
-const OptionString &ConfigurationBase::getOptionConfig() const
+const OptionString &ConfigurationBase::optionConfig() const
 {
 	return _optionConfig;
+}
+
+const OptionBoolean &ConfigurationBase::optionHelp() const
+{
+	return _optionHelp;
+}
+
+bool ConfigurationBase::hasCommand() const
+{
+	return _hasCommand;
 }
 
 string ConfigurationBase::config() const
@@ -76,16 +77,24 @@ string ConfigurationBase::config() const
 	return SYNCTL_DEFAULT_CONFIG;
 }
 
-const string &ConfigurationBase::getCommand() const
+bool ConfigurationBase::help() const
+{
+	return (_optionHelp.affected() > 0);
+}
+
+const string &ConfigurationBase::command() const
 {
 	return _operandCommand;
 }
 
 size_t ConfigurationBase::getOperands(const vector<string> &arguments)
 {
-	if (arguments.size() < 1)
-		throw OperandMissingException("command");
+	if (arguments.size() < 1) {
+		_hasCommand = false;
+		return 0;
+	}
 
+	_hasCommand = true;
 	_operandCommand = arguments[0];
 
 	return 1;

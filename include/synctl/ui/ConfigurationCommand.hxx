@@ -5,6 +5,7 @@
 #include <string>
 
 #include "synctl/ui/ConfigurationBase.hxx"
+#include "synctl/ui/OptionBoolean.hxx"
 
 
 namespace synctl {
@@ -27,12 +28,17 @@ class ConfigurationCommand : public Configuration
 		default;
 
 
-	const OptionString &getOptionConfig() const;
+	const OptionString &optionConfig() const;
 
-	std::string getConfig() const;
+	const OptionBoolean &optionHelp() const;
 
 
-	const std::string &getCommand() const;
+	std::string config() const;
+
+	bool help() const;
+
+
+	const std::string &command() const;
 
 
 	virtual void getOptions(std::vector<Option *> *dest);

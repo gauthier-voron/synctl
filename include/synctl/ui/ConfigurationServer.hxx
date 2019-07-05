@@ -16,6 +16,7 @@ class ConfigurationBase;
 
 class ConfigurationServer : public ConfigurationCommand
 {
+	bool         _hasOperand;
 	std::string  _operandServerPath;
 
 
@@ -27,6 +28,8 @@ class ConfigurationServer : public ConfigurationCommand
 	ConfigurationServer &operator=(const ConfigurationServer &other) =
 		default;
 
+
+	bool hasServerPath() const;
 
 	std::string serverPath() const;
 

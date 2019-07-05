@@ -1,0 +1,82 @@
+.TH "SYNCTL" "1" "01/07/2019" "Synctl 1\&.0\&.0" "Synctl Manual"
+.
+.nh
+.ad l
+.
+.SH "NAME"
+synctl \- Backup and synchronize your files
+.SH "SYNOPSIS"
+.sp
+.nf
+\fIsynctl\fR [\-\-version] [\-\-help] [\-C <path>] <command> [<args>]
+.fi
+.sp
+.SH "DESCRIPTION"
+.sp
+Synctl is a fast backup and synchronization tool desgined to run on poor
+hardware configuration and over low throughput network\&.
+.sp
+See \fBsynctl-tutorial\fR(7) for a tutorial for an everyday usage of Synctl
+on various setups\&.
+.sp
+.SH "OPTIONS"
+.PP
+\-C <paths>
+.RS 4
+Change the search path for profile files to \fI<paths>\fR\&.
+See \fBsynctl-profile\fR(5) for details about profile files\&.
+.RE
+.PP
+\-h, \-\-help
+.RS 4
+Print this help message and exit\&.
+.RE
+.PP
+\-V, \-\-version
+.RS 4
+Prints the Synctl program version and exit\&.
+.RE
+.SH "ENVIRONMENT"
+.PP
+\fBSYNCTL_PROFILE_PATH\fR
+.RS 4
+If set and option \fI\-C\fR is not specified, defines the search path for
+profile files\&.
+See \fBsynctl-profile\fR(5) for details about profile files\&.
+.RE
+.SH "COMMANDS"
+.PP
+\fBsynctl-help\fR(1)
+.RS 4
+Print the help message associated with a command\&. With appropriate option,
+also print the help message associated with a given context\&.
+.RE
+.PP
+\fBsynctl-init\fR(1)
+.RS 4
+Initialize a new repository or reset an existing repository\&.
+.RE
+.PP
+\fBsynctl-list\fR(1)
+.RS 4
+List the snapshots inside a repository\&.
+.RE
+.PP
+\fBsynctl-pull\fR(1)
+.RS 4
+Restore the files from a given snapshot\&.
+.RE
+.PP
+\fBsynctl-push\fR(1)
+.RS 4
+Create a new snapshot and push it in a repository\&.
+.RE
+.PP
+\fBsynctl-server\fR(1)
+.RS 4
+Start server mode\&. This should not be called directly\&.
+.RE
+.SH "SEE ALSO"
+.sp
+\fBsynctl-profile\fR(5), \fBsynctl-regex\fR(7), \fBsynctl-tutorial\fR(7)
+.sp

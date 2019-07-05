@@ -18,6 +18,7 @@ class ConfigurationBase;
 class ConfigurationInit : public ConfigurationCommand
 {
 	OptionBoolean  _optionForce = OptionBoolean("force", 'f');
+	bool           _hasOperand;
 	std::string    _operandServerPath;
 
 
@@ -30,6 +31,8 @@ class ConfigurationInit : public ConfigurationCommand
 
 
 	const OptionBoolean &optionForce() const;
+
+	bool hasServerPath() const;
 
 	bool force() const;
 

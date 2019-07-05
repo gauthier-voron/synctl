@@ -1,0 +1,144 @@
+.TH "SYNCTL-REGEX" "7" "30/06/2019" "Synctl 1\&.0\&.0" "Synctl Manual"
+.
+.nh
+.ad l
+.
+.SH "NAME"
+synctl-regex \- syntax of regular expressions in Synctl
+.SH "DESCRIPTION"
+.sp
+This document describes the types of regular expressions that can be used by
+Synctl commands and what they mean\&.
+.sp
+Regular expressions in Synctl are glob expressions i.e. similar to shell paths
+with wildcards\&.
+There are two type of them\&.
+The first one is for expressions used as a path filter in \fBsynctl-push\fR(1)
+and \fBsynctl-pull\fR(1) with the \fI\-\-include\fR and \fI\-\-exclude\fR
+options\&.
+The second one is for expressions used as a name filter in \fBsynctl-list\fR(1)
+with the \fI\-\-branch\fR and \fI\-\-trunk\fR options\&.
+.sp
+.SH "GLOB EXPRESSION SYNTAX"
+.sp
+Both types of glob expression (path filter and name filter) are standard
+sequences of characters with extra rules for certain characters\&.
+.SS "?"
+The "?" character refers to exactly one character of any kind\&.
+For instance, "a\fB?\fRc" does match "a\fBb\fRc" but does not match
+"a\fBb\fRbc"\&.
+.SS "[abc]"
+A sequence of letters between "[" and "]" characters refers to exactly one
+character of the sequence\&.
+For instance, "a\fB[xyz]\fRc" does match "a\fBy\fRc" but does not match
+"ac"\&.
+.SS "[^abc]"
+A sequence of letters between "[^" and "]" characters refers to exactly one
+character not in the specified sequence\&.
+For instance, "a\fB[^xyz]\fRc" does match "a\fBk\fRc" but does not match
+"a\fBc\fR"\&.
+.SS "[[:alnum:]]"
+Standard characters classes are also accepted\&.
+See \fBregex\fR(7) to get a list of possible classes\&.
+For instance, "a\fB[[:alnum:]]\fRc" does match "a\fB4\fRc" but does not match
+"a c"\&.
+.SS "*"
+.nh
+\fBFor name filters\fR\&
+.fi
+The "*" character refers to any number of character of any kind\&.
+For instance, "a\fB*\fRc" does match "a\fBbcdef\fRc" as well as "ac" but does
+not match "a\fBbcd\fR"\&.
+.sp
+.nh
+\fBFor path filters\fR\&
+.fi
+The "*" character refers to any number of character of any kind except the "/"
+character\&.
+For instance, "a\fB*\fRc" does match "a\fBbcdef\fRc" but does not match
+"a/c"\&.
+.SS "**"
+.nh
+\fBFor path filters\fR\&
+.fi
+The "**" character sequence refers to any number of character of any kind
+including the "/" character\&.
+For instance, "a\fB*\fRc" does match "a\fBbcdef\fRc" as well as "a\fB/\fRc"
+and "a\fBbc/de/f\fRc"\&.
+.SS "/**/"
+.nh
+\fBFor path filters\fR\&
+.fi
+The "/**/" character sequence refers to any number of path component of any
+type\&.
+For instance, "a\fB/**/\fRc" does match "a\fB/\fRc" as well as "a\fB/bc/d/\fRc"
+but not "a\fBbc/de/f\fRc"\&.
+.sp
+Additionally, for path filters only, if the expression starts with a \fB/\fR
+character ( or a \fB**\fR), then the glob expression must match the entire
+path\&.
+Otherwise, it must match the end of the path\&.
+For instance, "/abc" does match the path "\fB/abc\fR" but not the path
+"/abcde/f/g" nor "/dd/abc"\&.
+Also, "abc" does match the path "dd/xx\fBabc\fR" but does not match
+"dd/abc/xx"\&.
+.sp
+.SH "EXECUTION OF PATH FILTERS"
+.sp
+When processing paths during a \fBsynctl-push\fR(1) or \fBsynctl-pull\fR(1),
+the files are filtered recursively from the path specified by \fI\-\-root\fR
+by using all the glob expressions in the order they are specified\&.
+.sp
+This filtering method is very expressive but can lead to counter intuitive
+behavior like in the following situation:
+.sp
+.RS 4
+.nf
+/
+`- foo
+   |- bar
+   `- quux
+
+$ synctl push -s file:///mnt -r / --include=/foo/bar --exclude=/foo
+.fi
+.RE
+.sp
+In this example, the synctl creates an empty snapshot even if the
+\fI/foo/bar\fR file is explicitely included\&.
+This is because Synctl processes this way:
+.TS
+tab(:) allbox;
+l l l.
+Filtered file:Filter tried:Result
+/:/foo/bar:Does not match
+/:/foo:Does not match
+/foo:/foo/bar:Does not match
+/foo:/foo:Does match\&. \fBexclude\fR
+.TE
+.PP
+.PP
+The solution in this case is to use the following command instead:
+.sp
+.RS 4
+.nf
+$ synctl push -s file:///mnt -r / --include=/foo/bar --exclude=/foo/**
+.fi
+.RE
+.sp
+This produces the following behavior:
+.TS
+tab(:) allbox;
+l l l.
+Filtered file:Filter tried:Result
+/:/foo/bar:Does not match
+/:/foo/**:Does not match
+/foo:/foo/bar:Does not match
+/foo:/foo/**:Does not match
+/foo/bar:/foo/bar:Does match\&. \fBinclude\fR
+/foo/quux:/foo/bar:Does not match
+/foo/quux:/foo/**:Does match\&. \fBexclude\fR
+.TE
+.PP
+.SH "SEE ALSO"
+.sp
+Part of \fBsynctl\fR(1)

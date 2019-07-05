@@ -1,0 +1,181 @@
+.TH "SYNCTL-PULL" "1" "30/06/2019" "Synctl 1\&.0\&.0" "Synctl Manual"
+.
+.nh
+.ad l
+.
+.SH "NAME"
+synctl-pull \- Restore a local file hierarchy from a snapshot
+.SH "SYNOPSIS"
+.sp
+.nf
+\fIsynctl pull\fR [\-\-branch=<branch>] [\-\-trunk=<trunk>] [\-\-root=<path>]
+            [\-\-server=<location>] [\-\-snapshot=<snapshot>]
+            [\-\-command=<cmd>] [\-\-include=<glob>] [\-\-exclude=<glob>]
+            [<profile>]
+.fi
+.sp
+.SH "DESCRIPTION"
+.sp
+Restore a local file hierarchy from a previously created snapshot\&.
+Take the snapshot to restore in the Synctl repository at the given
+\fI<location>\fR either in the given \fI<profile>\fR (see
+\fBsynctl-profile\fR(5)) or with the \fI\-\-server\fR option\&.
+Restore the snapshot content at the given \fI<path>\fR either in the given
+\fI<profile>\fR or with the \fI\-\-root\fR option\&.
+.sp
+If the snapshot is not specified (with the options \fI\-\-snapshot\fR), then
+restore from the latest snapshot of the specified trunk\&.
+See \fBsynctl-push\fR(1) for information on how to create snapshots\&.
+.sp
+It is possible to restore a snapshot in place (i.e. on the same \fI<path>\fR
+the snapshot has been created from)\&.
+Only the modified files are replaced during the pull\&.
+It is also possible to partially restore a snapshot with the \fI\-\-include\fR
+and \fI\-\-exclude\fR options\&.
+.sp
+.SH "OPTIONS"
+.PP
+\-b <branch>, \-\-branch=<branch>
+.RS 4
+After the pull, set the specified \fI<branch>\fR to point to the restored
+snapshot\&.
+If the specified branch does not exist, it is created after the pull\&.
+.RE
+.PP
+\-c <cmd>, \-\-command=<cmd>
+.RS 4
+If the repository is accessed over ssh, give the specified \fI<cmd>\fR to ssh
+to execute on the remote host instead of "synctl server"\&.
+This command has no effect if the repository is not accessed over ssh\&.
+.RE
+.PP
+\-e <glob>, \-\-exclude=<glob>
+.RS 4
+Do not restore the files corresponding to the specified \fI<glob>\fR
+expression\&.
+See \fBsynctl-regex\fR(1) for information about glob expressions\&.
+Do not exclude a file if it matches a previously specified \fI\-\-include\fR
+option\&.
+If a directory is excluded, its descendants are always excluded\&.
+If there is a specified \fI<profile>\fR containing include or exclude fields,
+they are appended after the command line \fI\-\-include\fR and
+\fI\-\-exclude\fR options\&.
+.RE
+.PP
+\-i <glob>, \-\-include=<glob>
+.RS 4
+Do restore the files corresponding to the specified \fI<glob>\fR expression\&.
+See \fBsynctl-regex\fR(1) for information about glob expressions\&.
+Do not include a file if it matches a previously specified \fI\-\-exclude\fR
+option\&.
+If there is a specified \fI<profile>\fR containing include or exclude fields,
+they are appended after the command line \fI\-\-include\fR and
+\fI\-\-exclude\fR options\&.
+.RE
+.PP
+\-r <path>, \-\-root=<path>
+.RS 4
+Restore the snapshot at the specified \fI<path>\fR\&.
+This option is mandatory unless a path is specified in the \fI<profile>\fR\&.
+See \fBsynctl-profile\fR(5) for information about profile files\&.
+If the given path already exists then it is replaced unconditionally\&.
+.RE
+.PP
+\-s <location>, \-\-server=<location>
+.RS 4
+Indicate the \fI<location>\fR of the server where to find the snapshot to
+restore\&.
+This option is mandatory unless a server location is specified in the
+\fI<profile>\fR\&.
+See \fBsynctl-profile\fR(5) for information about profile files and how to
+specify a location\&.
+.RE
+.PP
+\-s <snapshot>, \-\-snapshot=<snapshot>
+.RS 4
+Restore the specified \fI<snapshot>\fR instead of the lastest one\&.
+It is possible to list the possible snapshots stored in a Synctl server with
+the \fBsynctl-list\fR(1) command\&.
+Be sure to specify a snapshot which belong to the correct trunk\&.
+.RE
+.PP
+\-t <trunk>, \-\-trunk=<trunk>
+.RS 4
+Restore the snapshot from the specified \fI<trunk>\fR\&.
+If this option is not specified, then use the default "master" trunk instead\&.
+.RE
+.SH "EXIT STATUS"
+.sp
+On success 0 is returned, a non-zero failure code otherwise\&.
+.sp
+.SH "EXAMPLES"
+.PP
+Pull the last snapshot from the "home" trunk in the repository "/mnt/backup" at
+the path "/home" then set the branch "computer-0" on the restored snapshot\&.
+.RS 4
+.sp
+.if n \{\
+.RS 4
+.\}
+.nf
+$ synctl pull --server=file:///mnt/backup --root=/home --trunk=home
+              --branch=computer-0
+
+OR
+
+$ cat /etc/synctl/home
+server = file:///mnt/backup
+root   = /home
+trunk  = home
+branch = computer-0
+$ synctl pull home
+.fi
+.if n \{\
+.RE
+.\}
+.sp
+.RE
+.PP
+Restore the directory "Music" from the penultimate snapshot of the "documents"
+trunk in the remote ssh repository "/srv/backup" at the address
+"ssh.backup.net"\&.
+.RS 4
+.sp
+.if n \{\
+.RS 4
+.\}
+.nf
+$ synctl list --server=ssh://user@ssh.backup.net/srv/backup
+              --trunk=documents
+documents:
+0427ac5895  Jun 30 00:12  computer-0
+bb78ef5401  Jun 30 00:04
+ff2f65e3cf  Jun 29 22:41
+
+$ synctl pull --server=ssh://user@ssh.backup.net/srv/backup --root=/home
+              --trunk=documents --snapshot=bb78ef5401 --include=/Music
+              --exclude='/*'
+
+OR
+
+$ cat /etc/synctl/profile
+server = ssh://user@ssh.backup.net/srv/backup
+root   = /home
+trunk  = documents
+
+$ synctl list profile
+documents:
+0427ac5895  Jun 30 00:12  computer-0
+bb78ef5401  Jun 30 00:04
+ff2f65e3cf  Jun 29 22:41
+
+$ synctl pull profile -s bb78ef5401 -i /Music -e '/*'
+.fi
+.if n \{\
+.RE
+.\}
+.sp
+.RE
+.SH "SEE ALSO"
+.sp
+Part of \fBsynctl\fR(1)

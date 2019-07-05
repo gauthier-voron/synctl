@@ -1,13 +1,17 @@
 #include "synctl/ui/ConfigurationCommand.hxx"
 
 #include <string>
+#include <vector>
 
 #include "synctl/ui/ConfigurationBase.hxx"
+#include "synctl/ui/OptionBoolean.hxx"
 #include "synctl/ui/OptionString.hxx"
 
 
 using std::string;
+using std::vector;
 using synctl::ConfigurationCommand;
+using synctl::OptionBoolean;
 using synctl::OptionString;
 
 
@@ -16,22 +20,32 @@ ConfigurationCommand::ConfigurationCommand(ConfigurationBase *inner)
 {
 }
 
-const OptionString &ConfigurationCommand::getOptionConfig() const
+const OptionString &ConfigurationCommand::optionConfig() const
 {
-	return _inner->getOptionConfig();
+	return _inner->optionConfig();
 }
 
-string ConfigurationCommand::getConfig() const
+const OptionBoolean &ConfigurationCommand::optionHelp() const
+{
+	return _inner->optionHelp();
+}
+
+string ConfigurationCommand::config() const
 {
 	return _inner->config();
 }
 
-const string &ConfigurationCommand::getCommand() const
+bool ConfigurationCommand::help() const
 {
-	return _inner->getCommand();
+	return _inner->help();
 }
 
-void ConfigurationCommand::getOptions(std::vector<Option *> *dest)
+const string &ConfigurationCommand::command() const
+{
+	return _inner->command();
+}
+
+void ConfigurationCommand::getOptions(vector<Option *> *dest)
 {
 	_inner->getOptions(dest);
 }

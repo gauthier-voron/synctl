@@ -1,0 +1,346 @@
+.TH "SYNCTL-TUTORIAL" "7" "30/06/2019" "Synctl 1\&.0\&.0" "Synctl Manual"
+.
+.ad l
+.
+.SH "NAME"
+synctl-tutorial \- some simple recipes for using Synctl in everyday life
+.SH "SYNOPSIS"
+.sp
+.nf
+synctl *
+.fi
+.sp
+.SH "DESCRIPTION"
+.sp
+This document shows some examples of how to use Synctl in various setups\&.
+You can use these examples and adapt them to your particular setup\&.
+If you need more specific information about how to use a command, please refer
+to the corresponding manpage \fBsynctl-<command>\fR(1) or type
+"synctl help <command>"\&.
+.sp
+.SH "GETTING STARTED"
+.sp
+To start using Synctl you need to create a repository\&.
+Repository is where you store your backups\&.
+To create a repository, use the command:
+.sp
+.RS 4
+.nf
+$ synctl init my-repository
+.fi
+.RE
+.sp
+This command creates a new Synctl repository at the relative path \fImy-repository\fR\&, assuming this file does not already exist\&. Synctl can use repositories over ssh connection\&. If you want to use a remote repository through ssh, you need to open a remote shell on the desired server and create a repository from this shell\&. See \fBsynctl-init\fR(1) for more information\&.
+.sp
+.SH "PUSHING A SNAPSHOT"
+.sp
+Synctl uses the concept of snapshot\&.
+A snapshot is an immutable save of your files, stored in a Synctl repository\&.
+To push a snapshot in a repository, use the command:
+.sp
+.RS 4
+.nf
+$ synctl push --server=file://my-repository --root=my-files
+.fi
+.RE
+.sp
+This command saves the file \fImy-files\fR and all its descendants (if it is
+a directory) into a snapshot and pushes it in the repository
+\fImy-repository\fR\&.
+You can control precisely what you want to save with filter options\&.
+See \fBsynctl-push\fR(1) for more information\&.
+.sp
+You can note the server path is prefixed with the string \fIfile://\fR\&.
+This is to indicate you are pushing into a local repository\&.
+You can push into a remote repository by using the \fIssh://\fR prefix with a
+command like this one:
+.sp
+.RS 4
+.nf
+$ synctl push --server=ssh://user@example.net/my-repository --root=my-files
+.fi
+.RE
+.sp
+See \fBsynctl-profile\fR(5) for more information on how to specify a repository
+location\&.
+.sp
+.SH "LISTING SNAPSHOTS"
+.sp
+At any moment, you can list the snapshots storead in a repository by using the
+following command:
+.sp
+.RS 4
+.nf
+$ synctl list --server=file://my-repository
+master:
+0427ac5895  Jun 30 11:55  Computer
+.fi
+.RE
+.sp
+This command list all the snapshots pushed into the repository
+\fImy-repository\fR.
+The output shows a snapshot named \fI0427ac5895\fR created the June 30th at
+11:55\&.
+The other words "master" and "Computer" are respectively the trunk and the
+branch\&.
+We see later what they are useful for\&.
+.sp
+.SH "PULLING A SNAPSHOT"
+.sp
+Once a snapshot has been pushed in a repository, you can restore it by pulling
+it from the server\&.
+To pull a snapshot from a repository, use the command:
+.sp
+.RS 4
+.nf
+$ synctl pull --server=file://my-repository --root=my-files
+.fi
+.RE
+.sp
+This command restore the last snapshot from the repository \fImy-repository\fR
+at the location \fImy-files\fR\&.
+Note that in this example, we restore the files at the same path we created the
+snapshot from (in the \fBPUSHING A SNAPSHOT\fR section)\&. This is not
+mandatory\&.
+You can restore a snapshot at any desired path\&.
+.sp
+Additionally, you can restore any snapshot you want and not only the last
+one\&.
+To restore a specific snapshot, use the command:
+.sp
+.RS 4
+.nf
+$ synctl pull --server=file://my-repository --root=my-files \\
+              --snapshot=0427ac5895
+.fi
+.RE
+.sp
+This command restores the snapshot \fI0427ac5895\fR listed in the section
+\fBLISTING SNAPSHOTS\fR\&.
+See \fBsynctl-pull\fR(1) for more information about how to pull snapshots\&.
+.sp
+.SH "USING PROFILES"
+.sp
+If you have to use several Synctl commands, it becomes tedious to specify the
+same \fI\-\-server\fR and \fI\-\-root\fR option each time\&.
+Instead, you can define a set of options as the default options in a profile
+file\&.
+.sp
+When you execute most of Synctl commands, you can provide a profile name\&.
+If Synctl finds a profile file with this name, it reads its content and
+interprets it as a list of options to use if no contradictory option is
+provided on the command line\&.
+For instance you can do the following:
+.sp
+.RS 4
+.nf
+$ cat ~/.config/synctl/my-profile
+server = file://my-repository
+root   = my-files
+.fi
+.RE
+.sp
+The file \fI<my-profile>\fR is a profile file which defines default values for
+the \fI\-\-server\fR and \fI\-\-root\fR options\&.
+You can now execute:
+.sp
+.RS 4
+.nf
+$ synctl push my-profile
+.fi
+.RE
+.sp
+This command creates a snapshot from \fImy-files\fR and pushes it in the
+repository \fImy-repository\fR\&.
+You can override the options of a profile file by using the command line
+option\&.
+For instance:
+.sp
+.RS 4
+.nf
+$ synctl pull my-profile --root=/tmp/restoration-point
+.fi
+.RE
+.sp
+This command restores the last snapshot from the repository \fImy-repository\fR
+but on the path \fI/tmp/restoration-point\fR\&.
+This is because the command line \fI\-\-root\fR option overrides the value of
+the profile \fImy-profile\fR\&.
+See \fBsynctl-profile\fR(5) for more information about the profile file syntax
+and how Synctl finds them\&.
+.sp
+.SH "SHARING A REPOSITORY"
+.sp
+Synctl uses deduplication to store snapshots efficiently\&.
+This means that if you take 10 snapshots of a directory of 100 GiB, but only
+a few files change between the snapshots, then the repository will not be much
+larger than 100 GiB\&.
+.sp
+The deduplication mechanism can be used over the snapshots of several
+computers\&.
+For instance, if you want to backup the "/etc" directory of multiple
+computers, many of them probably share a lot of files\&.
+It can be interesting to backup them on the same repository to save space:
+.sp
+.RS 4
+.nf
+# On computer A
+$ synctl push --server=ssh://192.168.0.2/my-repository --root=/etc --trunk=A
+
+# On computer B
+$ synctl push --server=ssh://192.168.0.2/my-repository --root=/etc --trunk=B
+.fi
+.RE
+.sp
+Each of the computer saves its own \fI/etc\fR directory on the repository
+\fImy-repository\fR on the server with the address \fI192.168.0.2\fR\&.
+Each of the computer also specify a different \fI\-\-trunk\fR value\&.
+This is because the snapshots of computer A and B are logically independant\&.
+.sp
+A trunk represent a consistent history of snapshots: computer A has its own
+"/etc" directory evolving independantly of the "/etc" directory of computer
+B\&.
+Thus, the computer A uses the trunk \fIA\fR and the computer B uses another
+trunk \fIB\fR\&.
+If, later, the computer A wants to restore a snapshot from its own history, it
+can do:
+.sp
+.RS 4
+.nf
+# On computer A
+$ synctl pull --server=ssh://192.168.0.2/my-repository --root=/etc --trunk=A
+.fi
+.RE
+.sp
+Note that the \fI\-\-trunk\fR option can be saved in a profile file\&.
+Also note than a same computer can uses different trunks to store different
+types of file hierarchy in the same repository\&.
+For instance:
+.sp
+.RS 4
+.nf
+$ cat ~/.config/synctl/system
+server  = ssh://192.168.0.2/my-repository
+root    = /
+trunk   = system
+exclude = /home
+
+$ cat ~/.config/synctl/home
+server = ssh://192.168.0.2/my-repository
+root   = /home
+trunk  = home
+.fi
+.RE
+.sp
+See \fBsynctl-push\fR(1) and \fBsynctl-profile\fR(5) for more information about
+trunk specification\&.
+.sp
+.SH "SHARING A TRUNK"
+.sp
+Using different trunks is useful to have several computers sharing the same
+repository but with logically separated history of snapshots\&.
+Sometimes however, you may want to have several computers to share the same
+history of snapshots\&.
+For instance, you might have several computers that you want to share the same
+"/home" directory\&.
+In this case, you simply use the same trunk:
+.sp
+.RS 4
+.nf
+# On computer A
+$ synctl push --server=ssh://192.168.0.2/repo --root=/home --trunk=my-trunk \\
+              --branch=A
+
+# On computer B
+$ synctl push --server=ssh://192.168.0.2/repo --root=/home --trunk=my-trunk \\
+              --branch=B
+.fi
+.RE
+.sp
+Each of the computer saves its own \fI/home\fR directory in the same repository
+under the same trunk \fImy-trunk\fR\&.
+Each computer also specify a different \fI\-\-branch\fR value\&.
+A branch is simply a way to track at which point of an history a client is\&.
+This is only a useful indication that the \fBsynctl-list\fR(1) displays\&.
+If the branch is not specified explicitely, Synctl uses the
+\fBhostname\fR(1)\&.
+.sp
+.SH "SHARING PARTIALLY A TRUNK"
+.sp
+In some situations you want that two computers share only a subpart of a common
+history\&.
+You can do that with trunks but let us consider the following setup:
+.sp
+.RS 4
+.nf
+Computer A
+/home
+|- music/
+`- video/
+   |- series/
+   `- movie/
+
+Computer B
+/home
+|- music/
+`- video/
+   `- movie/
+.fi
+.RE
+.sp
+We want that computers A and B keep their files synced but we do not want that
+computer B stores the \fI/home/video/series\fR directory\&.
+A possible solution is to use two trunks like the following:
+.sp
+.RS 4
+.nf
+$ cat ~/.config/synctl/media
+# This profile is for computers A and B
+server  = ...
+trunk   = media
+root    = /home
+exclude = /home/video/series
+
+$ cat ~/.config/synctl/series
+# This profile is for computer A only
+server = ...
+trunk  = series
+root   = /home/video/series
+.fi
+.RE
+.sp
+This solution would work but if there is more than two computers involved, the
+number of trunk can grow quite fast if each computer store different sets of
+files\&.
+.sp
+A more convenient solution is the partial sharing: computers A and B share a
+single trunk but computer B excludes the \fIseries\fR directory\&.
+.sp
+.RS 4
+.nf
+# Computer A
+$ cat ~/.config/synctl/home
+server  = ...
+trunk   = home
+root    = /home
+
+# Computer B
+$ cat ~/.config/synctl/home
+server  = ...
+trunk   = home
+root    = /home
+exclude = /home/video/series
+.fi
+.RE
+.sp
+Now if computer A pushes a snapshot 0, it contains the \fIseries\fR
+directory\&.
+Then if computer B pushes a snapshot 1, this new snapshot receives the
+\fIseries\fR directory of the previous snapshot\&.
+Consequently, if computer A pulls the snapshot 1, it will see the changes made
+by computer B with the \fIseries\fR directory unmodified (unless computer B
+removed the \fIvideo\fR directory\&.
+.sp
+.SH "SEE ALSO"
+.sp
+Part of \fBsynctl\fR(1)
