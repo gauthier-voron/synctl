@@ -22,11 +22,6 @@ using synctl::OptionString;
 using synctl::ProfileSeeker;
 
 
-void ConfigurationBase::_displayHelp() const
-{
-	cout << "rtfm" << endl;
-}
-
 void ConfigurationBase::_displayVersion() const
 {
 	cout << SYNCTL_CONSTANT_NAME;
