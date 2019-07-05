@@ -15,6 +15,7 @@
 #include "synctl/ui/Command.hxx"
 #include "synctl/ui/ConfigurationBase.hxx"
 #include "synctl/ui/ConfigurationCommand.hxx"
+#include "synctl/ui/ConfigurationHelp.hxx"
 #include "synctl/ui/FormatList.hxx"
 #include "synctl/ui/FormatListHuman.hxx"
 #include "synctl/ui/FormatListPorcelain.hxx"
@@ -35,6 +36,7 @@ using synctl::Channel;
 using synctl::Command;
 using synctl::ConfigurationBase;
 using synctl::ConfigurationCommand;
+using synctl::ConfigurationHelp;
 using synctl::ConfigurationList;
 using synctl::FormatList;
 using synctl::FormatListHuman;
@@ -299,6 +301,9 @@ int ConfigurationList::main(ConfigurationBase *c, const vector<string> &args)
 
 	aparser.requireOrder() = false;
 	rem = aparser.parse(args);
+
+	if (conf.help())
+		ConfigurationHelp::displayCommandHelp(c->command());
 
 	if (rem.empty() == false)
 		throw OperandUnexpectedException(rem[0]);
