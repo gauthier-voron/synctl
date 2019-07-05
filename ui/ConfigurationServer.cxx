@@ -11,6 +11,7 @@
 #include "synctl/repo/Repository.hxx"
 #include "synctl/ui/ArgumentParser.hxx"
 #include "synctl/ui/ConfigurationBase.hxx"
+#include "synctl/ui/ConfigurationHelp.hxx"
 #include "synctl/ui/OperandInvalidException.hxx"
 #include "synctl/ui/OperandMissingException.hxx"
 #include "synctl/ui/OperandUnexpectedException.hxx"
@@ -24,6 +25,7 @@ using synctl::ArgumentParser;
 using synctl::FdInputStream;
 using synctl::FdOutputStream;
 using synctl::ConfigurationBase;
+using synctl::ConfigurationHelp;
 using synctl::ConfigurationServer;
 using synctl::OperandMissingException;
 using synctl::OperandInvalidException;
@@ -39,6 +41,11 @@ ConfigurationServer::ConfigurationServer(ConfigurationBase *inner)
 {
 }
 
+bool ConfigurationServer::hasServerPath() const
+{
+	return _hasOperand;
+}
+
 string ConfigurationServer::serverPath() const
 {
 	return Path::resolvePath(_operandServerPath);
@@ -46,9 +53,12 @@ string ConfigurationServer::serverPath() const
 
 size_t ConfigurationServer::getOperands(const vector<string> &args)
 {
-	if (args.size() < 1)
-		throw OperandMissingException("server-path");
+	if (args.size() < 1) {
+		_hasOperand = false;
+		return 0;
+	}
 
+	_hasOperand = true;
 	_operandServerPath = args[0];
 
 	return 1;
@@ -75,6 +85,12 @@ int ConfigurationServer::main(ConfigurationBase *c, const vector<string> &args)
 	ConfigurationServer config = ConfigurationServer(c);
 	ArgumentParser parser = ArgumentParser(&config);
 	vector<string> rem = parser.parse(args);
+
+	if (config.help())
+		ConfigurationHelp::displayCommandHelp(c->command());
+
+	if (config.hasServerPath() == false)
+		throw OperandMissingException("server-path");
 
 	if (rem.empty() == false)
 		throw OperandUnexpectedException(rem[0]);
