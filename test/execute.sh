@@ -583,7 +583,8 @@ setup_case_environment() {
 	apath="${apath}${comp}"
     done
 
-    PATH="$apath:$PATH"
+    export PATH="$apath:$PATH"
+    export LD_LIBRARY_PATH="$apath:$LD_LIBRARY_PATH"
 
     export MEASURE_OUTPUT="$(absolute_path "$results")"
     export SKIP_FILE="$(absolute_path "$skip")"
