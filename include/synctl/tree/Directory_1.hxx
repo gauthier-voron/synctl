@@ -84,6 +84,11 @@ class Directory_1
 		const std::string &name() const;
 
 		const struct stat &stat() const;
+		uint16_t mode() const;
+		uint64_t atime() const;
+		uint64_t mtime() const;
+		const std::string &user() const;
+		const std::string &group() const;
 
 		const std::map<std::string, std::string> &xattrs() const;
 

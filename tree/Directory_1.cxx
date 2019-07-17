@@ -162,6 +162,31 @@ const struct stat &Directory_1::Entry::stat() const
 	return _stat;
 }
 
+uint16_t Directory_1::Entry::mode() const
+{
+	return _einfo->stat.mode;
+}
+
+uint64_t Directory_1::Entry::atime() const
+{
+	return _einfo->stat.atime;
+}
+
+uint64_t Directory_1::Entry::mtime() const
+{
+	return _einfo->stat.mtime;
+}
+
+const string &Directory_1::Entry::user() const
+{
+	return _einfo->user;
+}
+
+const string &Directory_1::Entry::group() const
+{
+	return _einfo->group;
+}
+
 const map<string, string> &Directory_1::Entry::xattrs() const
 {
 	if (_xattrs.empty()) {
