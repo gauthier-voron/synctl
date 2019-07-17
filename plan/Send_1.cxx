@@ -99,18 +99,18 @@ void Send_1::_sendDirectory(const Context *context, InputStream *input,
 	ctx.output = context->output;
 
 	for (const Directory_1::Entry &entry : dir.getChildren()) {
-		ctx.rpath += entry.name;
+		ctx.rpath += entry.name();
 
 		if (_filterPath(&ctx) == Filter::Reject) {
-			dir.removeChild(entry.name);
+			dir.removeChild(entry.name());
 			altered = true;
 		} else {
-			ctx.opcode = entry.opcode;
-			ctx.reference = entry.reference;
+			ctx.opcode = entry.opcode();
+			ctx.reference = entry.reference();
 			ctxs.push_back(ctx);
 		}
 
-		ctx.rpath.resize(ctx.rpath.length() - entry.name.length());
+		ctx.rpath.resize(ctx.rpath.length() - entry.name().length());
 	}
 
 	if (altered) {

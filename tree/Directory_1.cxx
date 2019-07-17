@@ -11,6 +11,7 @@
 
 #include <cstdint>
 #include <map>
+#include <memory>
 #include <string>
 #include <vector>
 
@@ -18,12 +19,17 @@
 #include "synctl/io/HashInputStream.hxx"
 #include "synctl/io/HashOutputStream.hxx"
 #include "synctl/io/InputStream.hxx"
+#include "synctl/io/IOException.hxx"
 #include "synctl/tree/Reference.hxx"
 
 
+using std::invalid_argument;
 using std::make_pair;
+using std::make_shared;
 using std::map;
+using std::out_of_range;
 using std::pair;
+using std::shared_ptr;
 using std::string;
 using std::to_string;
 using std::vector;
@@ -32,54 +38,9 @@ using synctl::EOFException;
 using synctl::HashInputStream;
 using synctl::HashOutputStream;
 using synctl::InputStream;
+using synctl::IOException;
 using synctl::Reference;
 
-
-Directory_1::Entry::Entry(const string &_name, const struct stat &_stat,
-			  const map<string, string> &_xattrs, opcode_t _opcode,
-			  const Reference &_reference)
-	: name(_name), stat(_stat), xattrs(_xattrs), opcode(_opcode),
-	  reference(_reference)
-{
-}
-
-Directory_1::Entry::Entry(const string &_name, const EntryInfo &_einfo)
-	: name(_name), opcode(_einfo.opcode), reference(_einfo.reference)
-{
-	struct passwd *passwd;
-	struct group *grp;
-	uint64_t tmp;
-	size_t pos;
-
-	stat.st_mode = le16toh(_einfo.stat.mode);
-
-	tmp = le64toh(_einfo.stat.atime);
-	stat.st_atim.tv_sec = tmp / 1000000000ul;
-	stat.st_atim.tv_nsec = tmp % 1000000000ul;
-
-	tmp = le64toh(_einfo.stat.mtime);
-	stat.st_mtim.tv_sec = tmp / 1000000000ul;
-	stat.st_mtim.tv_nsec = tmp % 1000000000ul;
-
-	if ((passwd = getpwnam(_einfo.user.c_str())) != NULL) {
-		stat.st_uid = passwd->pw_uid;
-	} else {
-		stat.st_uid = stol(_einfo.user, &pos, 10);
-		if (pos != _einfo.user.length())
-			stat.st_uid = -1;
-	}
-
-	if ((grp = getgrnam(_einfo.group.c_str())) != NULL) {
-		stat.st_gid = grp->gr_gid;
-	} else {
-		stat.st_gid = stol(_einfo.group, &pos, 10);
-		if (pos != _einfo.group.length())
-			stat.st_gid = -1;
-	}
-
-	for (auto &x : _einfo.xattrs)
-		xattrs[x.name] = x.value;
-}
 
 Directory_1::EntryXattr::EntryXattr(const string &_name, const string &_value)
 	: name(_name), value(_value)
@@ -119,6 +80,147 @@ Directory_1::EntryInfo::EntryInfo(const struct stat &_stat,
 
 	for (auto &x : _xattrs)
 		xattrs.emplace_back(x.first, x.second);
+}
+
+Directory_1::EntryInfo::EntryInfo(uint16_t _mode, uint64_t _atime,
+				  uint64_t _mtime, const string &_user,
+				  const string &_group,
+				  const map<string, string> &_xattrs,
+				  opcode_t _opcode,
+				  const Reference &_reference)
+	: user(_user), group(_group), opcode(_opcode), reference(_reference)
+{
+	stat.mode = _mode;
+	stat.atime = _atime;
+	stat.mtime = _mtime;
+
+	for (auto &x : _xattrs)
+		xattrs.emplace_back(x.first, x.second);
+}
+
+Directory_1::Entry::Entry(const string &name, shared_ptr<EntryInfo> &einfo)
+	: _name(name), _einfo(einfo)
+{
+	_stat.st_mode = 0;
+}
+
+Directory_1::Entry::Entry(const string &name, shared_ptr<EntryInfo> &einfo,
+			  const struct stat &stat,
+			  const map<string, string> &xattrs)
+	: _name(name), _einfo(einfo), _stat(stat), _xattrs(xattrs)
+{
+}
+
+Directory_1::Entry::Entry()
+	: _einfo(nullptr)
+{
+	_stat.st_mode = 0;
+}
+
+const std::string &Directory_1::Entry::name() const
+{
+	return _name;
+}
+
+uid_t __stid(const string &str, size_t *pos = nullptr, int base = 10)
+{
+	uid_t ret = ((uid_t) -1);
+	size_t __pos;
+
+	if (pos == nullptr)
+		pos = &__pos;
+
+	try {
+		ret = stol(str, pos, base);
+	} catch (invalid_argument &) {
+		*pos = 0;
+	} catch (out_of_range &) {
+		*pos = 0;
+	}
+
+	if (*pos != str.length())
+		throw IOException();
+
+	return ret;
+}
+
+const struct stat &Directory_1::Entry::stat() const
+{
+	struct passwd *passwd;
+	struct group *grp;
+	uint64_t tmp;
+	size_t pos;
+
+	if (_stat.st_mode == 0) {
+		_stat.st_mode = le16toh(_einfo->stat.mode);
+
+		tmp = le64toh(_einfo->stat.atime);
+		_stat.st_atim.tv_sec = tmp / 1000000000ul;
+		_stat.st_atim.tv_nsec = tmp % 1000000000ul;
+
+		tmp = le64toh(_einfo->stat.mtime);
+		_stat.st_mtim.tv_sec = tmp / 1000000000ul;
+		_stat.st_mtim.tv_nsec = tmp % 1000000000ul;
+
+		if ((passwd = getpwnam(_einfo->user.c_str())) != NULL) {
+			_stat.st_uid = passwd->pw_uid;
+		} else {
+			_stat.st_uid = __stid(_einfo->user, &pos, 10);
+		}
+
+		if ((grp = getgrnam(_einfo->group.c_str())) != NULL) {
+			_stat.st_gid = grp->gr_gid;
+		} else {
+			_stat.st_gid = __stid(_einfo->group, &pos, 10);
+		}
+	}
+
+	return _stat;
+}
+
+uint16_t Directory_1::Entry::mode() const
+{
+	return _einfo->stat.mode;
+}
+
+uint64_t Directory_1::Entry::atime() const
+{
+	return _einfo->stat.atime;
+}
+
+uint64_t Directory_1::Entry::mtime() const
+{
+	return _einfo->stat.mtime;
+}
+
+const string &Directory_1::Entry::user() const
+{
+	return _einfo->user;
+}
+
+const string &Directory_1::Entry::group() const
+{
+	return _einfo->group;
+}
+
+const map<string, string> &Directory_1::Entry::xattrs() const
+{
+	if (_xattrs.empty()) {
+		for (auto &x : _einfo->xattrs)
+			_xattrs[x.name] = x.value;
+	}
+
+	return _xattrs;
+}
+
+opcode_t Directory_1::Entry::opcode() const
+{
+	return _einfo->opcode;
+}
+
+const Reference &Directory_1::Entry::reference() const
+{
+	return _einfo->reference;
 }
 
 void Directory_1::_writeXattr(OutputStream *output, const EntryInfo &einfo)
@@ -182,16 +284,16 @@ void Directory_1::_write(OutputStream *output) const
 {
 	for (auto it : _children) {
 		const string &name = it.first;
-		EntryInfo &einfo = it.second;
+		shared_ptr<EntryInfo> &einfo = it.second;
 
 		output->writeStr(name);
-		_writeInfo(output, einfo);
+		_writeInfo(output, *einfo);
 	}
 }
 
 void Directory_1::_read(InputStream *input)
 {
-	EntryInfo einfo;
+	shared_ptr<EntryInfo> einfo;
 	string name;
 
 	while (1) {
@@ -201,7 +303,8 @@ void Directory_1::_read(InputStream *input)
 			break;
 		}
 
-		_readInfo(input, &einfo);
+		einfo = make_shared<EntryInfo>();
+		_readInfo(input, einfo.get());
 		_children[name] = einfo;
 	}
 }
@@ -210,13 +313,19 @@ void Directory_1::addChild(const string &name, const struct stat &statbuf,
 			   const map<string, string> &xattrs, opcode_t opcode,
 			   const Reference &reference)
 {
-	_children[name] = EntryInfo(statbuf, xattrs, opcode, reference);
+	_children[name] =
+		make_shared<EntryInfo>(statbuf, xattrs, opcode, reference);
 }
 
-void Directory_1::addChild(const Entry &entry)
+void Directory_1::addChild(const string &name, uint16_t mode, uint64_t atime,
+			   uint64_t mtime, const string &user,
+			   const string &group,
+			   const map<string, string> &xattrs,
+			   opcode_t opcode, const Reference &reference)
 {
-	_children[entry.name] = EntryInfo(entry.stat, entry.xattrs,
-					  entry.opcode, entry.reference);
+	_children[name] =
+		make_shared<EntryInfo>(mode, atime, mtime, user, group, xattrs,
+				       opcode, reference);
 }
 
 void Directory_1::removeChild(const string &name)

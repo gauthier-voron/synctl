@@ -41,36 +41,55 @@ objects := $(patsubst %.cxx, $(OBJ)%.o, $(sources))
 objects-gcov := $(patsubst %.o, %.gcov.o,    $(objects))
 objects-gcda := $(patsubst %.o, %.gcov.gcda, $(objects))
 
+intercept-sources := $(filter %.c, $(call FIND, test/intercept))
+intercept-objects := $(patsubst %.c, $(OBJ)%.so, $(intercept-sources))
 
-check: $(BIN)synctl
-	./$< init --force 'sandbox'
-	./$< push --root='include' --server 'file://sandbox' \
-             --exclude=/synctl/* --include=/synctl/io/* --include=**/ui/* --skip=*repo*
-	# ./$< pull -rrecvbox -s 'file://sandbox' -R `cat sandbox/branches/Orme/*/ref`
+ifneq ($(VALIDATION),)
+  validation-cases := $(wildcard test/validation/$(strip $(VALIDATION))*)
+endif
+
+manpages := $(foreach suffix, 1 2 3 4 5 6 7 8, \
+              $(filter %.$(suffix), $(call FIND, man)))
+
+
+bin-install-path := $(PREFIX)/usr/bin/
+
+manpages-install-path := $(PREFIX)/usr/share/
+
 
 all: $(BIN)synctl
 
 
 test: validation-test
 
-validation-test: test/execute.sh $(BIN)synctl
+validation-test: test/execute.sh $(BIN)synctl $(BIN)intercept.so
 	$(call cmd-call, $< --mode validation, \
           $(if $(filter $(V), 0), --silent,    \
-          $(if $(filter $(V), 1), --quiet)))
+          $(if $(filter $(V), 1), --quiet))    \
+          $(validation-cases))
 
 .validation-test-gcov: test/execute.sh $(BIN)synctl-gcov
 	-$(call cmd-call, $< --mode validation,  \
           --executable $(BIN)synctl-gcov         \
           $(if $(filter $(V), 0 1 2), --silent))
 
+
 benchmark: test/execute.sh $(BIN)synctl
 	$(call cmd-call, $< --mode benchmark)
 
+
 coverage: $(COV)coverage.csv
 
+
+install: installbin installdoc
+
+installbin: $(bin-install-path)synctl
+
+installdoc: $(patsubst %, $(manpages-install-path)%.gz, $(manpages))
+
+
 clean:
-	$(call cmd-clean, $(DEP) $(COV) $(OBJ) $(BIN) .depends \
-               sandbox recvbox recbox)
+	$(call cmd-clean, $(DEP) $(COV) $(OBJ) $(BIN) .depends)
 
 
 $(call REQUIRE-DIR, $(BIN)synctl)
@@ -103,14 +122,6 @@ $(DEP)%.cxx.gcov.d: %.cxx
                -Iinclude/)
 
 
-.depends:
-	$(call cmd-dep, $@, $(filter %.d, $^))
-
-ifeq ($(mode),build)
-  -include .depends
-endif
-
-
 $(call REQUIRE-DIR, $(COV)coverage.csv)
 
 $(COV)coverage.csv: $(objects-gcda)
@@ -119,6 +130,43 @@ $(COV)coverage.csv: $(objects-gcda)
 $(objects-gcda): .validation-test-gcov ;
 
 .INTERMEDIATE: .validation-test-gcov
+
+
+$(call REQUIRE-DIR, $(BIN)intercept.so)
+
+$(BIN)intercept.so: $(intercept-objects)
+	$(call cmd-ldso, $@, $^, -ldl)
+
+$(call REQUIRE-DIR, $(intercept-objects))
+$(call REQUIRE-DEP, $(intercept-sources), $(DEP)%.d)
+
+$(OBJ)test/intercept/%.so: test/intercept/%.c
+	$(call cmd-ccso, $@, $<, -Itest/intercept/)
+
+$(DEP)test/intercept/%.c.d: test/intercept/%.c
+	$(call cmd-depc, $@, $<, $(patsubst %.c, $(OBJ)%.so, $<), \
+               -Itest/intercept/)
+
+
+$(call REQUIRE-DIR, $(bin-install-path)synctl)
+$(call REQUIRE-DIR, $(patsubst %, $(manpages-install-path)%.gz, $(manpages)))
+
+$(bin-install-path)synctl: $(BIN)synctl
+	$(call cmd-cp, $@, $<)
+
+$(manpages-install-path)%.gz: %
+	$(call cmd-gzip, $@, $<)
+
+
+-include .config/Makefile
+
+
+.depends:
+	$(call cmd-dep, $@, $(filter %.d, $^))
+
+ifeq ($(mode),build)
+  -include .depends
+endif
 
 
 endif

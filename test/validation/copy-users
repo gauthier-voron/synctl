@@ -1,0 +1,26 @@
+#!/bin/bash
+
+set -e
+set -x
+
+if [ "x$(whoami)" != 'xroot' ] ; then
+    skip 'need root privilege'
+fi
+
+cat > 'spec.txt' <<EOF
+root 04**** * *
+root/foo 040700 19990103 19990104 o:nobody
+root/foo/f0 0100600 19990105 19990106 o:root
+root/foo/l0 0120777 19990107 19990108 o:2000 = ../l0
+root/l0 0120777 19990109 19990110 = foo/l0
+EOF
+
+mkdir 'pushed' 'pulled'
+
+mktree -p 'pushed' < 'spec.txt'
+
+synctl init 'server'
+synctl push --server='file://server' --root='pushed/root'
+synctl pull --server='file://server' --root='pulled/root'
+
+chktree -p 'pulled' < 'spec.txt'

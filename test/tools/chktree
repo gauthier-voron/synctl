@@ -88,6 +88,32 @@ check_xattr() {
     vtest "$path" "x:$opt" "x$(getfattr -h --only-values -n "$name" "$path")" = "x$value"
 }
 
+check_owner() {
+    local path="$1" ; shift
+    local owner="$1" ; shift
+
+    test "x$path" != 'x'
+
+    if echo "$owner" | grep -Pq '^\d+$' ; then
+	vtest "$path" "o:$owner" "x$(stat -c '%u' "$path")" = "x$owner"
+    else
+	vtest "$path" "o:$owner" "x$(stat -c '%U' "$path")" = "x$owner"
+    fi
+}
+
+check_group() {
+    local path="$1" ; shift
+    local group="$1" ; shift
+
+    test "x$path" != 'x'
+
+    if echo "$group" | grep -Pq '^\d+$' ; then
+	vtest "$path" "g:$group" "x$(stat -c '%g' "$path")" = "x$group"
+    else
+	vtest "$path" "g:$group" "x$(stat -c '%G' "$path")" = "x$group"
+    fi
+}
+
 check_hardlink() {
     local path0="$1" ; shift
     local path1="$1" ; shift
@@ -109,6 +135,10 @@ check_options() {
 
 	if [ "x${opt:0:2}" = 'xx:' ] ; then
 	    check_xattr "$path" "${opt:2}"
+	elif [ "x${opt:0:2}" = 'xo:' ] ; then
+	    check_owner "$path" "${opt:2}"
+	elif [ "x${opt:0:2}" = 'xg:' ] ; then
+	    check_group "$path" "${opt:2}"
 	else
 	    false
 	fi

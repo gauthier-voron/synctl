@@ -33,9 +33,11 @@ Explorer::Node::Node(const Reference &_reference, opcode_t _opcode)
 }
 
 Explorer::Node::Node(const Reference &_reference, opcode_t _opcode,
-		     const struct stat &_stat,
+		     uint16_t _mode, uint64_t _atime, uint64_t _mtime,
+		     const string &_user, const string &_group,
 		     const map<string, string> &_xattrs)
-	: reference(_reference), opcode(_opcode), stat(_stat), xattrs(_xattrs)
+	: reference(_reference), opcode(_opcode), mode(_mode), atime(_atime)
+	, mtime(_mtime), user(_user), group(_group), xattrs(_xattrs)
 {
 }
 
@@ -59,20 +61,15 @@ bool Explorer::Entry::operator==(const Entry &other) const
 
 	if (reference() != other.reference())
 		return false;
-	if (stat().st_mode != other.stat().st_mode)
+	if (_node->mode != other._node->mode)
 		return false;
-	// TODO: uid and gid might make no sense on server side
-	if (stat().st_uid != other.stat().st_uid)
+	if (_node->user != other._node->user)
 		return false;
-	if (stat().st_gid != other.stat().st_gid)
+	if (_node->group != other._node->group)
 		return false;
-	if (stat().st_atim.tv_sec != other.stat().st_atim.tv_sec)
+	if (_node->atime != other._node->atime)
 		return false;
-	if (stat().st_atim.tv_nsec != other.stat().st_atim.tv_nsec)
-		return false;
-	if (stat().st_mtim.tv_sec != other.stat().st_mtim.tv_sec)
-		return false;
-	if (stat().st_mtim.tv_nsec != other.stat().st_mtim.tv_nsec)
+	if (_node->mtime != other._node->mtime)
 		return false;
 	if (xattrs() != other.xattrs())
 		return false;
@@ -95,25 +92,45 @@ bool Explorer::Entry::operator<(const Entry &other) const
 
 	if (reference() < other.reference())
 		return true;
-	if (stat().st_mode < other.stat().st_mode)
+	if (_node->mode < other._node->mode)
 		return true;
-	// TODO: uid and gid might make no sense on server side
-	if (stat().st_uid < other.stat().st_uid)
+	if (_node->user < other._node->user)
 		return true;
-	if (stat().st_gid < other.stat().st_gid)
+	if (_node->group < other._node->group)
 		return true;
-	if (stat().st_atim.tv_sec < other.stat().st_atim.tv_sec)
+	if (_node->atime < other._node->atime)
 		return true;
-	if (stat().st_atim.tv_nsec < other.stat().st_atim.tv_nsec)
-		return true;
-	if (stat().st_mtim.tv_sec < other.stat().st_mtim.tv_sec)
-		return true;
-	if (stat().st_mtim.tv_nsec < other.stat().st_mtim.tv_nsec)
+	if (_node->mtime < other._node->mtime)
 		return true;
 	if (xattrs() < other.xattrs())
 		return true;
 
 	return false;
+}
+
+uint16_t Explorer::Entry::mode() const
+{
+	return _node->mode;
+}
+
+uint64_t Explorer::Entry::atime() const
+{
+	return _node->atime;
+}
+
+uint64_t Explorer::Entry::mtime() const
+{
+	return _node->mtime;
+}
+
+const string &Explorer::Entry::user() const
+{
+	return _node->user;
+}
+
+const string &Explorer::Entry::group() const
+{
+	return _node->group;
 }
 
 const Reference &Explorer::Entry::reference() const
@@ -126,11 +143,6 @@ opcode_t Explorer::Entry::opcode() const
 	if (_node != nullptr)
 		return _node->opcode;
 	return OP_TREE_NONE;
-}
-
-const struct stat &Explorer::Entry::stat() const
-{
-	return _node->stat;
 }
 
 const map<string, string> &Explorer::Entry::xattrs() const
@@ -202,9 +214,11 @@ void Explorer::_loadDirectory_1(Node *node)
 	input.reset();
 
 	for (const Directory_1::Entry &child : dir.getChildren()) {
-		n = make_shared<Node>(child.reference, child.opcode,
-				      child.stat, child.xattrs);
-		node->children[child.name] = move(n);
+		n = make_shared<Node>(child.reference(), child.opcode(),
+				      child.mode(), child.atime(),
+				      child.mtime(), child.user(),
+				      child.group(), child.xattrs());
+		node->children[child.name()] = move(n);
 	}
 
 	node->cloaded = true;

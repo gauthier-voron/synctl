@@ -1,0 +1,18 @@
+#!/bin/bash
+#
+#   skip - skip a test or benchmark case, possibly explaining the reason
+#
+#   Usage: skip [<reason>]
+#
+#   Exit the case immediately, informing the case execution script that this
+#   case is skipped.
+#   If <reason> is specified, also indicate why the case has been skipped.
+#
+
+if [ "x${SKIP_FILE}" != 'x' ] ; then
+    echo "$1" > "${SKIP_FILE}"
+else
+    echo "cannot skip properly: 'SKIP_FILE' is not defined" >&2
+fi
+
+exit 1

@@ -13,6 +13,26 @@ define cmd-call
   $(Q)./$(strip $(1)) $(2)
 endef
 
+define cmd-cp
+  $(call cmd-echo,  CP      $(strip $(call cmd-format, $(1))))
+  $(Q)cp -a $(2) $(1)
+endef
+
+define cmd-gzip
+  $(call cmd-echo,  GZIP    $(strip $(call cmd-format, $(1))))
+  $(Q)gzip -c $(2) > $(1)
+endef
+
+
+define cmd-ccso
+  $(call cmd-echo,  CC      $(strip $(call cmd-format, $(1))))
+  $(Q)gcc -fPIC -Wall -Wextra -g -std=c17 -c $(2) -o $(1) $(3)
+endef
+
+define cmd-ldso
+  $(call cmd-echo,  LDSO    $(strip $(call cmd-format, $(1))))
+  $(Q)gcc -shared -fPIC $(2) -o $(1) $(3)
+endef
 
 define cmd-ccxx
   $(call cmd-echo,  CCXX    $(strip $(call cmd-format, $(1))))
@@ -34,6 +54,11 @@ define cmd-ldcov
   $(Q)g++ $(2) --coverage -o $(1) $(3)
 endef
 
+
+define cmd-depc
+  $(call cmd-info,  DEPC    $(strip $(call cmd-format, $(1))))
+  $(Q)gcc -std=c17 $(2) -MM -o $(1) -MT $(3) $(4)
+endef
 
 define cmd-depcxx
   $(call cmd-info,  DEPCXX  $(strip $(call cmd-format, $(1))))

@@ -54,7 +54,8 @@ void SnapshotCombiner::_import(const string &path, Directory_1 *received,
 
 	split(path, nullptr, &name);
 
-	received->addChild(name, base.stat(), base.xattrs(),
+	received->addChild(name, base.mode(), base.atime(), base.mtime(),
+			   base.user(), base.group(), base.xattrs(),
 			   base.opcode(), base.reference());
 
 	_importedPaths.push_back(path);
@@ -65,8 +66,8 @@ void SnapshotCombiner::_store(const Directory_1 &object, Reference *reference)
 	unique_ptr<TransientOutputStream> tos;
 	Reference ref;
 
-	for (Directory_1::Entry &child : object.getChildren())
-		_repository->takeReference(child.reference);
+	for (const Directory_1::Entry &child : object.getChildren())
+		_repository->takeReference(child.reference());
 
 	tos = _repository->newObject();
 
@@ -91,7 +92,7 @@ bool SnapshotCombiner::_combine(const string &path, Directory_1 *received,
 	bool modified;
 
 	if (merged(path, &reference) == false) {
-		input = _repository->readObject(recv.reference);
+		input = _repository->readObject(recv.reference());
 		dir.read(input.get());
 		input.reset();
 
@@ -100,9 +101,9 @@ bool SnapshotCombiner::_combine(const string &path, Directory_1 *received,
 		if (modified)
 			_store(dir, &reference);
 	} else {
-		received->removeChild(recv.name);
-		received->addChild(recv.name, recv.stat, recv.xattrs,
-				   recv.opcode, reference);
+		received->removeChild(recv.name());
+		received->addChild(recv.name(), recv.stat(), recv.xattrs(),
+				   recv.opcode(), reference);
 
 		modified = true;
 	}
@@ -127,14 +128,14 @@ bool SnapshotCombiner::_merge(const string &path, Directory_1 *received,
 	i = 0;
 	while (it != bchd.end()) {
 		hasRecv = i < recv.size();
-		if (hasRecv && (recv[i].name < it->first)) {
+		if (hasRecv && (recv[i].name() < it->first)) {
 			i++;
 			continue;
 		}
 
 		cpath += it->first;
 
-		if (!hasRecv || (it->first < recv[i].name)) {
+		if (!hasRecv || (it->first < recv[i].name())) {
 			if (_filterPath(cpath) == Filter::Reject) {
 				_import(cpath, received, it->second);
 				modified = true;
@@ -146,8 +147,8 @@ bool SnapshotCombiner::_merge(const string &path, Directory_1 *received,
 		}
 
 		if (it->second.isDirectory() &&
-		    (recv[i].opcode == OP_TREE_DIRECTORY_1) &&
-		    (recv[i].reference != it->second.reference())) {
+		    (recv[i].opcode() == OP_TREE_DIRECTORY_1) &&
+		    (recv[i].reference() != it->second.reference())) {
 			modified |= _combine(cpath, received, recv[i],
 					     it->second);
 		}

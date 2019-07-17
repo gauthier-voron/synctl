@@ -1,0 +1,186 @@
+#!/bin/bash
+#
+#   intercept - run a command while intercepting some calls to the glibc
+#
+#   Launch an arbitrary command but intercept come calls this command make to
+#   the glibc and substitute the a custom behavior to the default
+#   implementation.
+ #
+
+# Name of the script without the path.
+#
+SCRIPT_NAME="${0##*/}"
+
+# Name of the library to use with LD_PRELOAD on the executed child command.
+#
+LIBNAME='intercept.so'
+
+# What the user indicates for the --libpath option on the command line.
+#
+OPTION_LIBPATH=
+
+# Path where to find the LIBNAME library.
+# <empty> / <path>
+#
+LIBPATH=
+
+
+
+# Print a message on the standard error and exit with failure.
+# Arg0: the message to print.
+#
+fatal() {
+    local msg="$1" ; shift
+
+    exec >&2
+    printf "%s: %s\n" "${SCRIPT_NAME}" "$msg"
+    printf "Please type '%s --help' for more information\n" "$0"
+
+    exit 1
+}
+
+# Setup the library path, given the --libpath option value and the default
+# search path.
+# Return: 0 = a suitable library has been found / 1 = no suitable library
+#
+setup_libpath() {
+    local dirs="$LD_LIBRARY_PATH"
+    local dir path
+
+    if [ "x${OPTION_LIBPATH}" != 'x' ] ; then
+	LIBPATH="${OPTION_LIBPATH}"
+	return 0
+    fi
+
+    while [ "x$dirs" != 'x' ] ; do
+	dir="${dirs%%:*}"
+
+	if [ "x$dir" != 'x' ] ; then
+	    path="$dir/$LIBNAME"
+	    if [ -f "$path" -a -r "$path" -a -x "$path" ] ; then
+		LIBPATH="$path"
+		return 0
+	    fi
+	fi
+
+	if [ "x$dir" = "x$dirs" ] ; then
+	    dirs=''
+	else
+	    dirs="${dirs#*:}"
+	fi
+    done
+
+    return 1
+}
+
+
+# Print usage information on stdout.
+#
+usage() {
+    cat <<EOF
+Usage: ${SCRIPT_NAME} [<options...>] <command> [<args...>]
+
+Execute the given <command>, intercepting and alterating the behavior of some
+library calls.
+
+Launch the specified <command> with the supplied <args> arguments if any. While
+the <command> is running, intercept some calls to exeternal libraries
+(typically the glibc) and alterate their behavior.
+
+The calls to intercept are specified by the options.
+
+
+Options:
+
+  -h, --help                  Print this message and exit.
+
+  -l, --libpath <path>        Indicate the path of the interception library.
+                              If not specified, this program looks in the
+                              LD_LIBRARY_PATH for a file named "intercept.so".
+
+  -V, --version               Print version information and exit.
+
+  --<name> <cmd>              Intercept the call to the function <name> and
+                              alterate its behavior as specified by the given
+                              command <cmd> (see Alteration section).
+
+
+Alteration:
+
+  getpwnam()
+  getpwuid()
+    The command receives a single argument which is the parameter given to the
+    function (i.e. a "name" or a "uid"). If the command exits with a non zero
+    code, then use the default behavior of the function. Otherwise expect the
+    command to write a line of this form in the standard output:
+
+        <name>:<passwd>:<uid>:<gid>:<gecos>:<dir>:<shell>
+
+    This line has the same syntax that the ones in /etc/passwd. If the command
+    provides such a line, parse it and return a struct passwd for this content.
+    If the command does not provide such a line, return NULL.
+
+EOF
+}
+
+# Print version information on stdout.
+#
+version() {
+    cat <<EOF
+intercept 1.0.0
+Gauthier Voron
+gauthier.voron@mnesic.fr
+EOF
+}
+
+
+# Set the --libpath option value.
+# If called more than once, then exit with fatal message
+# Arg0: the option value
+#
+set_libpath() {
+    local arg="$1" ; shift
+
+    if [ "x$arg" = 'x' ] ; then
+	fatal "invalid empty value for libpath option"
+    elif [ ! -f "$arg" -o ! -r "$arg" -o ! -x "$arg" ] ; then
+	fatal "invalid value for libpath option: '$arg'"
+    elif [ "x${OPTION_LIBPATH}" != 'x' ] ; then
+	fatal "option libpath set twice: '${OPTION_LIBPATH}' , '$arg'"
+    fi
+
+    OPTION_LIBPATH="$arg"
+}
+
+
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+#                           Main script starts here
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+# Parse command line arguments.
+# To keep it simple, only accept non bundled short options and separated option
+# value.
+#
+while [ $# -gt 0 ] ; do
+    case "$1" in
+	'-h'|'--help')        usage; exit 0 ;;
+	'-l'|'--libpath')     shift; set_libpath "$1" ;;
+	'-V'|'--version')     version; exit 0 ;;
+	'--getpwnam')         shift; export INTERCEPT_GETPWNAM="$1" ;;
+	'--getpwuid')         shift; export INTERCEPT_GETPWUID="$1" ;;
+	'--')                 shift; break ;;
+	*)                    break ;;
+    esac
+    shift
+done
+
+# Setup the LIBPATH from the option or from the default search path.
+#
+if ! setup_libpath ; then
+    fatal "cannot find library '$LIBNAME'"
+fi
+
+# Execute the command with the intercept.so library as an LD_PRELOAD shared
+# object, effectively overriding glibc symbols.
+#
+LD_PRELOAD="$LIBPATH:${LD_PRELOAD}" "$@"

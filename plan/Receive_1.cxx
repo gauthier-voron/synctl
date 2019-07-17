@@ -84,8 +84,8 @@ void Receive_1::_receiveDirectory(const Context *context)
 			dest = &reference;
 	}
 
-	for (Directory_1::Entry &child : dir.getChildren())
-		context->repository->takeReference(child.reference);
+	for (const Directory_1::Entry &child : dir.getChildren())
+		context->repository->takeReference(child.reference());
 
 	tos = context->repository->newObject();
 	dir.write(tos.get(), dest);

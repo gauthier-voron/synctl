@@ -85,11 +85,11 @@ ATEXIT_SCRIPT=
 
 # The total number of test/benchmark to do.
 #
-CASE_DONE=
+CASE_DONE=0
 
 # The number of failed test/benchmark.
 #
-CASE_FAILED=
+CASE_FAILED=0
 
 # The name of the failed test/benchmark cases.
 # The name of a case is either the file name (without the path) of the script
@@ -97,6 +97,14 @@ CASE_FAILED=
 # on the command line.
 #
 CASE_FAILED_NAMES=()
+
+# The number of skipped test/benchmark.
+#
+CASE_SKIPPED=0
+
+# The name of the skipped test/benchmark cases along with an optional reason.
+#
+CASE_SKIPPED_NAMES=()
 
 # The maximum length (in number of character) of case number.
 # Equals to log_10(#case)
@@ -263,6 +271,7 @@ print_case_result() {
     local name="$1" ; shift
     local num=$1 ; shift
     local ret=$1 ; shift
+    local skip="$1" ; shift
     local cs ce ph res
     local head body
 
@@ -277,6 +286,9 @@ print_case_result() {
 	    fi
 	    cs="\033[32m"
 	    res='success'
+	elif [ -e "$skip" ] ; then
+	    cs="\033[33m"
+	    res='skipped'
 	else
 	    cs="\033[31m"
 	    res='failure'
@@ -291,6 +303,13 @@ print_case_result() {
 	    fi
 	    ph=0
 	    res='success'
+	elif [ -e "$skip" ] ; then
+	    if is_quiet ; then
+		ph=1
+	    else
+		ph=0
+	    fi
+	    res='skipped'
 	else
 	    if is_quiet ; then
 		ph=1
@@ -334,20 +353,45 @@ print_case_summary() {
     local name
 
     if [ ${CASE_FAILED} -eq 0 ] ; then
-	if is_quiet ; then
-	    return 0
-	elif is_silent ; then
-	    return 0
-	fi
+	if [ ${CASE_SKIPPED} -eq 0 ] ; then
+	    if is_quiet ; then
+		return 0
+	    elif is_silent ; then
+		return 0
+	    fi
 
-	echo
-	if use_color ; then
-	    printf "\033[32m::\033[0m All tests succeed\n"
+	    echo
+	    if use_color ; then
+		printf "\033[32m::\033[0m All tests succeed\n"
+	    else
+		printf ":: All tests succeed\n"
+	    fi
+
+	    return 0
 	else
-	    printf ":: All tests succeed\n"
-	fi
+	    if is_quiet ; then
+		return 0
+	    elif is_silent ; then
+		return 0
+	    fi
 
-	return 0
+	    echo
+	    if use_color ; then
+		printf "\033[33m::\033[0m Test skipped : %d / %d\n" \
+		       ${CASE_SKIPPED} ${CASE_DONE}
+		for name in "${CASE_SKIPPED_NAMES[@]}" ; do
+		    printf "  \033[33m->\033[0m %s\n" "$name"
+		done
+	    else
+		printf ":: Test skipped : %d / %d\n" ${CASE_SKIPPED} \
+		       ${CASE_DONE}
+		for name in "${CASE_SKIPPED_NAMES[@]}" ; do
+		    printf "  -> %s\n" "$name"
+		done
+	    fi
+
+	    return 0
+	fi
     else
 	if is_quiet ; then
 	    return 1
@@ -523,6 +567,7 @@ setup_executable() {
 #
 setup_case_environment() {
     local results="$1" ; shift
+    local skip="$1" ; shift
     local comp apath
 
     while [ "x${CASES_PATH}" != 'x' ] ; do
@@ -538,9 +583,11 @@ setup_case_environment() {
 	apath="${apath}${comp}"
     done
 
-    PATH="$apath:$PATH"
+    export PATH="$apath:$PATH"
+    export LD_LIBRARY_PATH="$apath:$LD_LIBRARY_PATH"
 
     export MEASURE_OUTPUT="$(absolute_path "$results")"
+    export SKIP_FILE="$(absolute_path "$skip")"
 }
 
 
@@ -556,9 +603,11 @@ execute_case() {
     local path=$(absolute_path "${prefix}${name}")
     local sandbox=$(create_case_sandbox)
     local log=$(mktemp --suffix='.log' "${SCRIPT_NAME}.XXXXXX")
+    local skip=$(mktemp -u --suffix='.log' "${SCRIPT_NAME}.XXXXXX")
     local vcpid skpid vcret results popresult
 
     push_atexit "rm '$log'"
+    push_atexit "test -e '$skip' && rm '$skip'"
 
     if [ "x$MODE" = 'xbenchmark' -a "x$OUTPUT" != 'x' ] ; then
 	results="$OUTPUT/$name.csv"
@@ -574,7 +623,7 @@ execute_case() {
     set -m
     (
 	cd "$sandbox"
-	setup_case_environment "$results"
+	setup_case_environment "$results" "$skip"
 	exec "$path"
     ) > "$log" 2>&1 &
     vcpid=$!
@@ -600,15 +649,25 @@ execute_case() {
 	wait $skpid
     fi
 
-    print_case_result "$name" $num $vcret
+    print_case_result "$name" $num $vcret "$skip"
     if [ $vcret -ne 0 ] ; then
-	print_case_log "$log"
-	CASE_FAILED=$(( CASE_FAILED + 1 ))
-	CASE_FAILED_NAMES+=("$name")
+	if [ -e "$skip" ] ; then
+	    CASE_SKIPPED=$(( CASE_SKIPPED + 1 ))
+	    if [ "x$(cat "$skip")" != 'x' ] ; then
+		CASE_SKIPPED_NAMES+=("$name : $(cat "$skip")")
+	    else
+		CASE_SKIPPED_NAMES+=("$name")
+	    fi
+	else
+	    print_case_log "$log"
+	    CASE_FAILED=$(( CASE_FAILED + 1 ))
+	    CASE_FAILED_NAMES+=("$name")
+	fi
     elif [ $popresult -eq 1 ] ; then
 	print_case_log "$results"
     fi
 
+    pop_atexit
     pop_atexit
 
     if [ $popresult -eq 1 ] ; then
