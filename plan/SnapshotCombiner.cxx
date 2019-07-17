@@ -54,7 +54,8 @@ void SnapshotCombiner::_import(const string &path, Directory_1 *received,
 
 	split(path, nullptr, &name);
 
-	received->addChild(name, base.stat(), base.xattrs(),
+	received->addChild(name, base.mode(), base.atime(), base.mtime(),
+			   base.user(), base.group(), base.xattrs(),
 			   base.opcode(), base.reference());
 
 	_importedPaths.push_back(path);

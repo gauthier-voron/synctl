@@ -29,7 +29,11 @@ class Explorer
 	{
 		Reference                                     reference;
 		opcode_t                                      opcode;
-		struct stat                                   stat;
+		uint16_t                                      mode;
+		uint64_t                                      atime;
+		uint64_t                                      mtime;
+		std::string                                   user;
+		std::string                                   group;
 		std::map<std::string, std::string>            xattrs;
 		bool                                          cloaded;
 		std::map<std::string, std::shared_ptr<Node>>  children;
@@ -37,7 +41,8 @@ class Explorer
 		Node() = default;
 		Node(const Reference &reference, opcode_t opcode);
 		Node(const Reference &reference, opcode_t opcode,
-		     const struct stat &stat,
+		     uint16_t mode, uint64_t atime, uint64_t mtime,
+		     const std::string &user, const std::string &group,
 		     const std::map<std::string, std::string> &xattrs);
 		Node(const Node &other) = default;
 	};
@@ -61,11 +66,16 @@ class Explorer
 		bool operator!=(const Entry &other) const;
 		bool operator<(const Entry &other) const;
 
+		uint16_t mode() const;
+		uint64_t atime() const;
+		uint64_t mtime() const;
+
+		const std::string &user() const;
+		const std::string &group() const;
+
 		const Reference &reference() const;
 
 		opcode_t opcode() const;
-
-		const struct stat &stat() const;
 
 		const std::map<std::string, std::string> &xattrs() const;
 
