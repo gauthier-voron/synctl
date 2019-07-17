@@ -44,11 +44,6 @@ objects-gcda := $(patsubst %.o, %.gcov.gcda, $(objects))
 intercept-sources := $(filter %.c, $(call FIND, test/intercept))
 intercept-objects := $(patsubst %.c, $(OBJ)%.so, $(intercept-sources))
 
-check: $(BIN)synctl
-	./$< init --force 'sandbox'
-	./$< push --root='include' --server 'file://sandbox' \
-             --exclude=/synctl/* --include=/synctl/io/* --include=**/ui/* --skip=*repo*
-	# ./$< pull -rrecvbox -s 'file://sandbox' -R `cat sandbox/branches/Orme/*/ref`
 
 all: $(BIN)synctl
 
@@ -71,8 +66,7 @@ benchmark: test/execute.sh $(BIN)synctl
 coverage: $(COV)coverage.csv
 
 clean:
-	$(call cmd-clean, $(DEP) $(COV) $(OBJ) $(BIN) .depends \
-               sandbox recvbox recbox)
+	$(call cmd-clean, $(DEP) $(COV) $(OBJ) $(BIN) .depends)
 
 
 $(call REQUIRE-DIR, $(BIN)synctl)
@@ -129,6 +123,9 @@ $(OBJ)test/intercept/%.so: test/intercept/%.c
 $(DEP)test/intercept/%.c.d: test/intercept/%.c
 	$(call cmd-depc, $@, $<, $(patsubst %.c, $(OBJ)%.so, $<), \
                -Itest/intercept/)
+
+
+-include .config/Makefile
 
 
 .depends:
