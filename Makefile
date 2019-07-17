@@ -44,6 +44,10 @@ objects-gcda := $(patsubst %.o, %.gcov.gcda, $(objects))
 intercept-sources := $(filter %.c, $(call FIND, test/intercept))
 intercept-objects := $(patsubst %.c, $(OBJ)%.so, $(intercept-sources))
 
+ifneq ($(VALIDATION),)
+  validation-cases := $(wildcard test/validation/$(strip $(VALIDATION))*)
+endif
+
 
 all: $(BIN)synctl
 
@@ -53,7 +57,8 @@ test: validation-test
 validation-test: test/execute.sh $(BIN)synctl $(BIN)intercept.so
 	$(call cmd-call, $< --mode validation, \
           $(if $(filter $(V), 0), --silent,    \
-          $(if $(filter $(V), 1), --quiet)))
+          $(if $(filter $(V), 1), --quiet))    \
+          $(validation-cases))
 
 .validation-test-gcov: test/execute.sh $(BIN)synctl-gcov
 	-$(call cmd-call, $< --mode validation,  \
