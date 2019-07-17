@@ -55,7 +55,7 @@ all: $(BIN)synctl
 
 test: validation-test
 
-validation-test: test/execute.sh $(BIN)synctl
+validation-test: test/execute.sh $(BIN)synctl $(BIN)intercept.so
 	$(call cmd-call, $< --mode validation, \
           $(if $(filter $(V), 0), --silent,    \
           $(if $(filter $(V), 1), --quiet)))
