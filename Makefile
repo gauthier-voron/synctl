@@ -48,6 +48,14 @@ ifneq ($(VALIDATION),)
   validation-cases := $(wildcard test/validation/$(strip $(VALIDATION))*)
 endif
 
+manpages := $(foreach suffix, 1 2 3 4 5 6 7 8, \
+              $(filter %.$(suffix), $(call FIND, man)))
+
+
+bin-install-path := $(PREFIX)/usr/bin/
+
+manpages-install-path := $(PREFIX)/usr/share/
+
 
 all: $(BIN)synctl
 
@@ -65,10 +73,20 @@ validation-test: test/execute.sh $(BIN)synctl $(BIN)intercept.so
           --executable $(BIN)synctl-gcov         \
           $(if $(filter $(V), 0 1 2), --silent))
 
+
 benchmark: test/execute.sh $(BIN)synctl
 	$(call cmd-call, $< --mode benchmark)
 
+
 coverage: $(COV)coverage.csv
+
+
+install: installbin installdoc
+
+installbin: $(bin-install-path)synctl
+
+installdoc: $(patsubst %, $(manpages-install-path)%.gz, $(manpages))
+
 
 clean:
 	$(call cmd-clean, $(DEP) $(COV) $(OBJ) $(BIN) .depends)
@@ -128,6 +146,16 @@ $(OBJ)test/intercept/%.so: test/intercept/%.c
 $(DEP)test/intercept/%.c.d: test/intercept/%.c
 	$(call cmd-depc, $@, $<, $(patsubst %.c, $(OBJ)%.so, $<), \
                -Itest/intercept/)
+
+
+$(call REQUIRE-DIR, $(bin-install-path)synctl)
+$(call REQUIRE-DIR, $(patsubst %, $(manpages-install-path)%.gz, $(manpages)))
+
+$(bin-install-path)synctl: $(BIN)synctl
+	$(call cmd-cp, $@, $<)
+
+$(manpages-install-path)%.gz: %
+	$(call cmd-gzip, $@, $<)
 
 
 -include .config/Makefile

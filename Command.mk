@@ -13,6 +13,16 @@ define cmd-call
   $(Q)./$(strip $(1)) $(2)
 endef
 
+define cmd-cp
+  $(call cmd-echo,  CP      $(strip $(call cmd-format, $(1))))
+  $(Q)cp -a $(2) $(1)
+endef
+
+define cmd-gzip
+  $(call cmd-echo,  GZIP    $(strip $(call cmd-format, $(1))))
+  $(Q)gzip -c $(2) > $(1)
+endef
+
 
 define cmd-ccso
   $(call cmd-echo,  CC      $(strip $(call cmd-format, $(1))))
