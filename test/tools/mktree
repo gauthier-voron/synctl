@@ -86,6 +86,24 @@ do_xattr() {
     setfattr -h -n "$name" -v "$value" "$path"
 }
 
+do_owner() {
+    local path="$1" ; shift
+    local owner="$1" ; shift
+
+    test "x$path" != 'x'
+
+    chown --no-dereference "$owner" "$path"
+}
+
+do_group() {
+    local path="$1" ; shift
+    local group="$1" ; shift
+
+    test "x$path" != 'x'
+
+    chown --no-dereference ":$group" "$path"
+}
+
 do_options() {
     local path="$1" ; shift
     local rem="$1" ; shift
@@ -98,6 +116,10 @@ do_options() {
 
 	if [ "x${opt:0:2}" = 'xx:' ] ; then
 	    do_xattr "$path" "${opt:2}"
+	elif [ "x${opt:0:2}" = 'xo:' ] ; then
+	    do_owner "$path" "${opt:2}"
+	elif [ "x${opt:0:2}" = 'xg:' ] ; then
+	    do_group "$path" "${opt:2}"
 	else
 	    false
 	fi
