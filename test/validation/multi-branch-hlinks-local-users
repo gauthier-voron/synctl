@@ -1,0 +1,58 @@
+#!/bin/bash
+
+set -e
+set -x
+
+cat > 'spec-0.txt' <<EOF
+root 04**** * *
+root/f0 0100644 19990101 19990102 < f0\n
+root/f1 0100644 19990101 19990102 = root/f0
+root/f2 0100644 19990101 19990102 = root/f0
+EOF
+
+cat > 'spec-1.txt' <<EOF
+root 04**** * *
+root/f0 0100644 19990101 19990102 < f0\n
+root/f1 0100644 19990101 19990102 = root/f0
+EOF
+
+mkdir 'pushed-0' 'pushed-1' 'pulled'
+
+mktree -p 'pushed-0' < 'spec-0.txt'
+mktree -p 'pushed-1' < 'spec-1.txt'
+
+cat > 'hide-user' <<'EOF'
+#!/bin/sh
+#
+#   Hide the current user if the process is "synctl server ..."
+#
+
+cat -A "/proc/$PPID/cmdline" | grep -q 'synctl\^@server\^@' || exit 1
+
+case "x$1" in
+    "x$UID")
+        exit 0
+        ;;
+    "x$(whoami)")
+        exit 0
+        ;;
+    *)
+        exit 1
+        ;;
+esac
+EOF
+
+chmod 755 'hide-user'
+
+synctl init 'server'
+
+synctl push --server='file://server' --root='pushed-0/root' --trunk='t0' \
+       --branch='b0'
+
+intercept --getpwuid './hide-user' --getpwnam './hide-user' \
+  synctl push --server='file://server' --root='pushed-1/root' --trunk='t0' \
+       --branch='b1' --exclude='f2'
+
+synctl pull --server='file://server' --root='pulled/root' --trunk='t0'
+
+chktree -p 'pulled' < 'spec-0.txt'
