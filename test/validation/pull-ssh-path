@@ -26,9 +26,13 @@ mktree -p 'pushed' < 'spec.txt'
 synctl init 'server'
 
 path="$PWD/server"
-path="${path#$HOME/}"
+rpath="${path#$HOME/}"
+if [ "x$rpath" = "x$path" ] ; then
+    rpath="$(echo "$HOME" | sed -r 's/[^/]+/../g')$path"
+fi
+
 synctl push --server='file://server' --root='pushed/root'
 
-synctl pull --server="ssh://localhost/~$USER/$path" --root='pulled/root'
+synctl pull --server="ssh://localhost/~$USER/$rpath" --root='pulled/root'
 
 chktree -p 'pulled' < 'spec.txt'
