@@ -41,6 +41,8 @@ objects := $(patsubst %.cxx, $(OBJ)%.o, $(sources))
 objects-gcov := $(patsubst %.o, %.gcov.o,    $(objects))
 objects-gcda := $(patsubst %.o, %.gcov.gcda, $(objects))
 
+intercept-sources := $(filter %.c, $(call FIND, test/intercept))
+intercept-objects := $(patsubst %.c, $(OBJ)%.so, $(intercept-sources))
 
 check: $(BIN)synctl
 	./$< init --force 'sandbox'
@@ -103,14 +105,6 @@ $(DEP)%.cxx.gcov.d: %.cxx
                -Iinclude/)
 
 
-.depends:
-	$(call cmd-dep, $@, $(filter %.d, $^))
-
-ifeq ($(mode),build)
-  -include .depends
-endif
-
-
 $(call REQUIRE-DIR, $(COV)coverage.csv)
 
 $(COV)coverage.csv: $(objects-gcda)
@@ -119,6 +113,30 @@ $(COV)coverage.csv: $(objects-gcda)
 $(objects-gcda): .validation-test-gcov ;
 
 .INTERMEDIATE: .validation-test-gcov
+
+
+$(call REQUIRE-DIR, $(BIN)intercept.so)
+
+$(BIN)intercept.so: $(intercept-objects)
+	$(call cmd-ldso, $@, $^, -ldl)
+
+$(call REQUIRE-DIR, $(intercept-objects))
+$(call REQUIRE-DEP, $(intercept-sources), $(DEP)%.d)
+
+$(OBJ)test/intercept/%.so: test/intercept/%.c
+	$(call cmd-ccso, $@, $<, -Itest/intercept/)
+
+$(DEP)test/intercept/%.c.d: test/intercept/%.c
+	$(call cmd-depc, $@, $<, $(patsubst %.c, $(OBJ)%.so, $<), \
+               -Itest/intercept/)
+
+
+.depends:
+	$(call cmd-dep, $@, $(filter %.d, $^))
+
+ifeq ($(mode),build)
+  -include .depends
+endif
 
 
 endif
