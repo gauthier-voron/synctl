@@ -53,6 +53,10 @@ class Directory_1
 		EntryInfo(const struct stat &stat,
 			  const std::map<std::string, std::string> &xattrs,
 			  opcode_t opcode, const Reference &reference);
+		EntryInfo(uint16_t mode, uint64_t atime, uint64_t mtime,
+			  const std::string &user, const std::string &group,
+			  const std::map<std::string, std::string> &xattrs,
+			  opcode_t opcode, const Reference &reference);
 	};
 
 
@@ -119,6 +123,11 @@ class Directory_1
 
 
 	void addChild(const std::string &name, const struct stat &statbuf,
+		      const std::map<std::string, std::string> &xattrs,
+		      opcode_t opcode, const Reference &reference);
+	void addChild(const std::string &name, uint16_t mode, uint64_t atime,
+		      uint64_t mtime, const std::string &user,
+		      const std::string &group,
 		      const std::map<std::string, std::string> &xattrs,
 		      opcode_t opcode, const Reference &reference);
 

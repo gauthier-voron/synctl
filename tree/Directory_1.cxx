@@ -82,6 +82,22 @@ Directory_1::EntryInfo::EntryInfo(const struct stat &_stat,
 		xattrs.emplace_back(x.first, x.second);
 }
 
+Directory_1::EntryInfo::EntryInfo(uint16_t _mode, uint64_t _atime,
+				  uint64_t _mtime, const string &_user,
+				  const string &_group,
+				  const map<string, string> &_xattrs,
+				  opcode_t _opcode,
+				  const Reference &_reference)
+	: user(_user), group(_group), opcode(_opcode), reference(_reference)
+{
+	stat.mode = _mode;
+	stat.atime = _atime;
+	stat.mtime = _mtime;
+
+	for (auto &x : _xattrs)
+		xattrs.emplace_back(x.first, x.second);
+}
+
 Directory_1::Entry::Entry(const string &name, shared_ptr<EntryInfo> &einfo)
 	: _name(name), _einfo(einfo)
 {
@@ -299,6 +315,17 @@ void Directory_1::addChild(const string &name, const struct stat &statbuf,
 {
 	_children[name] =
 		make_shared<EntryInfo>(statbuf, xattrs, opcode, reference);
+}
+
+void Directory_1::addChild(const string &name, uint16_t mode, uint64_t atime,
+			   uint64_t mtime, const string &user,
+			   const string &group,
+			   const map<string, string> &xattrs,
+			   opcode_t opcode, const Reference &reference)
+{
+	_children[name] =
+		make_shared<EntryInfo>(mode, atime, mtime, user, group, xattrs,
+				       opcode, reference);
 }
 
 void Directory_1::removeChild(const string &name)
