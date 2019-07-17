@@ -55,7 +55,8 @@ void __applyStat(const std::string &path, const struct stat &stat)
 			throw IOException();
 
 	if ((st.st_uid != stat.st_uid) || (st.st_gid != stat.st_gid))
-		if (::chown(path.c_str(), stat.st_uid, stat.st_gid) != 0)
+		if (::fchownat(AT_FDCWD, path.c_str(), stat.st_uid,
+			       stat.st_gid, AT_SYMLINK_NOFOLLOW) != 0)
 			throw IOException();
 
 	times[0] = stat.st_atim;
