@@ -7,6 +7,7 @@
 #include <unistd.h>
 
 #include <map>
+#include <memory>
 #include <string>
 #include <vector>
 
@@ -56,23 +57,44 @@ class Directory_1
 
 
  public:
-	struct Entry
+	class Entry
 	{
-		std::string                         name;
-		struct stat                         stat;
-		std::map<std::string, std::string>  xattrs;
-		opcode_t                            opcode;
-		Reference                           reference;
+		std::string                                  _name;
+		std::shared_ptr<EntryInfo>                   _einfo;
 
-		Entry(const std::string &name, const struct stat &stat,
-		      const std::map<std::string, std::string> &xattrs,
-		      opcode_t opcode, const Reference &reference);
-		Entry(const std::string &name, const EntryInfo &einfo);
+		mutable struct stat                          _stat;
+		mutable std::map<std::string, std::string>   _xattrs;
+
+
+	 public:
+		Entry();
+		Entry(const std::string &name,
+		      std::shared_ptr<EntryInfo> &einfo);
+
+		Entry(const std::string &name,
+		      std::shared_ptr<EntryInfo> &einfo,
+		      const struct stat &stat,
+		      const std::map<std::string, std::string> &xattrs);
+		Entry(const Entry &other) = default;
+		Entry(Entry &&other) = default;
+
+		Entry &operator=(const Entry &other) = default;
+		Entry &operator=(Entry &&other) = default;
+
+		const std::string &name() const;
+
+		const struct stat &stat() const;
+
+		const std::map<std::string, std::string> &xattrs() const;
+
+		opcode_t opcode() const;
+
+		const Reference &reference() const;
 	};
 
 
  private:
-	std::map<std::string, EntryInfo>  _children;
+	std::map<std::string, std::shared_ptr<EntryInfo>>  _children;
 
 
 	void _writeXattr(OutputStream *output, const EntryInfo &einfo) const;
@@ -94,7 +116,6 @@ class Directory_1
 	void addChild(const std::string &name, const struct stat &statbuf,
 		      const std::map<std::string, std::string> &xattrs,
 		      opcode_t opcode, const Reference &reference);
-	void addChild(const Entry &entry);
 
 	void removeChild(const std::string &path);
 

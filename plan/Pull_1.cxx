@@ -159,16 +159,16 @@ void Pull_1::_createDirectory(const Context *context)
 	directory.create();
 
 	for (const Directory_1::Entry &entry : dir.getChildren()) {
-		ctx.apath += entry.name;
-		ctx.rpath += entry.name;
-		ctx.opcode = entry.opcode;
+		ctx.apath += entry.name();
+		ctx.rpath += entry.name();
+		ctx.opcode = entry.opcode();
 
 		_pullObject(&ctx);
-		__applyStat(ctx.apath, entry.stat);
-		setXattributes(ctx.apath, entry.xattrs);
+		__applyStat(ctx.apath, entry.stat());
+		setXattributes(ctx.apath, entry.xattrs());
 
-		ctx.apath.resize(ctx.apath.length() - entry.name.length());
-		ctx.rpath.resize(ctx.rpath.length() - entry.name.length());
+		ctx.apath.resize(ctx.apath.length() - entry.name().length());
+		ctx.rpath.resize(ctx.rpath.length() - entry.name().length());
 	}
 }
 
@@ -206,25 +206,25 @@ void Pull_1::_mergeDirectory(const Context *context)
 
 	while (j < remoteChildren.size()) {
 		hasLocal = i < localChildren.size();
-		if (hasLocal && (localChildren[i] < remoteChildren[j].name)) {
+		if (hasLocal && (localChildren[i] < remoteChildren[j].name())){
 			_delete(ctx.apath + localChildren[i]);
 			i++;
 		}
 
-		ctx.apath += remoteChildren[j].name;
-		ctx.rpath += remoteChildren[j].name;
-		ctx.opcode = remoteChildren[j].opcode;
+		ctx.apath += remoteChildren[j].name();
+		ctx.rpath += remoteChildren[j].name();
+		ctx.opcode = remoteChildren[j].opcode();
 
 		_pullObject(&ctx);
-		setXattributes(ctx.apath, remoteChildren[j].xattrs);
-		__applyStat(ctx.apath, remoteChildren[j].stat);
+		setXattributes(ctx.apath, remoteChildren[j].xattrs());
+		__applyStat(ctx.apath, remoteChildren[j].stat());
 
 		ctx.apath.resize(ctx.apath.length() -
-				 remoteChildren[j].name.length());
+				 remoteChildren[j].name().length());
 		ctx.rpath.resize(ctx.rpath.length() -
-				 remoteChildren[j].name.length());
+				 remoteChildren[j].name().length());
 
-		if (hasLocal && (localChildren[i] == remoteChildren[j].name))
+		if (hasLocal && (localChildren[i] == remoteChildren[j].name()))
 			i++;
 		j++;
 	}

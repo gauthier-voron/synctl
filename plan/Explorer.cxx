@@ -202,9 +202,9 @@ void Explorer::_loadDirectory_1(Node *node)
 	input.reset();
 
 	for (const Directory_1::Entry &child : dir.getChildren()) {
-		n = make_shared<Node>(child.reference, child.opcode,
-				      child.stat, child.xattrs);
-		node->children[child.name] = move(n);
+		n = make_shared<Node>(child.reference(), child.opcode(),
+				      child.stat(), child.xattrs());
+		node->children[child.name()] = move(n);
 	}
 
 	node->cloaded = true;
