@@ -1,0 +1,35 @@
+#!/bin/bash
+
+set -e
+set -x
+
+mkdir 'pushed' 'pulled'
+
+mktree -p 'pushed' <<EOF
+root 04**** * *
+root/a 040755 19990101 19990102
+root/a/b 0100644 19990103 19990104 < b\n
+root/a/c 0100644 19990105 19990106 < c\n
+root/a/d 0100644 19990107 19990108 < d\n
+EOF
+
+cat > 'profile' <<EOF
+trunk = t0
+branch = b0
+root = pushed/root
+server = file://server
+exclude = /a/b
+exclude = /a/d
+EOF
+
+synctl init 'server'
+
+synctl push './profile' --exclude='/a/c' --include='a/d'
+
+synctl pull --server='file://server' --root='pulled/root' --trunk='t0'
+
+chktree -p 'pulled' <<EOF
+root 04**** * *
+root/a 040755 19990101 19990102
+root/a/d 0100644 19990107 19990108 < d\n
+EOF
