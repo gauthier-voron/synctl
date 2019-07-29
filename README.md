@@ -37,7 +37,7 @@ To build synctl, you need the following dependencies installed on your system:
 
   * libcrypto
 
-  * libprce2
+  * libpcre2
 
 Then run the command:
 
