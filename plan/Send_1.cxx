@@ -67,14 +67,14 @@ void Send_1::_sendObject(const Context *context)
 void Send_1::_transfer(const Context *context, InputStream *input,
 		       uint64_t size)
 {
-	uint8_t buffer[TRANSFER_BUFFER_SIZE];
+	vector<uint8_t> buffer = vector<uint8_t>(TRANSFER_BUFFER_SIZE);
 	size_t did;
 
 	context->output->writeInt(size);
 
 	do {
-		did = input->read(buffer, TRANSFER_BUFFER_SIZE);
-		context->output->write(buffer, did);
+		did = input->read(buffer.data(), TRANSFER_BUFFER_SIZE);
+		context->output->write(buffer.data(), did);
 	} while (did > 0);
 }
 
@@ -159,7 +159,6 @@ void Send_1::setFilter(Filter *filter)
 void Send_1::send(OutputStream *output, const Repository *repository,
 		  const Snapshot::Content &content)
 {
-	opcode_t op = OP_TREE_NONE;
 	Context ctx;
 
 	ctx.output = output;
@@ -178,5 +177,4 @@ void Send_1::send(OutputStream *output, const Repository *repository,
 
 	output->writeInt(ctx.opcode);
 	_sendObject(&ctx);
-	output->writeInt(op);
 }

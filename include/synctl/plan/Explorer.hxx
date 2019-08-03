@@ -35,8 +35,8 @@ class Explorer
 		std::string                                   user;
 		std::string                                   group;
 		std::map<std::string, std::string>            xattrs;
-		bool                                          cloaded;
 		std::map<std::string, std::shared_ptr<Node>>  children;
+		bool                                          cloaded = false;
 
 		Node() = default;
 		Node(const Reference &reference, opcode_t opcode);

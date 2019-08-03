@@ -44,8 +44,8 @@ objects-gcda := $(patsubst %.o, %.gcov.gcda, $(objects))
 intercept-sources := $(filter %.c, $(call FIND, test/intercept))
 intercept-objects := $(patsubst %.c, $(OBJ)%.so, $(intercept-sources))
 
-ifneq ($(VALIDATION),)
-  validation-cases := $(wildcard test/validation/$(strip $(VALIDATION))*)
+ifneq ($(C),)
+  cases := $(wildcard test/validation/$(strip $(C))*)
 endif
 
 manpages := $(foreach suffix, 1 2 3 4 5 6 7 8, \
@@ -62,20 +62,30 @@ all: $(BIN)synctl
 
 test: validation-test
 
+full-test: validation-test memcheck coverage
+
+
 validation-test: test/execute.sh $(BIN)synctl $(BIN)intercept.so
 	$(call cmd-call, $< --mode validation, \
           $(if $(filter $(V), 0), --silent,    \
           $(if $(filter $(V), 1), --quiet))    \
-          $(validation-cases))
+          --executable $(BIN)synctl $(cases))
+
+memcheck: test/execute.sh $(BIN)synctl $(BIN)intercept.so
+	$(call cmd-call, $< --mode validation, \
+          $(if $(filter $(V), 0), --silent,    \
+          $(if $(filter $(V), 1), --quiet))    \
+          --valgrind --executable $(BIN)synctl $(cases))
 
 .validation-test-gcov: test/execute.sh $(BIN)synctl-gcov
-	-$(call cmd-call, $< --mode validation,  \
-          --executable $(BIN)synctl-gcov         \
-          $(if $(filter $(V), 0 1 2), --silent))
+	-$(call cmd-call, $< --mode validation,    \
+          $(if $(filter $(V), 0 1 2), --silent)    \
+          --executable $(BIN)synctl-gcov $(cases))
 
 
 benchmark: test/execute.sh $(BIN)synctl
-	$(call cmd-call, $< --mode benchmark)
+	$(call cmd-call, $< --mode benchmark, \
+          --executable $(BIN)synctl $(cases))
 
 
 coverage: $(COV)coverage.csv

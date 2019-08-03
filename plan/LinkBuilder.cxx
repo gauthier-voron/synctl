@@ -81,9 +81,9 @@ void LinkBuilder::_mergeLeaves(const MergeLeaves &leaves,
 			       const Snapshot::Content &snapshot)
 {
 	unique_ptr<Link> single = make_unique<Link>();
+	Link *ptr, *recvlink = nullptr;
 	Explorer::Entry rentry;
 	bool hasLink = false;
-	Link *recvlink, *ptr;
 
 	for (const string &path : leaves.received) {
 		rentry = _explorer->find(snapshot, path);

@@ -72,6 +72,10 @@ OPTION_SILENT=
 #
 OPTION_TIMEOUT=
 
+# What the user indicates for the --valgrind option on the command line.
+#
+OPTION_VALGRIND=
+
 # What the user indicates for the --executable option on the command line.
 #
 OPTION_EXECUTABLE=
@@ -220,6 +224,13 @@ is_quiet() {
 #
 is_silent() {
     test "x${OPTION_SILENT}" != 'x'
+}
+
+# Indicate if the script uses valgrind.
+# Return: 0 = yes / 1 = no
+#
+has_valgrind() {
+    test "x${OPTION_VALGRIND}" != 'x'
 }
 
 # Return the maximum length over a list of arbitrary strings.
@@ -549,14 +560,47 @@ delete_case_sandbox() {
 
 
 setup_executable() {
-    local epath
+    local epath replace=0 executable=
 
     if [ "x${OPTION_EXECUTABLE}" != 'x' ] ; then
+	replace=1
+	executable="$(absolute_path "${OPTION_EXECUTABLE}")"
+    elif has_valgrind ; then
+	replace=1
+	executable="$(which synctl)"
+    fi
+
+    if [ $replace -eq 1 ] ; then
 	epath=$(mktemp -d --suffix='.d' "${SCRIPT_NAME}.epath.XXXXXX")
 
 	push_atexit "rm -rf '$epath'"
 
-	ln -s "$(absolute_path "${OPTION_EXECUTABLE}")" "$epath/synctl"
+	if has_valgrind ; then
+	    cat > "$epath/synctl" <<EOF
+#!/bin/bash
+
+valgrind --tool=memcheck --leak-check=full --show-leak-kinds=all  \\
+         --trace-children=yes --log-file=valgrind-%p.log          \\
+         --trace-children-skip=/usr/bin/'*','*'cmdalias'*'        \\
+    "$executable" "\$@"
+
+ret=\$?
+
+for f in 'valgrind-'*'.log' ; do
+    if [ \$(cat "\$f" | wc -l) -gt 20 ] ; then
+        cat "\$f" >&2
+        ret=1
+    fi
+
+    rm "\$f"
+done
+
+exit \$ret
+EOF
+	    chmod 755 "$epath/synctl"
+	else
+	    ln -s "$(absolute_path "${OPTION_EXECUTABLE}")" "$epath/synctl"
+	fi
 
         CASES_PATH="$epath:${CASES_PATH}"
     fi
@@ -704,6 +748,8 @@ Options:
 
   -t, --timeout <sec>         Set a timeout for each case.
 
+  -v, --valgrind              In validation mode, check for invalid access.
+
   -x, --executable <path>     Alias synctl as <path>. 
 
 Modes:
@@ -814,6 +860,18 @@ set_timeout() {
     OPTION_TIMEOUT=$arg
 }
 
+# Set the --valgrind option value.
+# If called more than once, then exit with fatal message
+# Arg0: the option value
+#
+set_valgrind() {
+    if [ "x${OPTION_VALGRIND}" != 'x' ] ; then
+	fatal "option valgrind set twice"
+    fi
+
+    OPTION_VALGRIND=1
+}
+
 set_executable() {
     local arg="$1" ; shift
 
@@ -845,6 +903,7 @@ while [ $# -gt 0 ] ; do
 	'-q'|'--quiet')       set_quiet ;;
 	'-s'|'--silent')      set_silent ;;
 	'-t'|'--timeout')     shift; set_timeout "$1" ;;
+	'-v'|'--valgrind')    set_valgrind ;;
 	'-x'|'--executable')  shift; set_executable "$1" ;;
 	'--')                 shift; break ;;
 	*)                    break ;;

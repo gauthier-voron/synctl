@@ -45,6 +45,7 @@ class FormatListHuman : public FormatList
 	FormatListHuman();
 	FormatListHuman(OutputStream *output);
 	FormatListHuman(const FormatListHuman &other) = delete;
+	virtual ~FormatListHuman() = default;
 
 	virtual void load(const std::string &trunk,
 			  const std::string &snapshot,
