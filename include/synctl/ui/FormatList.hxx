@@ -13,6 +13,8 @@ namespace synctl {
 class FormatList
 {
  public:
+	virtual ~FormatList() = default;
+
 	virtual void load(const std::string &trunk,
 			  const std::string &snapshot,
 			  const struct timespec &date,

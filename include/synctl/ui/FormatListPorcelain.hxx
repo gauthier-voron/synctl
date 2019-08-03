@@ -52,6 +52,7 @@ class FormatListPorcelain : public FormatList {
 	FormatListPorcelain();
 	FormatListPorcelain(OutputStream *output);
 	FormatListPorcelain(const FormatListPorcelain &other) = delete;
+	virtual ~FormatListPorcelain() = default;
 
 	virtual void load(const std::string &trunk,
 			  const std::string &snapshot,
