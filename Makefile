@@ -66,16 +66,23 @@ validation-test: test/execute.sh $(BIN)synctl $(BIN)intercept.so
 	$(call cmd-call, $< --mode validation, \
           $(if $(filter $(V), 0), --silent,    \
           $(if $(filter $(V), 1), --quiet))    \
-          $(validation-cases))
+          --executable $(BIN)synctl $(validation-cases))
+
+memcheck: test/execute.sh $(BIN)synctl $(BIN)intercept.so
+	$(call cmd-call, $< --mode validation, \
+          $(if $(filter $(V), 0), --silent,    \
+          $(if $(filter $(V), 1), --quiet))    \
+          --valgrind --executable $(BIN)synctl $(validation-cases))
 
 .validation-test-gcov: test/execute.sh $(BIN)synctl-gcov
-	-$(call cmd-call, $< --mode validation,  \
-          --executable $(BIN)synctl-gcov         \
-          $(if $(filter $(V), 0 1 2), --silent))
+	-$(call cmd-call, $< --mode validation,    \
+          $(if $(filter $(V), 0 1 2), --silent)    \
+          --executable $(BIN)synctl-gcov $(validation-cases))
 
 
 benchmark: test/execute.sh $(BIN)synctl
-	$(call cmd-call, $< --mode benchmark)
+	$(call cmd-call, $< --mode benchmark, \
+          --executable $(BIN)synctl $(validation-cases))
 
 
 coverage: $(COV)coverage.csv
