@@ -159,7 +159,6 @@ void Send_1::setFilter(Filter *filter)
 void Send_1::send(OutputStream *output, const Repository *repository,
 		  const Snapshot::Content &content)
 {
-	opcode_t op = OP_TREE_NONE;
 	Context ctx;
 
 	ctx.output = output;
@@ -178,5 +177,4 @@ void Send_1::send(OutputStream *output, const Repository *repository,
 
 	output->writeInt(ctx.opcode);
 	_sendObject(&ctx);
-	output->writeInt(op);
 }

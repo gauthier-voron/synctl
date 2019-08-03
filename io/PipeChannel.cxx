@@ -1,7 +1,7 @@
 #include "synctl/io/PipeChannel.hxx"
 
-#include <signal.h>
 #include <sys/types.h>
+#include <sys/wait.h>
 #include <unistd.h>
 
 #include <cstdlib>
@@ -48,8 +48,13 @@ OutputStream *PipeChannel::outputStream()
 
 void PipeChannel::close()
 {
+	int status;
+
 	_in.close();
 	_out.close();
+
+	if (_pid != 0)
+		::waitpid(_pid, &status, 0);
 }
 
 [[noreturn]] static void __execCommand(const vector<string> &cmd,
