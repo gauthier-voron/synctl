@@ -62,6 +62,9 @@ all: $(BIN)synctl
 
 test: validation-test
 
+full-test: validation-test memcheck coverage
+
+
 validation-test: test/execute.sh $(BIN)synctl $(BIN)intercept.so
 	$(call cmd-call, $< --mode validation, \
           $(if $(filter $(V), 0), --silent,    \
