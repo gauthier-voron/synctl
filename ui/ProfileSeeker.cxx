@@ -53,7 +53,7 @@ void ProfileSeeker::push(const string &paths)
 	do {
 		end = paths.find(":", start);
 
-		path = paths.substr(start, end);
+		path = paths.substr(start, end - start);
 		_sanitize(&path);
 		_paths.push_back(path);
 
