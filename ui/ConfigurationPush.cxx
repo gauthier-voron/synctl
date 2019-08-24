@@ -45,6 +45,7 @@
 #include "synctl/ui/OptionBoolean.hxx"
 #include "synctl/ui/OptionLambda.hxx"
 #include "synctl/ui/OptionString.hxx"
+#include "synctl/ui/Path.hxx"
 #include "synctl/ui/ProfileParser.hxx"
 
 
@@ -67,6 +68,7 @@ using synctl::OperandUnexpectedException;
 using synctl::OptionBoolean;
 using synctl::OptionLambda;
 using synctl::OptionString;
+using synctl::Path;
 using synctl::ProfileParser;
 using synctl::Protocol;
 using synctl::SshChannel;
@@ -234,7 +236,7 @@ static int __main(ConfigurationPush *config)
 	if (protocol == nullptr)
 		return 1;
 
-	psettings.localRoot = config->root();
+	psettings.localRoot = Path::resolvePath(config->root());
 	psettings.branchName = config->branch();
 	psettings.trunkName = config->trunk();
 	psettings.snapshotName = nullptr;
