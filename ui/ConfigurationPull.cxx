@@ -41,6 +41,7 @@
 #include "synctl/ui/OperandUnexpectedException.hxx"
 #include "synctl/ui/OptionLambda.hxx"
 #include "synctl/ui/OptionString.hxx"
+#include "synctl/ui/Path.hxx"
 #include "synctl/ui/ProfileParser.hxx"
 
 
@@ -61,6 +62,7 @@ using synctl::OperandMissingException;
 using synctl::OperandUnexpectedException;
 using synctl::OptionLambda;
 using synctl::OptionString;
+using synctl::Path;
 using synctl::ProfileParser;
 using synctl::Protocol;
 using synctl::SshChannel;
@@ -220,7 +222,7 @@ static int __main(ConfigurationPull *config)
 	else
 		psettings.branchName.clear();
 
-	psettings.localRoot = config->root();
+	psettings.localRoot = Path::resolvePath(config->root());
 	psettings.trunkName = config->trunk();
 
 	if (config->optionSnapshot().affected())
