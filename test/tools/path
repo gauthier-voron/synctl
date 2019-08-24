@@ -1,0 +1,224 @@
+#!/usr/bin/perl
+#
+# Copyright 2019 Gauthier Voron
+#
+# This file is part of Synctl
+#
+# Synctl is free software: you can redistribute it and/or modify it under the
+# terms of the GNU General Public License as published by the Free Software
+# Fundation, either version 3 of the License, or (at your option) any later
+# version.
+#
+# Synctl is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANDABILITY or FITNESS FOR
+# A PARTICULAR PURPOSE. See the GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License along with
+# Synctl. If not, see <https://www.gnu.org/licenses/>.
+#
+
+#
+#   path - transform paths
+#
+#   Usage: path absolute <path>              (1)
+#          path canonical <path>             (2)
+#          path from <source> <path>         (3)
+#          path from-home [<user>] <path>    (4)
+#
+#   Transform a given path to give it some characteristics. The desired
+#   characteristics are specified by a keyword argument.
+#
+#   1- absolute     Make the <path> absolute, starting with the '/' character.
+#
+#   2- canonical    Make the <path> canonical, starting with the '/' character
+#                   and containing no '.' or '..' element and not having
+#                   consecutive '/' characters and without trailing '/'
+#                   character unless it is also the first character.
+#
+#   3- from         Make the <path> relative to the given <source>. If <source>
+#                   is not an ancestor of <path>, then use '..' elements.
+#
+#   4- from-home    Make the <path> an absolute path starting with the '~'
+#                   character. If <user> is specified, make the path starts
+#                   with ~<user> instead. If <path> is not under '~', then use
+#                   '..' elements.
+#
+
+use strict;
+use warnings;
+
+
+sub error
+{
+    my ($message) = @_;
+
+    printf(STDERR "path: %s\n", $message);
+    printf(STDERR "Please read the header of '%s' for usage\n", $0);
+
+    exit (1);
+}
+
+sub absolute
+{
+    my ($path) = @_;
+
+    if (!defined($path)) {
+	error('missing path operand');
+    }
+
+    if (($path ne '') && (substr($path, 0, 1) eq '/')) {
+	return $path;
+    }
+
+    return ($ENV{PWD} . '/' . $path);
+}
+
+sub canonical
+{
+    my ($path) = @_;
+    my ($elem, @stack);
+
+    if (!defined($path)) {
+	error('missing path operand');
+    }
+
+    $path = absolute($path);
+
+    foreach $elem (split(m|/+|, $path)) {
+	if (($elem eq '.') || ($elem eq '')) {
+	    next;
+	} elsif ($elem eq '..') {
+	    pop(@stack);
+	} else {
+	    push(@stack, $elem);
+	}
+    }
+
+    return ('/' . join('/', @stack));
+}
+
+sub from
+{
+    my ($source, $path) = @_;
+    my @stack;
+
+    if (!defined($source)) {
+	error('missing source operand');
+    } elsif (!defined($path)) {
+	error('missing path operand');
+    }
+
+    $source = canonical($source);
+    $path = canonical($path);
+
+    while (!($path =~ m|^$source|)) {
+	push(@stack, '..');
+	$source =~ s|/[^/]+$||;
+    }
+
+    $path =~ s|^$source||;
+
+    if (scalar(@stack) == 0) {
+	if ($path eq '') {
+	    return '.';
+	}
+
+	$path =~ s|^/||;
+    }
+
+    if ($path eq '/') {
+	$path = '';
+    }
+
+    return (join('/', @stack) . $path);
+}
+
+sub _get_user_home
+{
+    my ($user) = @_;
+    my ($fh, $line, @fields, $home, $name);
+
+    if (!open($fh, '<', '/etc/passwd')) {
+	error("cannot open '/etc/passwd'");
+    }
+
+    while (defined($line = <$fh>)) {
+	@fields = split(':', $line);
+	$name = $fields[0];
+	$home = $fields[5];
+
+	if ($name ne $user) {
+	    next;
+	} elsif ($home eq '') {
+	    next;
+	}
+
+	last;
+    }
+
+    close($fh);
+
+    if ($name ne $user) {
+	error("unknown user '$user'");
+    }
+
+    return $home;
+}
+
+sub from_home
+{
+    my ($user, $path) = @_;
+    my ($source, $prefix);
+
+    if (!defined($path)) {
+	$path = $user;
+	$user = undef;
+    }
+
+    if (!defined($user)) {
+	$prefix = '~';
+	$source = $ENV{HOME};
+    } else {
+	$prefix = '~' . $user;
+	$source = _get_user_home($user);
+    }
+
+    $path = from($source, $path);
+
+    if ($path eq '.') {
+	return $prefix;
+    } else {
+	return ($prefix . '/' . $path);
+    }
+}
+
+sub main
+{
+    my ($type, @args) = @_;
+    my ($function);
+    my %funcs = (
+	'absolute' => \&absolute,
+	'canonical' => \&canonical,
+	'from' => \&from,
+	'from-home' => \&from_home,
+    );
+
+    if (!defined($type)) {
+	error('missing type operand');
+    }
+
+    $function = $funcs{$type};
+
+    if (!defined($function)) {
+	error("unknown type operand '$type'");
+    }
+
+    printf("%s\n", $function->(@args));
+
+    return 0;
+}
+
+
+exit (main(@ARGV));
+
+__END__
