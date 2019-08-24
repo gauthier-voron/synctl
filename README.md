@@ -39,6 +39,13 @@ To build synctl, you need the following dependencies installed on your system:
 
   * libpcre2
 
+  * make
+
+To run synctl automatic tests, you also need the following dependencies
+installed on your system:
+
+  * perl
+
 Then run the command:
 
 ```
